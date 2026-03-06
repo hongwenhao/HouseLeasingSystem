@@ -33,11 +33,11 @@
       </el-col>
       <el-col :xs="12" :sm="6" :md="3">
         <el-select v-model="localFilters.rooms" placeholder="房间数" clearable style="width:100%">
-          <el-option label="不限" value="" />
-          <el-option label="1室" value="1" />
-          <el-option label="2室" value="2" />
-          <el-option label="3室" value="3" />
-          <el-option label="4+室" value="4+" />
+          <el-option label="不限" :value="null" />
+          <el-option label="1室" :value="1" />
+          <el-option label="2室" :value="2" />
+          <el-option label="3室" :value="3" />
+          <el-option label="4+室" :value="4" />
         </el-select>
       </el-col>
       <el-col :xs="12" :sm="6" :md="4">
