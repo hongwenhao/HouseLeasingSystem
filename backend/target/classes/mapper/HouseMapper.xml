@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.houseleasing.mapper.HouseMapper">
+
+    <select id="selectByCondition" resultType="com.houseleasing.entity.House">
+        SELECT * FROM houses
+        <where>
+            <if test="req.keyword != null and req.keyword != ''">
+                AND (title LIKE CONCAT('%', #{req.keyword}, '%')
+                OR description LIKE CONCAT('%', #{req.keyword}, '%')
+                OR address LIKE CONCAT('%', #{req.keyword}, '%'))
+            </if>
+            <if test="req.city != null and req.city != ''">
+                AND city = #{req.city}
+            </if>
+            <if test="req.district != null and req.district != ''">
+                AND district = #{req.district}
+            </if>
+            <if test="req.minPrice != null">
+                AND price &gt;= #{req.minPrice}
+            </if>
+            <if test="req.maxPrice != null">
+                AND price &lt;= #{req.maxPrice}
+            </if>
+            <if test="req.houseType != null and req.houseType != ''">
+                AND house_type = #{req.houseType}
+            </if>
+            <if test="req.ownerType != null and req.ownerType != ''">
+                AND owner_type = #{req.ownerType}
+            </if>
+            <if test="req.rooms != null">
+                AND rooms = #{req.rooms}
+            </if>
+            <if test="req.decoration != null and req.decoration != ''">
+                AND decoration = #{req.decoration}
+            </if>
+            AND status = 'ONLINE'
+        </where>
+        <choose>
+            <when test="req.sortBy == 'price_asc'">ORDER BY price ASC</when>
+            <when test="req.sortBy == 'price_desc'">ORDER BY price DESC</when>
+            <when test="req.sortBy == 'popular'">ORDER BY view_count DESC</when>
+            <otherwise>ORDER BY create_time DESC</otherwise>
+        </choose>
+    </select>
+
+</mapper>
