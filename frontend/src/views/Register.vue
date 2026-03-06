@@ -1,6 +1,10 @@
 <template>
+  <!-- 组件说明：用户注册页，包含用户名、手机号、邮箱、密码（含确认）、
+       注册身份（租客/房东）和服务条款同意的完整注册表单。
+       注册成功后自动跳转到登录页。 -->
   <div class="register-page">
     <div class="register-container">
+      <!-- 注册页头部：Logo + 标题 -->
       <div class="register-header">
         <router-link to="/" class="back-home">
           <img src="../assets/logo.svg" alt="logo" class="logo" />
@@ -9,12 +13,14 @@
         <p class="subtitle">加入房屋租赁系统，开启智能租房体验</p>
       </div>
 
+      <!-- 注册表单 -->
       <el-form
         ref="formRef"
         :model="form"
         :rules="rules"
         label-position="top"
       >
+        <!-- 用户名 -->
         <el-form-item label="用户名" prop="username">
           <el-input
             v-model="form.username"
@@ -24,6 +30,7 @@
             clearable
           />
         </el-form-item>
+        <!-- 手机号 -->
         <el-form-item label="手机号" prop="phone">
           <el-input
             v-model="form.phone"
@@ -33,6 +40,7 @@
             clearable
           />
         </el-form-item>
+        <!-- 邮箱（可选） -->
         <el-form-item label="邮箱" prop="email">
           <el-input
             v-model="form.email"
@@ -42,6 +50,7 @@
             clearable
           />
         </el-form-item>
+        <!-- 密码 -->
         <el-form-item label="密码" prop="password">
           <el-input
             v-model="form.password"
@@ -52,6 +61,7 @@
             show-password
           />
         </el-form-item>
+        <!-- 确认密码 -->
         <el-form-item label="确认密码" prop="confirmPassword">
           <el-input
             v-model="form.confirmPassword"
@@ -62,12 +72,14 @@
             show-password
           />
         </el-form-item>
+        <!-- 注册身份选择：租客 or 房东 -->
         <el-form-item label="注册身份" prop="role">
           <el-radio-group v-model="form.role" size="large" class="role-group">
             <el-radio-button value="TENANT">🏠 我是租客</el-radio-button>
             <el-radio-button value="LANDLORD">🔑 我是房东</el-radio-button>
           </el-radio-group>
         </el-form-item>
+        <!-- 服务条款同意 -->
         <el-form-item prop="agreed">
           <el-checkbox v-model="form.agreed">
             我已阅读并同意
@@ -77,6 +89,7 @@
           </el-checkbox>
         </el-form-item>
 
+        <!-- 注册按钮 -->
         <el-button
           type="primary"
           size="large"
@@ -88,6 +101,7 @@
         </el-button>
       </el-form>
 
+      <!-- 跳转登录页链接 -->
       <div class="register-footer">
         <span>已有账户？</span>
         <router-link to="/login" class="login-link">立即登录</router-link>
@@ -97,25 +111,30 @@
 </template>
 
 <script setup>
+// 说明：注册页逻辑，处理多字段表单验证和注册请求
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { register } from '../api/auth.js'
 
 const router = useRouter()
-const formRef = ref(null)
+const formRef = ref(null)  // 表单实例引用
 const loading = ref(false)
 
+// 注册表单数据
 const form = reactive({
   username: '',
   phone: '',
   email: '',
   password: '',
   confirmPassword: '',
-  role: 'TENANT',
+  role: 'TENANT',  // 默认注册为租客
   agreed: false
 })
 
+/**
+ * 自定义校验：确认密码必须与密码一致
+ */
 const validateConfirmPassword = (rule, value, callback) => {
   if (value !== form.password) {
     callback(new Error('两次输入的密码不一致'))
@@ -124,6 +143,9 @@ const validateConfirmPassword = (rule, value, callback) => {
   }
 }
 
+/**
+ * 自定义校验：必须勾选同意条款才能注册
+ */
 const validateAgreed = (rule, value, callback) => {
   if (!value) {
     callback(new Error('请阅读并同意条款'))
@@ -132,6 +154,7 @@ const validateAgreed = (rule, value, callback) => {
   }
 }
 
+// 表单校验规则
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -156,6 +179,12 @@ const rules = {
   agreed: [{ validator: validateAgreed, trigger: 'change' }]
 }
 
+/**
+ * 处理注册表单提交
+ * 1. 前端表单全量校验
+ * 2. 调用注册接口（不传 confirmPassword 和 agreed，这两个字段仅前端使用）
+ * 3. 注册成功后跳转到登录页
+ */
 async function handleRegister() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return

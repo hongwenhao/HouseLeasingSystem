@@ -1,6 +1,10 @@
 <template>
+  <!-- 组件说明：用户登录页，包含用户名/手机号 + 密码表单，
+       表单验证通过后调用 Pinia userStore.login() 发起登录请求，
+       成功后跳转到 redirect 参数指定的页面或首页。 -->
   <div class="login-page">
     <div class="login-container">
+      <!-- 登录页头部：Logo + 标题 -->
       <div class="login-header">
         <router-link to="/" class="back-home">
           <img src="../assets/logo.svg" alt="logo" class="logo" />
@@ -9,6 +13,7 @@
         <p class="subtitle">欢迎回来，请登录您的账户</p>
       </div>
 
+      <!-- 登录表单 -->
       <el-form
         ref="formRef"
         :model="form"
@@ -16,6 +21,7 @@
         label-position="top"
         @submit.prevent="handleLogin"
       >
+        <!-- 用户名/手机号输入框 -->
         <el-form-item label="用户名 / 手机号" prop="username">
           <el-input
             v-model="form.username"
@@ -25,6 +31,7 @@
             clearable
           />
         </el-form-item>
+        <!-- 密码输入框（支持回车提交） -->
         <el-form-item label="密码" prop="password">
           <el-input
             v-model="form.password"
@@ -37,6 +44,7 @@
           />
         </el-form-item>
 
+        <!-- 登录按钮 -->
         <el-button
           type="primary"
           size="large"
@@ -48,6 +56,7 @@
         </el-button>
       </el-form>
 
+      <!-- 跳转注册页链接 -->
       <div class="login-footer">
         <span>还没有账户？</span>
         <router-link to="/register" class="register-link">立即注册</router-link>
@@ -57,6 +66,7 @@
 </template>
 
 <script setup>
+// 说明：登录页逻辑，处理表单验证和登录请求
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -66,14 +76,16 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const formRef = ref(null)
-const loading = ref(false)
+const formRef = ref(null)  // 表单实例引用，用于调用 validate()
+const loading = ref(false)  // 登录按钮 loading 状态
 
+// 表单数据
 const form = reactive({
   username: '',
   password: ''
 })
 
+// 表单校验规则
 const rules = {
   username: [{ required: true, message: '请输入用户名或手机号', trigger: 'blur' }],
   password: [
@@ -82,6 +94,12 @@ const rules = {
   ]
 }
 
+/**
+ * 处理登录表单提交
+ * 1. 前端表单校验
+ * 2. 调用 userStore.login() 发起登录请求
+ * 3. 登录成功后重定向（支持 redirect 参数）
+ */
 async function handleLogin() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
@@ -89,6 +107,7 @@ async function handleLogin() {
   try {
     await userStore.login(form)
     ElMessage.success('登录成功')
+    // 支持登录后重定向：如从 /houses 跳转到登录页，登录后返回 /houses
     const redirect = route.query.redirect || '/'
     router.push(redirect)
   } catch (e) {

@@ -223,6 +223,7 @@
 </template>
 
 <script setup>
+// 说明：发布/编辑房源页逻辑，根据路由是否携带 id 参数判断是发布新房源还是编辑已有房源
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -232,11 +233,13 @@ import { createHouse, updateHouse, getHouseDetail } from '../api/house.js'
 
 const route = useRoute()
 const router = useRouter()
-const formRef = ref(null)
-const submitting = ref(false)
+const formRef = ref(null)      // 表单实例引用
+const submitting = ref(false)  // 提交按钮 loading 状态
 
+/** 通过路由参数判断当前是编辑模式（有 id）还是发布新房源模式 */
 const isEdit = computed(() => !!route.params.id)
 
+/** 五项费用字段的中文标签映射 */
 const feeLabels = {
   waterFee: '水费',
   electricFee: '电费',
@@ -245,26 +248,29 @@ const feeLabels = {
   internetFee: '网络费'
 }
 
+/** 配套设施选项列表（通过复选框多选） */
 const amenityOptions = ['洗衣机', '空调', '冰箱', '热水器', 'WiFi', '停车位', '电梯', '床', '衣柜', '沙发', '电视', '微波炉', '天然气', '暖气']
 
+// 房源表单数据（发布时为默认值，编辑时从接口加载）
 const form = reactive({
   title: '',
   description: '',
   city: '',
   district: '',
   address: '',
-  longitude: null,
-  latitude: null,
-  area: 50,
-  rooms: '2室1厅',
+  longitude: null,    // 可选：经度（用于地图定位）
+  latitude: null,     // 可选：纬度
+  area: 50,           // 面积（平米），默认50
+  rooms: '2室1厅',    // 户型描述
   floor: 1,
   totalFloor: 20,
-  decoration: 'SIMPLE',
-  houseType: 'RESIDENTIAL',
-  ownerType: 'OWNER',
-  price: 3000,
-  deposit: 1,
-  availableDate: null,
+  decoration: 'SIMPLE',        // 装修情况：FINE/SIMPLE/ROUGH
+  houseType: 'RESIDENTIAL',    // 房屋类型
+  ownerType: 'OWNER',          // 房东类型：OWNER/SUBLEASE/AGENT
+  price: 3000,                 // 月租金（元）
+  deposit: 1,                  // 押金月数
+  availableDate: null,         // 可入住日期（可选）
+  // 五项费用配置：每项包含类型（METERED/FIXED/INCLUDED）和金额
   feeConfig: {
     waterFee: { type: 'METERED', amount: 3.5 },
     electricFee: { type: 'METERED', amount: 0.6 },
@@ -272,10 +278,11 @@ const form = reactive({
     propertyFee: { type: 'FIXED', amount: 200 },
     internetFee: { type: 'FIXED', amount: 100 }
   },
-  amenities: [],
-  images: []
+  amenities: [],  // 配套设施列表（字符串数组）
+  images: []      // 图片 URL 列表
 })
 
+// 表单必填项校验规则
 const rules = {
   title: [{ required: true, message: '请输入房源标题', trigger: 'blur' }],
   city: [{ required: true, message: '请输入城市', trigger: 'blur' }],
@@ -290,10 +297,12 @@ const rules = {
 }
 
 onMounted(async () => {
+  // 编辑模式：从接口加载已有房源数据填充表单
   if (isEdit.value) {
     try {
       const res = await getHouseDetail(route.params.id)
       Object.assign(form, res)
+      // 兼容老数据无 feeConfig 的情况，使用默认费用配置
       if (!form.feeConfig) {
         form.feeConfig = {
           waterFee: { type: 'METERED', amount: 3.5 },
@@ -311,6 +320,10 @@ onMounted(async () => {
   }
 })
 
+/**
+ * 提交房源表单
+ * 编辑模式调用 updateHouse，发布模式调用 createHouse，成功后跳转到房东中心
+ */
 async function handleSubmit() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
@@ -323,7 +336,7 @@ async function handleSubmit() {
       await createHouse(form)
       ElMessage.success('房源发布成功，请等待审核')
     }
-    router.push('/landlord-center')
+    router.push('/landlord-center')  // 返回房东中心查看房源状态
   } catch (e) {
     ElMessage.error(e.message || '操作失败，请稍后重试')
   } finally {

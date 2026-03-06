@@ -160,6 +160,7 @@
 </template>
 
 <script setup>
+// 说明：房东中心页逻辑，管理房东的房源列表、预约订单管理、合同管理和收益统计
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
@@ -168,27 +169,29 @@ import { getMyHouses, deleteHouse } from '../api/house.js'
 import { getLandlordOrders, confirmOrder, rejectOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 
-const activeTab = ref('houses')
-const housesLoading = ref(false)
-const ordersLoading = ref(false)
-const contractsLoading = ref(false)
-const myHouses = ref([])
-const landlordOrders = ref([])
-const contracts = ref([])
-const stats = ref({})
-const rejectDialogVisible = ref(false)
-const rejectReason = ref('')
-const rejecting = ref(false)
-const currentRejectOrder = ref(null)
+const activeTab = ref('houses')        // 当前激活 tab
+const housesLoading = ref(false)       // 我的房源加载状态
+const ordersLoading = ref(false)       // 预约订单加载状态
+const contractsLoading = ref(false)    // 合同列表加载状态
+const myHouses = ref([])               // 当前房东发布的所有房源
+const landlordOrders = ref([])         // 收到的预约订单列表
+const contracts = ref([])              // 参与的合同列表
+const stats = ref({})                  // 统计数据（累计收益、在租数等）
+const rejectDialogVisible = ref(false) // 拒绝预约对话框显隐
+const rejectReason = ref('')           // 拒绝原因输入内容
+const rejecting = ref(false)           // 拒绝按钮 loading 状态
+const currentRejectOrder = ref(null)   // 当前正在被拒绝的订单
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 
 onMounted(() => {
+  // 页面挂载时并发加载所有数据
   loadHouses()
   loadOrders()
   loadContracts()
   computeStats()
 })
 
+/** 加载房东自己发布的房源列表 */
 async function loadHouses() {
   housesLoading.value = true
   try {
@@ -198,6 +201,7 @@ async function loadHouses() {
   finally { housesLoading.value = false }
 }
 
+/** 加载收到的预约订单列表 */
 async function loadOrders() {
   ordersLoading.value = true
   try {
@@ -207,6 +211,7 @@ async function loadOrders() {
   finally { ordersLoading.value = false }
 }
 
+/** 加载参与的合同列表 */
 async function loadContracts() {
   contractsLoading.value = true
   try {
@@ -216,6 +221,13 @@ async function loadContracts() {
   finally { contractsLoading.value = false }
 }
 
+/**
+ * 计算房东收益统计数据（前端聚合计算）
+ * - totalHouses：总房源数
+ * - activeRentals：当前生效中的合同数（在租房源数）
+ * - totalIncome：所有在租合同的月租金总和
+ * - avgPrice：所有房源月租金的平均值
+ */
 function computeStats() {
   stats.value = {
     totalHouses: myHouses.value.length,
@@ -227,17 +239,22 @@ function computeStats() {
   }
 }
 
+/**
+ * 删除指定房源（需二次确认弹框）
+ * @param {number} id - 房源 ID
+ */
 async function deleteMyHouse(id) {
   await ElMessageBox.confirm('确定要删除该房源吗？', '删除确认', { type: 'warning' })
   try {
     await deleteHouse(id)
     ElMessage.success('删除成功')
-    loadHouses()
+    loadHouses()  // 重新加载房源列表
   } catch (e) {
     ElMessage.error(e.message || '删除失败')
   }
 }
 
+/** 确认预约订单（房东操作） */
 async function handleConfirmOrder(id) {
   try {
     await confirmOrder(id)
@@ -248,12 +265,17 @@ async function handleConfirmOrder(id) {
   }
 }
 
+/**
+ * 打开拒绝预约对话框
+ * @param {Object} order - 要拒绝的订单对象
+ */
 function openRejectDialog(order) {
   currentRejectOrder.value = order
   rejectReason.value = ''
   rejectDialogVisible.value = true
 }
 
+/** 提交拒绝预约（附带拒绝原因） */
 async function submitReject() {
   rejecting.value = true
   try {
@@ -268,36 +290,43 @@ async function submitReject() {
   }
 }
 
+/** 房源状态枚举转中文 */
 function houseStatusLabel(status) {
   const map = { PENDING: '审核中', APPROVED: '已上架', REJECTED: '审核拒绝', OFFLINE: '已下架' }
   return map[status] || status
 }
 
+/** 房源状态对应 Tag 类型 */
 function houseStatusType(status) {
   const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', OFFLINE: 'info' }
   return map[status] || 'info'
 }
 
+/** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
   const map = { PENDING: '待确认', CONFIRMED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[status] || status
 }
 
+/** 订单状态对应 Tag 类型 */
 function orderStatusType(status) {
   const map = { PENDING: 'warning', CONFIRMED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
 }
 
+/** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
   const map = { PENDING: '待签署', ACTIVE: '生效中', TERMINATED: '已终止', EXPIRED: '已到期' }
   return map[status] || status
 }
 
+/** 合同状态对应 Tag 类型 */
 function contractStatusType(status) {
   const map = { PENDING: 'warning', ACTIVE: 'success', TERMINATED: 'danger', EXPIRED: 'info' }
   return map[status] || 'info'
 }
 
+/** 格式化日期为本地化中文短日期 */
 function formatDate(date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('zh-CN')

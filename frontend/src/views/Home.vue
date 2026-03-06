@@ -1,22 +1,27 @@
 <template>
+  <!-- 组件说明：首页视图，包含 Hero 搜索区域、平台数据统计横幅、
+       精选推荐房源网格，以及平台优势展示区域。
+       页面挂载时同时执行数字动画计数和推荐房源加载。 -->
   <div class="home-page">
     <NavBar />
 
-    <!-- Hero Section -->
+    <!-- Hero 区域：大图背景 + 搜索栏 -->
     <section class="hero">
       <div class="hero-content">
         <h1 class="hero-title">找到您理想的租房</h1>
         <p class="hero-subtitle">真实房源 · 安全交易 · 快速成交</p>
+        <!-- 搜索栏：v-model 双向绑定筛选条件，search 事件触发跳转到房源列表页 -->
         <div class="hero-search">
           <SearchBar v-model="filters" @search="handleSearch" />
         </div>
       </div>
     </section>
 
-    <!-- Stats Banner -->
+    <!-- 平台数据统计横幅 -->
     <section class="stats-banner">
       <div class="stats-inner">
         <div class="stat-item">
+          <!-- 动态数字：通过 animateCounter 实现从 0 滚动到目标值的动画效果 -->
           <span class="stat-num">{{ animatedStats.houses }}+</span>
           <span class="stat-label">在租房源</span>
         </div>
@@ -35,16 +40,18 @@
       </div>
     </section>
 
-    <!-- Recommended Houses -->
+    <!-- 精选推荐房源区域 -->
     <section class="section">
       <div class="section-inner">
         <div class="section-header">
           <h2 class="section-title">精选推荐房源</h2>
           <router-link to="/houses" class="view-more">查看全部 →</router-link>
         </div>
+        <!-- 加载中：骨架屏占位 -->
         <div v-if="loading" class="loading-wrap">
           <el-skeleton :rows="3" animated />
         </div>
+        <!-- 推荐房源网格 -->
         <div v-else-if="recommendedHouses.length > 0" class="house-grid">
           <HouseCard
             v-for="house in recommendedHouses"
@@ -52,11 +59,12 @@
             :house="house"
           />
         </div>
+        <!-- 暂无推荐数据 -->
         <el-empty v-else description="暂无推荐房源" />
       </div>
     </section>
 
-    <!-- Advantages Section -->
+    <!-- 平台优势区域 -->
     <section class="advantages">
       <div class="advantages-inner">
         <h2 class="section-title center">我们的优势</h2>
@@ -85,6 +93,7 @@
 </template>
 
 <script setup>
+// 说明：首页逻辑，负责推荐房源加载和数字动画效果
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -96,8 +105,9 @@ import { getRecommended } from '../api/house.js'
 
 const router = useRouter()
 const loading = ref(false)
-const recommendedHouses = ref([])
+const recommendedHouses = ref([])  // 精选推荐房源列表
 
+// 搜索筛选条件（与 SearchBar 组件 v-model 双向绑定）
 const filters = reactive({
   keyword: '',
   city: '',
@@ -109,6 +119,7 @@ const filters = reactive({
   decoration: ''
 })
 
+// 数字动画状态：存储各统计指标的当前动画显示值
 const animatedStats = reactive({
   houses: 0,
   users: 0,
@@ -116,25 +127,34 @@ const animatedStats = reactive({
   cities: 0
 })
 
+/**
+ * 数字计数动画：在指定时间内将某个统计字段从 0 平滑增长到目标值
+ * @param {string} key      - animatedStats 中的字段名
+ * @param {number} target   - 动画目标值
+ * @param {number} duration - 动画持续时间（毫秒，默认 1500ms）
+ */
 function animateCounter(key, target, duration = 1500) {
   const start = Date.now()
   const timer = setInterval(() => {
     const elapsed = Date.now() - start
-    const progress = Math.min(elapsed / duration, 1)
+    const progress = Math.min(elapsed / duration, 1) // 归一化进度 0~1
     animatedStats[key] = Math.floor(progress * target)
-    if (progress >= 1) clearInterval(timer)
-  }, 16)
+    if (progress >= 1) clearInterval(timer) // 动画完成后清除定时器
+  }, 16) // 约 60fps 刷新率
 }
 
 onMounted(async () => {
+  // 启动四个数字的计数动画
   animateCounter('houses', 1280)
   animateCounter('users', 5600)
   animateCounter('deals', 890)
   animateCounter('cities', 32)
 
+  // 加载精选推荐房源
   loading.value = true
   try {
     const res = await getRecommended()
+    // 兼容后端返回数组或 { list, total } 两种格式
     recommendedHouses.value = Array.isArray(res) ? res : (res?.list || [])
   } catch (e) {
     ElMessage.error('加载推荐房源失败')
@@ -143,8 +163,13 @@ onMounted(async () => {
   }
 })
 
+/**
+ * 处理搜索事件：将筛选条件转换为 URL query 参数，跳转到房源列表页
+ * @param {Object} searchFilters - SearchBar 组件提交的筛选条件
+ */
 function handleSearch(searchFilters) {
   const query = {}
+  // 过滤掉空值，只保留有效的筛选条件
   Object.entries(searchFilters).forEach(([k, v]) => {
     if (v !== '' && v !== null && v !== undefined) query[k] = v
   })

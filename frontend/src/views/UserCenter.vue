@@ -166,6 +166,7 @@
 </template>
 
 <script setup>
+// 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
@@ -179,24 +180,27 @@ import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 
 const userStore = useUserStore()
-const activeTab = ref('profile')
-const savingProfile = ref(false)
-const changingPwd = ref(false)
-const ordersLoading = ref(false)
-const contractsLoading = ref(false)
-const myOrders = ref([])
-const myContracts = ref([])
-const messages = ref([])
+const activeTab = ref('profile')      // 当前激活的 tab 标签名
+const savingProfile = ref(false)      // 保存资料按钮 loading 状态
+const changingPwd = ref(false)        // 修改密码按钮 loading 状态
+const ordersLoading = ref(false)      // 订单列表加载状态
+const contractsLoading = ref(false)   // 合同列表加载状态
+const myOrders = ref([])              // 当前用户的预约订单列表
+const myContracts = ref([])           // 当前用户的合同列表
+const messages = ref([])              // 消息通知列表
 const profileFormRef = ref(null)
 const pwdFormRef = ref(null)
 
+// 从 Pinia store 计算用户信息
 const userInfo = computed(() => userStore.userInfo)
 
+/** 将角色枚举值映射为中文标签 */
 const roleLabel = computed(() => {
   const map = { TENANT: '租客', LANDLORD: '房东', ADMIN: '管理员' }
   return map[userInfo.value.role] || userInfo.value.role || '用户'
 })
 
+// 资料编辑表单（初始值从 store 取）
 const profileForm = reactive({
   username: userInfo.value.username,
   phone: userInfo.value.phone,
@@ -204,12 +208,14 @@ const profileForm = reactive({
   avatarUrl: userInfo.value.avatarUrl
 })
 
+// 密码修改表单
 const pwdForm = reactive({
   oldPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
+// 密码修改表单校验规则
 const pwdRules = {
   oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
   newPassword: [
@@ -219,6 +225,7 @@ const pwdRules = {
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
     {
+      // 自定义校验：两次密码必须一致
       validator: (rule, val, cb) => {
         if (val !== pwdForm.newPassword) cb(new Error('两次密码不一致'))
         else cb()
@@ -229,6 +236,7 @@ const pwdRules = {
 }
 
 onMounted(async () => {
+  // 拉取最新用户信息，更新资料表单的初始值
   try {
     await userStore.fetchProfile()
     Object.assign(profileForm, {
@@ -239,11 +247,13 @@ onMounted(async () => {
     })
   } catch (e) { /* ignore */ }
 
+  // 并发加载订单、合同、消息数据
   loadOrders()
   loadContracts()
   loadMessages()
 })
 
+/** 加载当前用户的预约订单列表（最多20条） */
 async function loadOrders() {
   ordersLoading.value = true
   try {
@@ -253,6 +263,7 @@ async function loadOrders() {
   finally { ordersLoading.value = false }
 }
 
+/** 加载当前用户参与的合同列表（最多20条） */
 async function loadContracts() {
   contractsLoading.value = true
   try {
@@ -262,6 +273,7 @@ async function loadContracts() {
   finally { contractsLoading.value = false }
 }
 
+/** 加载当前用户的消息通知列表（最多50条） */
 async function loadMessages() {
   try {
     const res = await getMessages({ page: 1, pageSize: 50 })
@@ -269,6 +281,7 @@ async function loadMessages() {
   } catch (e) { /* ignore */ }
 }
 
+/** 保存用户资料修改 */
 async function saveProfile() {
   savingProfile.value = true
   try {
@@ -281,6 +294,10 @@ async function saveProfile() {
   }
 }
 
+/**
+ * 提交密码修改
+ * 修改成功后强制登出，要求用户重新登录（使旧 token 失效）
+ */
 async function changePassword() {
   const valid = await pwdFormRef.value.validate().catch(() => false)
   if (!valid) return
@@ -288,7 +305,7 @@ async function changePassword() {
   try {
     await changePasswordApi({ oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
     ElMessage.success('密码修改成功，请重新登录')
-    await userStore.logout()
+    await userStore.logout()  // 清除本地登录态
   } catch (e) {
     ElMessage.error(e.message || '密码修改失败')
   } finally {
@@ -296,24 +313,31 @@ async function changePassword() {
   }
 }
 
+/** 取消指定预约订单 */
 async function cancelMyOrder(id) {
   try {
     await cancelOrder(id)
     ElMessage.success('已取消预约')
-    loadOrders()
+    loadOrders()  // 重新加载订单列表以更新状态
   } catch (e) {
     ElMessage.error(e.message || '取消失败')
   }
 }
 
+/**
+ * 将指定消息标记为已读
+ * @param {number} id - 消息 ID
+ */
 async function handleMarkRead(id) {
   try {
     await markRead(id)
+    // 本地更新消息已读状态，无需重新请求接口
     const msg = messages.value.find(m => m.id === id)
     if (msg) msg.isRead = true
   } catch (e) { /* ignore */ }
 }
 
+/** 将所有消息一键标记为已读 */
 async function markAllMessagesRead() {
   try {
     await markAllRead()
@@ -324,26 +348,34 @@ async function markAllMessagesRead() {
   }
 }
 
+/** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
   const map = { PENDING: '待确认', CONFIRMED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[status] || status
 }
 
+/** 订单状态对应的 Element Plus Tag 类型 */
 function orderStatusType(status) {
   const map = { PENDING: 'warning', CONFIRMED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
 }
 
+/** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
   const map = { PENDING: '待签署', ACTIVE: '生效中', TERMINATED: '已终止', EXPIRED: '已到期' }
   return map[status] || status
 }
 
+/** 合同状态对应的 Element Plus Tag 类型 */
 function contractStatusType(status) {
   const map = { PENDING: 'warning', ACTIVE: 'success', TERMINATED: 'danger', EXPIRED: 'info' }
   return map[status] || 'info'
 }
 
+/**
+ * 根据信用分返回对应的进度条颜色
+ * 90+ 绿色优秀；70-89 蓝色良好；60-69 橙色一般；60以下 红色较低
+ */
 function creditColor(score) {
   if (score >= 90) return '#67c23a'
   if (score >= 70) return '#409eff'
@@ -351,6 +383,7 @@ function creditColor(score) {
   return '#f56c6c'
 }
 
+/** 根据信用分返回等级描述文字 */
 function creditLabel(score) {
   if (score >= 90) return '优秀信用'
   if (score >= 70) return '良好信用'
@@ -358,6 +391,7 @@ function creditLabel(score) {
   return '信用较低'
 }
 
+/** 格式化日期为本地化中文短日期 */
 function formatDate(date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('zh-CN')

@@ -141,6 +141,7 @@
 </template>
 
 <script setup>
+// 说明：合同详情页逻辑，展示合同完整信息、AI 风险检测结果，并支持签署和终止合同操作
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -151,24 +152,30 @@ import RiskWarning from '../components/RiskWarning.vue'
 import { getContractDetail, signContract, terminateContract, getContractRisks } from '../api/contract.js'
 
 const route = useRoute()
-const loading = ref(false)
-const actioning = ref(false)
-const contract = ref(null)
-const risks = ref([])
-const terminateDialogVisible = ref(false)
-const terminateReason = ref('')
-const role = localStorage.getItem('role') || ''
+const loading = ref(false)                  // 页面加载状态
+const actioning = ref(false)               // 签署/终止按钮 loading 状态
+const contract = ref(null)                 // 合同详情数据
+const risks = ref([])                      // AI 检测到的合同风险列表
+const terminateDialogVisible = ref(false)  // 终止合同对话框显隐
+const terminateReason = ref('')            // 终止原因
+const role = localStorage.getItem('role') || ''  // 当前用户角色
 
+/** 合同状态对应的中文标签 */
 const statusLabel = computed(() => {
   const map = { PENDING: '待签署', ACTIVE: '生效中', TERMINATED: '已终止', EXPIRED: '已到期' }
   return map[contract.value?.status] || contract.value?.status || '-'
 })
 
+/** 合同状态对应的 Element Plus Tag 类型 */
 const statusType = computed(() => {
   const map = { PENDING: 'warning', ACTIVE: 'success', TERMINATED: 'danger', EXPIRED: 'info' }
   return map[contract.value?.status] || 'info'
 })
 
+/**
+ * 计算是否显示"签署合同"按钮
+ * 条件：合同处于待签署状态，且当前用户尚未签署
+ */
 const showSignBtn = computed(() => {
   if (!contract.value || contract.value.status !== 'PENDING') return false
   if (role === 'LANDLORD' && !contract.value.landlordSigned) return true
@@ -176,6 +183,7 @@ const showSignBtn = computed(() => {
   return false
 })
 
+/** 计算是否显示"终止合同"按钮（仅生效中的合同可终止） */
 const showTerminateBtn = computed(() => {
   return contract.value?.status === 'ACTIVE'
 })
@@ -183,6 +191,7 @@ const showTerminateBtn = computed(() => {
 onMounted(async () => {
   loading.value = true
   try {
+    // 并发加载合同详情和风险检测结果，任一失败不影响另一个
     const [contractRes, risksRes] = await Promise.allSettled([
       getContractDetail(route.params.id),
       getContractRisks(route.params.id)
@@ -198,11 +207,16 @@ onMounted(async () => {
   }
 })
 
+/**
+ * 当前用户签署合同
+ * 签署成功后重新加载合同数据（更新签署状态和合同状态）
+ */
 async function handleSign() {
   actioning.value = true
   try {
     await signContract(route.params.id)
     ElMessage.success('合同签署成功')
+    // 重新拉取合同数据以更新双方签署状态
     const res = await getContractDetail(route.params.id)
     contract.value = res
   } catch (e) {
@@ -212,12 +226,16 @@ async function handleSign() {
   }
 }
 
+/**
+ * 终止合同（附带终止原因）
+ * 终止成功后本地更新合同状态，避免重新请求
+ */
 async function handleTerminate() {
   actioning.value = true
   try {
     await terminateContract(route.params.id, { reason: terminateReason.value })
     ElMessage.success('合同已终止')
-    contract.value.status = 'TERMINATED'
+    contract.value.status = 'TERMINATED'  // 本地更新状态
     terminateDialogVisible.value = false
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
@@ -226,6 +244,7 @@ async function handleTerminate() {
   }
 }
 
+/** 格式化日期为本地化中文短日期 */
 function formatDate(date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('zh-CN')

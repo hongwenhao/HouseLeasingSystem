@@ -131,6 +131,7 @@
 </template>
 
 <script setup>
+// 说明：预约订单详情页逻辑，展示订单状态时间线，并根据角色提供确认/拒绝/取消预约等操作
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -141,24 +142,31 @@ import { createContract } from '../api/contract.js'
 
 const route = useRoute()
 const router = useRouter()
-const loading = ref(false)
-const actioning = ref(false)
-const order = ref(null)
-const rejectDialogVisible = ref(false)
-const rejectReason = ref('')
+const loading = ref(false)           // 页面加载状态
+const actioning = ref(false)         // 操作按钮 loading（确认/拒绝/取消）
+const order = ref(null)              // 订单详情数据
+const rejectDialogVisible = ref(false) // 拒绝对话框显隐
+const rejectReason = ref('')         // 拒绝原因
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
-const role = localStorage.getItem('role') || ''
+const role = localStorage.getItem('role') || ''  // 当前用户角色（从 localStorage 读取）
 
+/** 订单状态对应的中文标签 */
 const statusLabel = computed(() => {
   const map = { PENDING: '待确认', CONFIRMED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[order.value?.status] || order.value?.status || '-'
 })
 
+/** 订单状态对应的 Element Plus Tag 类型（颜色） */
 const statusType = computed(() => {
   const map = { PENDING: 'warning', CONFIRMED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[order.value?.status] || 'info'
 })
 
+/**
+ * 计算是否显示操作按钮区域
+ * 房东可操作：订单待确认（确认/拒绝）或已确认（生成合同）
+ * 租客可操作：订单待确认（取消预约）
+ */
 const showActions = computed(() => {
   if (!order.value) return false
   if (role === 'LANDLORD' && (order.value.status === 'PENDING' || order.value.status === 'CONFIRMED')) return true
@@ -166,6 +174,10 @@ const showActions = computed(() => {
   return false
 })
 
+/**
+ * 计算订单状态时间线事件列表
+ * 基于订单状态动态生成已发生的节点（创建、确认/拒绝/取消/完成）
+ */
 const timelineEvents = computed(() => {
   if (!order.value) return []
   const events = [
@@ -195,12 +207,13 @@ onMounted(async () => {
   }
 })
 
+/** 房东确认预约 */
 async function handleConfirm() {
   actioning.value = true
   try {
     await confirmOrder(route.params.id)
     ElMessage.success('已确认预约')
-    order.value.status = 'CONFIRMED'
+    order.value.status = 'CONFIRMED'  // 本地更新状态，无需重新请求
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
   } finally {
@@ -208,6 +221,7 @@ async function handleConfirm() {
   }
 }
 
+/** 房东拒绝预约（附带拒绝原因） */
 async function handleReject() {
   actioning.value = true
   try {
@@ -223,6 +237,7 @@ async function handleReject() {
   }
 }
 
+/** 租客取消预约 */
 async function handleCancel() {
   actioning.value = true
   try {
@@ -236,6 +251,10 @@ async function handleCancel() {
   }
 }
 
+/**
+ * 房东根据已确认订单生成合同
+ * 成功后跳转到新创建的合同详情页
+ */
 async function handleCreateContract() {
   try {
     const res = await createContract({ orderId: route.params.id })
@@ -248,6 +267,7 @@ async function handleCreateContract() {
   }
 }
 
+/** 格式化日期时间为本地化中文完整时间字符串（24小时制） */
 function formatDateTime(date) {
   if (!date) return '-'
   return new Date(date).toLocaleString('zh-CN', { hour12: false })

@@ -162,40 +162,45 @@
 </template>
 
 <script setup>
+// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供数据概览、用户管理、房源审核三大功能
 import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import { getStats, getUserList, getPendingHouses, auditHouseAdmin, getAreaStats, getPriceTrends, getCreditDistribution, banUser, unbanUser } from '../api/admin.js'
 
-const activeTab = ref('overview')
-const stats = ref({})
-const users = ref([])
-const filteredUsers = ref([])
-const pendingHouses = ref([])
-const usersLoading = ref(false)
-const housesLoading = ref(false)
-const userSearch = ref('')
-const auditDialogVisible = ref(false)
-const auditReason = ref('')
-const auditing = ref(false)
-const currentAuditHouse = ref(null)
+const activeTab = ref('overview')        // 当前激活 tab
+const stats = ref({})                    // 平台概览统计数据
+const users = ref([])                    // 所有用户列表（未过滤）
+const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
+const pendingHouses = ref([])            // 待审核房源列表
+const usersLoading = ref(false)          // 用户列表加载状态
+const housesLoading = ref(false)         // 待审核房源加载状态
+const userSearch = ref('')               // 用户搜索关键词
+const auditDialogVisible = ref(false)    // 审核拒绝对话框显隐
+const auditReason = ref('')              // 审核拒绝原因
+const auditing = ref(false)              // 审核提交按钮 loading 状态
+const currentAuditHouse = ref(null)      // 当前被审核的房源
 
-const areaChartRef = ref(null)
-const priceChartRef = ref(null)
-const creditChartRef = ref(null)
+// ECharts 图表 DOM 引用
+const areaChartRef = ref(null)   // 城市房源数量柱状图容器
+const priceChartRef = ref(null)  // 租金趋势折线图容器
+const creditChartRef = ref(null) // 信用分布饼图容器
 
 onMounted(async () => {
+  // 并发加载统计数据、用户列表、待审核房源
   loadStats()
   loadUsers()
   loadPendingHouses()
+  // 等待 DOM 渲染完成后再初始化 ECharts 图表（避免容器尺寸为 0）
   await nextTick()
   setTimeout(() => {
     initCharts()
-  }, 200)
+  }, 200)  // 额外延迟确保 tab 切换后 DOM 完全渲染
 })
 
+/** 加载平台整体数据概览统计 */
 async function loadStats() {
   try {
     const res = await getStats()
@@ -203,16 +208,18 @@ async function loadStats() {
   } catch (e) { /* ignore */ }
 }
 
+/** 加载所有用户列表（支持关键词前端过滤） */
 async function loadUsers() {
   usersLoading.value = true
   try {
     const res = await getUserList({ page: 1, pageSize: 100 })
     users.value = Array.isArray(res) ? res : (res?.list || [])
-    filteredUsers.value = [...users.value]
+    filteredUsers.value = [...users.value]  // 初始不过滤
   } catch (e) { /* ignore */ }
   finally { usersLoading.value = false }
 }
 
+/** 加载状态为 PENDING 的待审核房源列表 */
 async function loadPendingHouses() {
   housesLoading.value = true
   try {
@@ -222,6 +229,10 @@ async function loadPendingHouses() {
   finally { housesLoading.value = false }
 }
 
+/**
+ * 前端实时过滤用户列表（按用户名或手机号模糊匹配）
+ * 在搜索框 input 事件时触发
+ */
 function filterUsers() {
   const keyword = userSearch.value.toLowerCase()
   filteredUsers.value = users.value.filter(u =>
@@ -229,14 +240,20 @@ function filterUsers() {
   )
 }
 
+/**
+ * 初始化 ECharts 图表：城市房源柱状图、租金趋势折线图、信用分布饼图
+ * 优先使用接口数据，接口失败时回退到硬编码的示例数据
+ */
 async function initCharts() {
   try {
+    // 并发请求三个图表数据，任一失败不阻塞其他
     const [areaRes, priceRes, creditRes] = await Promise.allSettled([
       getAreaStats(),
       getPriceTrends(),
       getCreditDistribution()
     ])
 
+    // 初始化城市房源数量柱状图
     if (areaChartRef.value) {
       const areaChart = echarts.init(areaChartRef.value)
       const areaData = areaRes.status === 'fulfilled' ? (areaRes.value || []) : []
@@ -245,7 +262,7 @@ async function initCharts() {
         xAxis: {
           type: 'category',
           data: areaData.map(d => d.city || d.name || '未知'),
-          axisLabel: { rotate: 30 }
+          axisLabel: { rotate: 30 }  // 城市名称倾斜显示，避免重叠
         },
         yAxis: { type: 'value', name: '房源数' },
         series: [{
@@ -258,6 +275,7 @@ async function initCharts() {
       })
     }
 
+    // 初始化近6个月租金均价折线图
     if (priceChartRef.value) {
       const priceChart = echarts.init(priceChartRef.value)
       const priceData = priceRes.status === 'fulfilled' ? (priceRes.value || []) : []
@@ -271,14 +289,15 @@ async function initCharts() {
         series: [{
           name: '平均租金',
           type: 'line',
-          smooth: true,
+          smooth: true,   // 平滑曲线
           data: priceData.map(d => d.avgPrice || d.price || 0),
           itemStyle: { color: '#67c23a' },
-          areaStyle: { opacity: 0.15 }
+          areaStyle: { opacity: 0.15 }  // 面积填充
         }]
       })
     }
 
+    // 初始化用户信用分分布饼图（环形图）
     if (creditChartRef.value) {
       const creditChart = echarts.init(creditChartRef.value)
       const creditData = creditRes.status === 'fulfilled' ? (creditRes.value || []) : []
@@ -288,7 +307,8 @@ async function initCharts() {
         series: [{
           name: '信用分布',
           type: 'pie',
-          radius: ['40%', '70%'],
+          radius: ['40%', '70%'],  // 环形图：内径40%，外径70%
+          // 优先使用接口数据，否则使用默认示例数据
           data: creditData.length > 0 ? creditData.map(d => ({
             name: d.range || d.name || '未知',
             value: d.count || d.value || 0
@@ -302,7 +322,7 @@ async function initCharts() {
       })
     }
   } catch (e) {
-    // Charts init failed, use fallback data
+    // 图表初始化失败时使用兜底示例数据渲染城市柱状图
     if (areaChartRef.value) {
       const areaChart = echarts.init(areaChartRef.value)
       areaChart.setOption({
@@ -315,16 +335,24 @@ async function initCharts() {
   }
 }
 
+/**
+ * 封禁指定用户账号
+ * @param {Object} user - 被封禁的用户对象
+ */
 async function handleBanUser(user) {
   try {
     await banUser(user.id)
-    user.banned = true
+    user.banned = true  // 本地更新状态，无需重新请求列表
     ElMessage.success(`已封禁用户 ${user.username}`)
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
   }
 }
 
+/**
+ * 解封指定用户账号
+ * @param {Object} user - 被解封的用户对象
+ */
 async function handleUnbanUser(user) {
   try {
     await unbanUser(user.id)
@@ -335,6 +363,10 @@ async function handleUnbanUser(user) {
   }
 }
 
+/**
+ * 审核通过房源
+ * 成功后从待审核列表中移除该房源
+ */
 async function approveHouse(house) {
   try {
     await auditHouseAdmin(house.id, { status: 'APPROVED' })
@@ -345,12 +377,17 @@ async function approveHouse(house) {
   }
 }
 
+/**
+ * 打开审核拒绝对话框
+ * @param {Object} house - 待拒绝的房源对象
+ */
 function openAuditReject(house) {
   currentAuditHouse.value = house
   auditReason.value = ''
   auditDialogVisible.value = true
 }
 
+/** 提交房源审核拒绝（附带拒绝原因） */
 async function submitAuditReject() {
   auditing.value = true
   try {
@@ -365,16 +402,19 @@ async function submitAuditReject() {
   }
 }
 
+/** 用户角色枚举转中文标签 */
 function roleLabel(role) {
   const map = { TENANT: '租客', LANDLORD: '房东', ADMIN: '管理员' }
   return map[role] || role
 }
 
+/** 用户角色对应的 Tag 类型 */
 function roleTagType(role) {
   const map = { TENANT: '', LANDLORD: 'success', ADMIN: 'danger' }
   return map[role] || 'info'
 }
 
+/** 房东类型枚举转中文标签 */
 function ownerTypeLabel(type) {
   const map = { OWNER: '一手房东', SUBLEASE: '二手房东', AGENT: '持牌中介' }
   return map[type] || type

@@ -1,8 +1,18 @@
--- Create database
+-- ============================================================
+-- init.sql —— 数据库初始化脚本
+-- 创建 house_leasing 数据库及所有业务表，并插入演示数据
+-- 字符集：utf8mb4（支持中文及 emoji）
+-- ============================================================
+
+-- 创建数据库（若不存在）
 CREATE DATABASE IF NOT EXISTS house_leasing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE house_leasing;
 
--- Users table
+-- ============================================================
+-- 用户表（users）
+-- 存储平台所有用户信息，包括租客、房东和管理员
+-- role 字段区分用户角色，is_real_name_auth 标识是否完成实名认证
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `users` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `username` VARCHAR(50) UNIQUE NOT NULL,
@@ -20,7 +30,12 @@ CREATE TABLE IF NOT EXISTS `users` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Houses table (三类房东 + 五项费用)
+-- ============================================================
+-- 房源表（houses）
+-- 存储房源全部信息，包含三类房东类型和五项费用配置
+-- owner_type: OWNER（一手房东）/ SUBLEASE（二手房东）/ AGENT（持牌中介）
+-- water/electric/gas/property/internet_fee_type: METERED/FIXED/INCLUDED
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `houses` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `title` VARCHAR(200) NOT NULL,
@@ -60,7 +75,10 @@ CREATE TABLE IF NOT EXISTS `houses` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- House images
+-- ============================================================
+-- 房源图片表（house_images）
+-- 存储房源图片 URL 列表，支持多张图片，sort 字段控制显示顺序
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `house_images` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `house_id` BIGINT NOT NULL,
@@ -69,7 +87,12 @@ CREATE TABLE IF NOT EXISTS `house_images` (
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Orders (rental intents + appointments + orders)
+-- ============================================================
+-- 订单表（orders）
+-- 存储租客发起的预约看房订单
+-- order_type: APPOINTMENT（预约看房）/ INTENT（意向订单）/ LEASE（正式租约）
+-- status 流转：PENDING → APPROVED/REJECTED/CANCELLED → COMPLETED/SIGNED
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `orders` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `house_id` BIGINT NOT NULL,
@@ -90,7 +113,12 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Contracts
+-- ============================================================
+-- 合同表（contracts）
+-- 存储房屋租赁合同信息，支持电子签署（双方分别签名）
+-- status 流转：DRAFT → PENDING_SIGN → TENANT_SIGNED/LANDLORD_SIGNED → FULLY_SIGNED
+-- risk_level 由 AI 智能检测合同条款风险后写入
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `contracts` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `contract_no` VARCHAR(50) UNIQUE NOT NULL COMMENT '合同编号',
@@ -117,7 +145,11 @@ CREATE TABLE IF NOT EXISTS `contracts` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Messages / notifications
+-- ============================================================
+-- 站内消息表（messages）
+-- 存储系统通知、订单状态变更、合同提醒等消息
+-- is_read 标识是否已读，related_id 关联具体业务记录 ID
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `messages` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `user_id` BIGINT NOT NULL,
@@ -129,7 +161,11 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- User behaviors for recommendation
+-- ============================================================
+-- 用户行为记录表（user_behaviors）
+-- 记录用户浏览、收藏、下单等行为，用于个性化推荐算法
+-- score 字段：VIEW=1分, COLLECT=3分, ORDER=5分（行为权重）
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `user_behaviors` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `user_id` BIGINT NOT NULL,
@@ -141,7 +177,10 @@ CREATE TABLE IF NOT EXISTS `user_behaviors` (
   INDEX `idx_house_id` (`house_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Reviews
+-- ============================================================
+-- 房源评价表（reviews）
+-- 租客在租期结束后对房源进行评价，rating 为 1-5 星
+-- ============================================================
 CREATE TABLE IF NOT EXISTS `reviews` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `house_id` BIGINT NOT NULL,
@@ -152,20 +191,25 @@ CREATE TABLE IF NOT EXISTS `reviews` (
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Insert demo data
--- Admin user (password: admin123)
+-- ============================================================
+-- 演示数据初始化
+-- 以下 INSERT 语句插入开发/测试用的示例数据
+-- 所有密码均为 BCrypt 加密后的 "admin123" 哈希值
+-- ============================================================
+
+-- 管理员账号（账号：admin，密码：admin123）
 INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
 ('admin', '13800000000', 'admin@houseleasing.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBpwTK/xOOXVta', 'ADMIN', '系统管理员', 1, 100);
 
--- Landlord user (password: landlord123)
+-- 房东示例账号（账号：landlord1，密码：landlord123）
 INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
 ('landlord1', '13811111111', 'landlord1@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBpwTK/xOOXVta', 'LANDLORD', '张房东', 1, 95);
 
--- Tenant user (password: tenant123)
+-- 租客示例账号（账号：tenant1，密码：tenant123）
 INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
 ('tenant1', '13822222222', 'tenant1@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBpwTK/xOOXVta', 'TENANT', '李租客', 1, 90);
 
--- Sample houses
+-- 示例房源数据（北京/上海/广州各城市代表性房源，覆盖三种房东类型）
 INSERT INTO `houses` (title, description, city, district, address, price, deposit, area, rooms, halls, bathrooms, floor, total_floor, decoration, house_type, owner_type, status, water_fee, water_fee_type, electric_fee, electric_fee_type, gas_fee, gas_fee_type, property_fee, property_fee_type, internet_fee, internet_fee_type, owner_id) VALUES
 ('阳光花园精装两室一厅', '南北通透，采光极好，近地铁2号线', '北京', '朝阳区', '北京市朝阳区阳光路100号阳光花园3栋5层501室', 5500.00, 11000.00, 75.5, 2, 1, 1, 5, 18, 'FINE', 'APARTMENT', 'OWNER', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 200.00, 'FIXED', 80.00, 'FIXED', 2),
 ('国贸CBD整租一居室', '精装修，拎包入住，距国贸地铁站500米', '北京', '朝阳区', '北京市朝阳区建国路88号', 6800.00, 13600.00, 55.0, 1, 1, 1, 12, 28, 'FINE', 'APARTMENT', 'AGENT', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 350.00, 'FIXED', 100.00, 'INCLUDED', 2),

@@ -1,14 +1,20 @@
 <template>
+  <!-- 组件说明：房源详情页，展示单套房源的完整信息，包括：
+       图片轮播、标题与房东类型角标、价格和押金、关键参数（户型/面积/楼层/装修等）、
+       地址、五项费用表、房源描述、配套设施、房东信息以及预约看房按钮。
+       点击预约看房会弹出预约对话框，未登录用户会被重定向到登录页。 -->
   <div class="house-detail-page">
     <NavBar />
 
+    <!-- 加载状态：骨架屏占位 -->
     <div v-if="loading" class="loading-wrap">
       <el-skeleton :rows="10" animated />
     </div>
 
+    <!-- 房源详情主体 -->
     <div v-else-if="house" class="detail-content">
       <div class="detail-inner">
-        <!-- Image Carousel -->
+        <!-- 图片轮播区域：没有图片时使用占位图 -->
         <el-carousel height="420px" class="carousel" :autoplay="false">
           <el-carousel-item
             v-for="(img, i) in (house.images && house.images.length > 0 ? house.images : [placeholder])"
@@ -19,19 +25,20 @@
         </el-carousel>
 
         <div class="info-section">
-          <!-- Title and badges -->
+          <!-- 标题行：房源标题 + 房东类型角标 -->
           <div class="title-row">
             <h1 class="house-title">{{ house.title }}</h1>
             <OwnerTypeBadge :ownerType="house.ownerType" />
           </div>
 
+          <!-- 价格区域 -->
           <div class="price-section">
             <span class="price">¥{{ house.price }}</span>
             <span class="price-unit">元/月</span>
             <el-tag type="info" class="deposit-tag">押金 {{ house.deposit }} 个月</el-tag>
           </div>
 
-          <!-- Key Info -->
+          <!-- 关键信息描述列表 -->
           <el-descriptions :column="3" border class="key-info">
             <el-descriptions-item label="城市">{{ house.city }}</el-descriptions-item>
             <el-descriptions-item label="区域">{{ house.district }}</el-descriptions-item>
@@ -43,25 +50,25 @@
             <el-descriptions-item label="可租日期" :span="3">{{ house.availableDate || '随时可住' }}</el-descriptions-item>
           </el-descriptions>
 
-          <!-- Address -->
+          <!-- 详细地址行（含地图定位图标） -->
           <div class="address-row">
             <el-icon><Location /></el-icon>
             <span>{{ house.city }} {{ house.district }} {{ house.address }}</span>
           </div>
 
-          <!-- Fee Table -->
+          <!-- 五项费用说明 -->
           <div class="section-card">
             <h3 class="card-title">费用说明</h3>
             <FeeTable :fees="house.feeConfig || house.fees || {}" />
           </div>
 
-          <!-- Description -->
+          <!-- 房源描述 -->
           <div class="section-card">
             <h3 class="card-title">房源描述</h3>
             <p class="description">{{ house.description || '暂无描述' }}</p>
           </div>
 
-          <!-- Amenities -->
+          <!-- 配套设施标签（无设施时不显示该区块） -->
           <div class="section-card" v-if="house.amenities && house.amenities.length > 0">
             <h3 class="card-title">配套设施</h3>
             <div class="amenities">
@@ -74,7 +81,7 @@
             </div>
           </div>
 
-          <!-- Landlord Info -->
+          <!-- 房东信息卡片 -->
           <div class="section-card landlord-card">
             <h3 class="card-title">房东信息</h3>
             <div class="landlord-info" v-if="house.landlord">
@@ -87,7 +94,7 @@
             <p v-else class="no-info">暂无房东信息</p>
           </div>
 
-          <!-- Book Button -->
+          <!-- 预约看房按钮 -->
           <div class="action-section">
             <el-button
               type="primary"
@@ -103,9 +110,10 @@
       </div>
     </div>
 
+    <!-- 房源不存在时的空状态 -->
     <el-empty v-else description="房源不存在" />
 
-    <!-- Appointment Dialog -->
+    <!-- 预约看房对话框 -->
     <el-dialog
       v-model="appointmentVisible"
       title="预约看房"
@@ -117,6 +125,7 @@
         :rules="appointRules"
         label-width="100px"
       >
+        <!-- 预约日期时间选择器（禁用过去日期） -->
         <el-form-item label="预约日期" prop="appointmentDate">
           <el-date-picker
             v-model="appointForm.appointmentDate"
@@ -126,6 +135,7 @@
             style="width: 100%"
           />
         </el-form-item>
+        <!-- 留言（可选） -->
         <el-form-item label="留言">
           <el-input
             v-model="appointForm.message"
@@ -148,6 +158,7 @@
 </template>
 
 <script setup>
+// 说明：房源详情页逻辑，加载房源完整信息并处理预约看房流程
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -162,12 +173,13 @@ import { createOrder } from '../api/order.js'
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
-const house = ref(null)
-const appointmentVisible = ref(false)
-const submitting = ref(false)
+const house = ref(null)             // 当前房源详情数据
+const appointmentVisible = ref(false) // 控制预约对话框显隐
+const submitting = ref(false)        // 提交预约按钮 loading 状态
 const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 
+// 预约表单数据
 const appointForm = ref({
   appointmentDate: null,
   message: ''
@@ -177,11 +189,19 @@ const appointRules = {
   appointmentDate: [{ required: true, message: '请选择预约日期', trigger: 'change' }]
 }
 
+/**
+ * 计算装修情况的中文标签
+ * FINE → 精装，SIMPLE → 简装，ROUGH → 毛坯
+ */
 const decorationLabel = computed(() => {
   const map = { FINE: '精装', SIMPLE: '简装', ROUGH: '毛坯' }
   return map[house.value?.decoration] || house.value?.decoration || '-'
 })
 
+/**
+ * 日期选择器禁用过去日期（预约时间必须是今天或之后）
+ * @param {Date} date - 待判断的日期
+ */
 function disablePastDates(date) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -191,6 +211,7 @@ function disablePastDates(date) {
 onMounted(async () => {
   loading.value = true
   try {
+    // 从路由参数中获取房源 ID 并加载详情
     const res = await getHouseDetail(route.params.id)
     house.value = res
   } catch (e) {
@@ -200,6 +221,10 @@ onMounted(async () => {
   }
 })
 
+/**
+ * 处理预约看房按钮点击
+ * 未登录用户重定向到登录页，并携带 redirect 参数以便登录后返回
+ */
 function handleBook() {
   const token = localStorage.getItem('token')
   if (!token) {
@@ -210,6 +235,10 @@ function handleBook() {
   appointmentVisible.value = true
 }
 
+/**
+ * 提交预约申请
+ * 调用创建订单接口，成功后跳转到订单详情页
+ */
 async function submitAppointment() {
   const valid = await appointFormRef.value.validate().catch(() => false)
   if (!valid) return
@@ -223,7 +252,7 @@ async function submitAppointment() {
     ElMessage.success('预约成功')
     appointmentVisible.value = false
     if (res && res.id) {
-      router.push(`/orders/${res.id}`)
+      router.push(`/orders/${res.id}`)  // 跳转到新创建的订单详情页
     }
   } catch (e) {
     ElMessage.error(e.message || '预约失败，请稍后重试')
