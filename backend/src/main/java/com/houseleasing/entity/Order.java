@@ -15,6 +15,7 @@ public class Order {
     private Long houseId;
     private Long tenantId;
     private Long landlordId;
+    private String orderNo;
     private String status = "PENDING";
     private String orderType;
     private LocalDateTime appointmentTime;
@@ -22,6 +23,8 @@ public class Order {
     private LocalDate endDate;
     private BigDecimal monthlyRent;
     private BigDecimal deposit;
+    private BigDecimal totalAmount;
+    private String paymentStatus = "UNPAID";
     private String remark;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

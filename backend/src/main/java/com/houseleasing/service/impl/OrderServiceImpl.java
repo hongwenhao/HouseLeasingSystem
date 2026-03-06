@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -40,6 +42,7 @@ public class OrderServiceImpl implements OrderService {
         order.setHouseId(houseId);
         order.setTenantId(tenantId);
         order.setLandlordId(house.getOwnerId());
+        order.setOrderNo(generateOrderNo("INT"));
         order.setOrderType("INTENT");
         order.setStatus("PENDING");
         order.setMonthlyRent(house.getPrice());
@@ -63,6 +66,7 @@ public class OrderServiceImpl implements OrderService {
         order.setHouseId(request.getHouseId());
         order.setTenantId(tenantId);
         order.setLandlordId(house.getOwnerId());
+        order.setOrderNo(generateOrderNo("APT"));
         order.setOrderType(request.getOrderType() != null ? request.getOrderType() : "APPOINTMENT");
         order.setStatus("PENDING");
         order.setAppointmentTime(request.getAppointmentTime());
@@ -150,5 +154,11 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("COMPLETED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+    }
+
+    private String generateOrderNo(String prefix) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int random = ThreadLocalRandom.current().nextInt(1000, 9999);
+        return prefix + timestamp + random;
     }
 }

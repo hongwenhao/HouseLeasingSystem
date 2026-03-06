@@ -18,7 +18,7 @@ public class User {
     private String realName;
     private String idCard;
     private Integer creditScore = 100;
-    private Boolean isRealNameAuth = false;
+    private Boolean isRealNameAuth = false; // maps to is_real_name_auth
     private String status = "ACTIVE";
     private String avatar;
     @TableField(fill = FieldFill.INSERT)

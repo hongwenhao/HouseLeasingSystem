@@ -13,6 +13,7 @@ public class UserBehavior {
     private Long userId;
     private Long houseId;
     private String behaviorType;
+    private java.math.BigDecimal score;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

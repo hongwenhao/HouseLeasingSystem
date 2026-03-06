@@ -77,6 +77,7 @@ public class ContractServiceImpl implements ContractService {
         }
 
         Contract contract = new Contract();
+        contract.setContractNo(generateContractNo());
         contract.setOrderId(order.getId());
         contract.setHouseId(order.getHouseId());
         contract.setTenantId(order.getTenantId());
@@ -87,6 +88,10 @@ public class ContractServiceImpl implements ContractService {
         contract.setRiskItems(riskItemsJson);
         contract.setTenantSigned(false);
         contract.setLandlordSigned(false);
+        contract.setStartDate(order.getStartDate());
+        contract.setEndDate(order.getEndDate());
+        contract.setMonthlyRent(order.getMonthlyRent());
+        contract.setDeposit(order.getDeposit());
         contract.setCreateTime(LocalDateTime.now());
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.insert(contract);
@@ -312,5 +317,11 @@ public class ContractServiceImpl implements ContractService {
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
+    }
+
+    private String generateContractNo() {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int random = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 9999);
+        return "HT" + timestamp + random;
     }
 }

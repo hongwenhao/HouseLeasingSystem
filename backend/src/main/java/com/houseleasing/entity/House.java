@@ -30,6 +30,11 @@ public class House {
     private String waterFeeType;
     private String electricFeeType;
     private String gasFeeType;
+    private String propertyFeeType;
+    private String internetFeeType;
+    private String coverImage;
+    private String tags;
+    private String workflowInstanceId;
     private Integer rooms;
     private Integer halls;
     private Integer bathrooms;

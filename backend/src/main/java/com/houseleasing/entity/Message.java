@@ -15,6 +15,7 @@ public class Message {
     private String content;
     private String type;
     private Boolean isRead = false;
+    private Long relatedId;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }
