@@ -22,6 +22,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 用户服务实现类
+ *
+ * @author HouseLeasingSystem开发团队
+ * @description 实现用户相关的所有业务逻辑，包括注册、登录、信息更新、实名认证、
+ *              信用评分管理及管理员对用户的封禁/解封操作
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,9 +38,16 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    /**
+     * 用户注册：验证用户名唯一性，加密密码后保存用户信息
+     *
+     * @param request 注册请求参数
+     * @return 注册成功的用户对象（密码字段已清空）
+     */
     @Override
     @Transactional
     public User register(RegisterRequest request) {
+        // 检查用户名是否已存在
         if (userMapper.selectByUsername(request.getUsername()) != null) {
             throw new BusinessException("Username already exists");
         }
@@ -41,38 +55,54 @@ public class UserServiceImpl implements UserService {
         user.setUsername(request.getUsername());
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
+        // 使用 BCrypt 加密存储密码
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole() != null ? request.getRole() : "TENANT");
-        user.setCreditScore(100);
+        user.setCreditScore(100); // 新用户初始信用分 100
         user.setIsRealNameAuth(false);
         user.setStatus("ACTIVE");
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
         userMapper.insert(user);
-        user.setPassword(null);
+        user.setPassword(null); // 清空密码字段后返回
         return user;
     }
 
+    /**
+     * 用户登录：验证账号密码，检查账号状态，生成 JWT Token
+     *
+     * @param request 登录请求参数
+     * @return 包含 token 和用户信息的 Map
+     */
     @Override
     public Map<String, Object> login(LoginRequest request) {
         User user = userMapper.selectByUsername(request.getUsername());
         if (user == null) {
             throw new BusinessException(401, "User not found");
         }
+        // 验证密码是否匹配
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BusinessException(401, "Invalid password");
         }
+        // 检查账号是否被封禁
         if ("BANNED".equals(user.getStatus())) {
             throw new BusinessException(403, "Account is banned");
         }
+        // 生成 JWT Token（包含用户名和角色）
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-        user.setPassword(null);
+        user.setPassword(null); // 清空密码后放入返回结果
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
         result.put("user", user);
         return result;
     }
 
+    /**
+     * 根据 ID 查询用户信息
+     *
+     * @param id 用户 ID
+     * @return 用户对象（密码字段已清空）
+     */
     @Override
     public User getUserById(Long id) {
         User user = userMapper.selectById(id);
@@ -83,6 +113,13 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 更新用户个人资料，仅更新请求中非空的字段
+     *
+     * @param userId  用户 ID
+     * @param request 更新请求参数
+     * @return 更新后的用户对象
+     */
     @Override
     @Transactional
     public User updateProfile(Long userId, UserUpdateRequest request) {
@@ -90,6 +127,7 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BusinessException(404, "User not found");
         }
+        // 仅更新非空字段（支持部分更新）
         if (StringUtils.hasText(request.getPhone())) user.setPhone(request.getPhone());
         if (StringUtils.hasText(request.getEmail())) user.setEmail(request.getEmail());
         if (StringUtils.hasText(request.getAvatar())) user.setAvatar(request.getAvatar());
@@ -100,6 +138,13 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 提交实名认证：保存真实姓名和身份证号，并标记为已实名认证
+     *
+     * @param userId   用户 ID
+     * @param realName 真实姓名
+     * @param idCard   身份证号码
+     */
     @Override
     @Transactional
     public void realNameAuth(Long userId, String realName, String idCard) {
@@ -109,11 +154,17 @@ public class UserServiceImpl implements UserService {
         }
         user.setRealName(realName);
         user.setIdCard(idCard);
-        user.setIsRealNameAuth(true);
+        user.setIsRealNameAuth(true); // 标记实名认证完成
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
     }
 
+    /**
+     * 更新用户信用评分，分值自动限制在 0-200 范围内
+     *
+     * @param userId 用户 ID
+     * @param delta  评分变动值（正数加分，负数减分）
+     */
     @Override
     @Transactional
     public void updateCreditScore(Long userId, int delta) {
@@ -121,27 +172,43 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BusinessException(404, "User not found");
         }
+        // 计算新评分并限制在合法范围 [0, 200]
         int newScore = Math.min(200, Math.max(0, user.getCreditScore() + delta));
         user.setCreditScore(newScore);
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
     }
 
+    /**
+     * 分页查询用户列表，支持按用户名、手机号、邮箱模糊搜索
+     *
+     * @param page    当前页码
+     * @param size    每页大小
+     * @param keyword 搜索关键词
+     * @return 分页用户列表
+     */
     @Override
     public PageResult<User> listUsers(int page, int size, String keyword) {
         Page<User> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
+            // 支持按用户名、手机号或邮箱进行模糊搜索
             wrapper.like(User::getUsername, keyword)
                     .or().like(User::getPhone, keyword)
                     .or().like(User::getEmail, keyword);
         }
         wrapper.orderByDesc(User::getCreateTime);
         Page<User> result = userMapper.selectPage(pageObj, wrapper);
+        // 清空所有用户的密码字段
         result.getRecords().forEach(u -> u.setPassword(null));
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 
+    /**
+     * 封禁用户账号，设置状态为 BANNED
+     *
+     * @param userId 要封禁的用户 ID
+     */
     @Override
     @Transactional
     public void banUser(Long userId) {
@@ -154,6 +221,11 @@ public class UserServiceImpl implements UserService {
         userMapper.updateById(user);
     }
 
+    /**
+     * 解封用户账号，恢复状态为 ACTIVE
+     *
+     * @param userId 要解封的用户 ID
+     */
     @Override
     @Transactional
     public void unbanUser(Long userId) {

@@ -18,6 +18,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 房源管理控制器
+ *
+ * @author HouseLeasingSystem开发团队
+ * @description 提供房源相关的 REST API，包括公开的搜索查询接口和需要认证的房源发布、更新、收藏接口
+ */
 @Tag(name = "House", description = "House management")
 @RestController
 @RequestMapping("/api/houses")
@@ -27,12 +33,25 @@ public class HouseController {
     private final HouseService houseService;
     private final UserMapper userMapper;
 
+    /**
+     * 按条件搜索房源（公开接口，无需认证）
+     *
+     * @param request 搜索条件和分页参数
+     * @return 符合条件的分页房源列表
+     */
     @Operation(summary = "Search houses (public)")
     @GetMapping("/search")
     public Result<PageResult<House>> searchHouses(HouseSearchRequest request) {
         return Result.success(houseService.searchHouses(request));
     }
 
+    /**
+     * 获取所有在线房源列表（公开接口）
+     *
+     * @param page 当前页码，默认第 1 页
+     * @param size 每页大小，默认 10 条
+     * @return 分页房源列表
+     */
     @Operation(summary = "Get all houses (public)")
     @GetMapping
     public Result<PageResult<House>> listHouses(
@@ -44,18 +63,36 @@ public class HouseController {
         return Result.success(houseService.searchHouses(req));
     }
 
+    /**
+     * 根据房源 ID 查询房源详情（公开接口，同时增加浏览量）
+     *
+     * @param id 房源 ID
+     * @return 房源详情信息
+     */
     @Operation(summary = "Get house by ID (public)")
     @GetMapping("/{id}")
     public Result<House> getHouseById(@PathVariable Long id) {
         return Result.success(houseService.getHouseById(id));
     }
 
+    /**
+     * 获取热门房源列表（按浏览量排序，使用 Redis 缓存）
+     *
+     * @return 热门房源列表
+     */
     @Operation(summary = "Get hot houses")
     @GetMapping("/hot")
     public Result<List<House>> getHotHouses() {
         return Result.success(houseService.getHotHouses());
     }
 
+    /**
+     * 房东发布新房源（需要认证）
+     *
+     * @param house       房源信息
+     * @param userDetails 当前登录用户信息
+     * @return 发布成功的房源对象
+     */
     @Operation(summary = "Add new house")
     @PostMapping
     @SecurityRequirement(name = "Bearer Authentication")
@@ -65,6 +102,14 @@ public class HouseController {
         return Result.success(houseService.addHouse(house, user.getId()));
     }
 
+    /**
+     * 房东更新房源信息（需要认证，且只能修改自己的房源）
+     *
+     * @param id          要更新的房源 ID
+     * @param house       更新的房源信息
+     * @param userDetails 当前登录用户信息
+     * @return 更新后的房源对象
+     */
     @Operation(summary = "Update house")
     @PutMapping("/{id}")
     @SecurityRequirement(name = "Bearer Authentication")
@@ -75,6 +120,14 @@ public class HouseController {
         return Result.success(houseService.updateHouse(id, house, user.getId()));
     }
 
+    /**
+     * 查询当前房东发布的所有房源（需要认证）
+     *
+     * @param userDetails 当前登录用户信息
+     * @param page        当前页码
+     * @param size        每页大小
+     * @return 当前房东的分页房源列表
+     */
     @Operation(summary = "List owner's houses")
     @GetMapping("/my")
     @SecurityRequirement(name = "Bearer Authentication")
@@ -86,6 +139,13 @@ public class HouseController {
         return Result.success(houseService.listOwnerHouses(user.getId(), page, size));
     }
 
+    /**
+     * 收藏指定房源（需要认证）
+     *
+     * @param id          要收藏的房源 ID
+     * @param userDetails 当前登录用户信息
+     * @return 操作成功的响应
+     */
     @Operation(summary = "Collect/favorite a house")
     @PostMapping("/{id}/collect")
     @SecurityRequirement(name = "Bearer Authentication")
@@ -96,6 +156,12 @@ public class HouseController {
         return Result.success();
     }
 
+    /**
+     * 根据用户名解析用户信息
+     *
+     * @param username 用户名
+     * @return 对应的用户实体
+     */
     private User resolveUser(String username) {
         User user = userMapper.selectByUsername(username);
         if (user == null) {

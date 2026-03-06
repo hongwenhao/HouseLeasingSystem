@@ -8,35 +8,51 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 合同风险分析服务实现类
+ *
+ * @author HouseLeasingSystem开发团队
+ * @description 基于规则引擎实现合同文本的风险识别，通过关键词匹配和数值计算
+ *              检测押金比例、维修条款、解约条款、违约金和费用约定等风险点
+ */
 @Slf4j
 @Service
 public class ContractRiskServiceImpl implements ContractRiskService {
 
+    /**
+     * 对合同文本进行多维度风险分析
+     * 依次检查五类风险：押金比例、维修条款、提前解约、违约金额度、水电费约定
+     *
+     * @param contractText 合同正文文本
+     * @param monthlyRent  月租金（用于计算押金倍数）
+     * @param deposit      押金金额
+     * @return 发现的风险条目列表
+     */
     @Override
     public List<RiskItem> analyzeRisk(String contractText, BigDecimal monthlyRent, BigDecimal deposit) {
         List<RiskItem> risks = new ArrayList<>();
         if (contractText == null) return risks;
 
-        // 1. Check if deposit exceeds two months rent
+        // 风险一：检查押金是否超过两个月租金
         if (monthlyRent != null && deposit != null) {
             if (deposit.compareTo(monthlyRent.multiply(new BigDecimal("2"))) > 0) {
                 risks.add(new RiskItem("押金过高", "押金超过两个月租金，请注意资金安全", "HIGH"));
             }
         }
 
-        // 2. Check for maintenance responsibility clause
+        // 风险二：检查是否包含维修责任条款
         if (!contractText.contains("维修") && !contractText.contains("修缮")) {
             risks.add(new RiskItem("条款缺失", "合同未约定维修责任，建议补充相关条款", "MEDIUM"));
         }
 
-        // 3. Check for early termination clause
+        // 风险三：检查是否包含提前解约条款
         if (!contractText.contains("提前解约") && !contractText.contains("提前终止")) {
             risks.add(new RiskItem("条款缺失", "合同未约定提前解约条款，建议明确违约处理方式", "MEDIUM"));
         }
 
-        // 4. Check penalty clauses (look for penalty percentage or amount)
+        // 风险四：检查违约金是否过高（简单启发式：查找含"4个月"/"5个月"违约金的描述）
         if (contractText.contains("违约金") && monthlyRent != null) {
-            // Simple heuristic: if "3个月" or "三个月" appears near "违约金", flag it
+            // 简单启发规则：如果违约金附近出现4个月或5个月的描述，则标记为高风险
             if (contractText.contains("违约金") &&
                     (contractText.contains("4个月") || contractText.contains("5个月") ||
                      contractText.contains("四个月") || contractText.contains("五个月"))) {
@@ -44,7 +60,7 @@ public class ContractRiskServiceImpl implements ContractRiskService {
             }
         }
 
-        // 5. Check if water/electricity fee standards are mentioned
+        // 风险五：检查水电费标准是否有明确约定
         if (!contractText.contains("水费") && !contractText.contains("电费")) {
             risks.add(new RiskItem("费用未约定", "合同未约定水电费标准，建议明确收费标准", "LOW"));
         }

@@ -32,6 +32,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * 合同服务实现类
+ *
+ * @author HouseLeasingSystem开发团队
+ * @description 实现租赁合同相关的所有业务逻辑，包括自动生成合同文本、风险分析、
+ *              电子签署、PDF 导出和合同取消，支持中文字体的 PDF 导出
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,6 +52,13 @@ public class ContractServiceImpl implements ContractService {
     private final MessageProducer messageProducer;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 根据订单生成租赁合同，包括自动生成合同文本和风险分析
+     *
+     * @param request 合同生成请求（订单ID和补充条款）
+     * @param userId  操作人用户 ID
+     * @return 生成的合同对象
+     */
     @Override
     @Transactional
     public Contract generateContract(ContractGenerateRequest request, Long userId) {
@@ -52,16 +66,19 @@ public class ContractServiceImpl implements ContractService {
         if (order == null) {
             throw new BusinessException(404, "Order not found");
         }
+        // 查询合同相关的房源、租客和房东信息
         House house = houseMapper.selectById(order.getHouseId());
         User tenant = userMapper.selectById(order.getTenantId());
         User landlord = userMapper.selectById(order.getLandlordId());
 
+        // 自动生成合同正文
         String contractText = buildContractText(order, house, tenant, landlord, request.getAdditionalClauses());
 
-        // Run risk analysis
+        // 执行合同风险分析
         List<ContractRiskService.RiskItem> riskItems = contractRiskService.analyzeRisk(
                 contractText, order.getMonthlyRent(), order.getDeposit());
 
+        // 根据最高风险等级确定整体风险等级
         String riskLevel = "LOW";
         if (riskItems.stream().anyMatch(r -> "HIGH".equals(r.level()))) {
             riskLevel = "HIGH";
@@ -69,6 +86,7 @@ public class ContractServiceImpl implements ContractService {
             riskLevel = "MEDIUM";
         }
 
+        // 将风险条目列表序列化为 JSON 存储
         String riskItemsJson;
         try {
             riskItemsJson = objectMapper.writeValueAsString(riskItems);
@@ -98,7 +116,18 @@ public class ContractServiceImpl implements ContractService {
         return contract;
     }
 
+    /**
+     * 构建合同正文文本，包含双方信息、房屋信息、各类条款和补充条款
+     *
+     * @param order             订单对象
+     * @param house             房源对象
+     * @param tenant            租客用户对象
+     * @param landlord          房东用户对象
+     * @param additionalClauses 补充条款内容（可为空）
+     * @return 格式化后的合同正文字符串
+     */
     private String buildContractText(Order order, House house, User tenant, User landlord, String additionalClauses) {
+        // 优先使用真实姓名，其次使用用户名，最后使用默认称谓
         String tenantName = tenant != null && StringUtils.hasText(tenant.getRealName())
                 ? tenant.getRealName() : (tenant != null ? tenant.getUsername() : "租客");
         String landlordName = landlord != null && StringUtils.hasText(landlord.getRealName())
@@ -182,6 +211,7 @@ public class ContractServiceImpl implements ContractService {
         sb.append("9.3 本合同一式两份，甲乙双方各执一份，具有同等法律效力。\n");
         sb.append("9.4 本合同未尽事宜，双方协商解决；协商不成的，提交有管辖权的法院裁决。\n");
 
+        // 如果有补充条款，添加第十条
         if (StringUtils.hasText(additionalClauses)) {
             sb.append("\n第十条 补充条款\n");
             sb.append(additionalClauses).append("\n");
@@ -193,6 +223,14 @@ public class ContractServiceImpl implements ContractService {
         return sb.toString();
     }
 
+    /**
+     * 用户签署合同，双方均签署后合同状态变为已签署并发送通知
+     *
+     * @param contractId 合同 ID
+     * @param userId     签署人用户 ID
+     * @param role       签署角色：TENANT 或 LANDLORD
+     * @return 更新后的合同对象
+     */
     @Override
     @Transactional
     public Contract signContract(Long contractId, Long userId, String role) {
@@ -204,6 +242,7 @@ public class ContractServiceImpl implements ContractService {
             throw new BusinessException("Contract is already cancelled");
         }
 
+        // 根据角色设置对应的签署状态
         if ("TENANT".equals(role)) {
             if (!contract.getTenantId().equals(userId)) {
                 throw new BusinessException(403, "Not authorized to sign as tenant");
@@ -218,12 +257,14 @@ public class ContractServiceImpl implements ContractService {
             throw new BusinessException("Invalid role: " + role);
         }
 
+        // 检查双方是否均已签署，若是则更新状态为已签署并发送通知
         if (Boolean.TRUE.equals(contract.getTenantSigned()) && Boolean.TRUE.equals(contract.getLandlordSigned())) {
             contract.setStatus("SIGNED");
             contract.setSignTime(LocalDateTime.now());
             messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成");
             messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成");
         } else {
+            // 只有一方签署时设置为待签署状态
             contract.setStatus("PENDING_SIGN");
         }
         contract.setUpdateTime(LocalDateTime.now());
@@ -231,6 +272,12 @@ public class ContractServiceImpl implements ContractService {
         return contract;
     }
 
+    /**
+     * 根据 ID 查询合同详情
+     *
+     * @param id 合同 ID
+     * @return 合同详情对象
+     */
     @Override
     public Contract getContractById(Long id) {
         Contract contract = contractMapper.selectById(id);
@@ -240,15 +287,26 @@ public class ContractServiceImpl implements ContractService {
         return contract;
     }
 
+    /**
+     * 查询用户的合同列表（分页）
+     *
+     * @param userId 用户 ID
+     * @param role   角色筛选（TENANT/LANDLORD/null）
+     * @param page   当前页码
+     * @param size   每页大小
+     * @return 分页合同列表
+     */
     @Override
     public PageResult<Contract> listContracts(Long userId, String role, int page, int size) {
         Page<Contract> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<Contract> wrapper = new LambdaQueryWrapper<>();
+        // 根据角色过滤合同
         if ("TENANT".equals(role)) {
             wrapper.eq(Contract::getTenantId, userId);
         } else if ("LANDLORD".equals(role)) {
             wrapper.eq(Contract::getLandlordId, userId);
         } else {
+            // 未指定角色则查询用户作为租客或房东的所有合同
             wrapper.eq(Contract::getTenantId, userId).or().eq(Contract::getLandlordId, userId);
         }
         wrapper.orderByDesc(Contract::getCreateTime);
@@ -256,6 +314,12 @@ public class ContractServiceImpl implements ContractService {
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 
+    /**
+     * 将合同导出为 PDF 文件，优先使用中文字体
+     *
+     * @param contractId 合同 ID
+     * @return PDF 文件的字节数组
+     */
     @Override
     public byte[] exportPdf(Long contractId) {
         Contract contract = contractMapper.selectById(contractId);
@@ -271,20 +335,24 @@ public class ContractServiceImpl implements ContractService {
             Font titleFont;
             Font bodyFont;
             try {
+                // 尝试使用中文字体（STSong-Light）
                 BaseFont bf = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
                 titleFont = new Font(bf, 18, Font.BOLD);
                 bodyFont = new Font(bf, 12);
             } catch (Exception fontEx) {
+                // 中文字体不可用时降级使用默认字体
                 log.warn("Chinese font not available, using default font: {}", fontEx.getMessage());
                 titleFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD);
                 bodyFont = new Font(Font.FontFamily.HELVETICA, 12);
             }
 
+            // 添加合同标题
             Paragraph title = new Paragraph("House Lease Contract / 房屋租赁合同", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(20);
             document.add(title);
 
+            // 逐行添加合同正文
             String content = contract.getContent() != null ? contract.getContent() : "";
             String[] lines = content.split("\n");
             for (String line : lines) {
@@ -301,6 +369,12 @@ public class ContractServiceImpl implements ContractService {
         }
     }
 
+    /**
+     * 取消合同，已签署的合同不可取消
+     *
+     * @param contractId 合同 ID
+     * @param userId     操作人用户 ID（必须是租客或房东）
+     */
     @Override
     @Transactional
     public void cancelContract(Long contractId, Long userId) {
@@ -308,9 +382,11 @@ public class ContractServiceImpl implements ContractService {
         if (contract == null) {
             throw new BusinessException(404, "Contract not found");
         }
+        // 验证操作人是否为合同当事方
         if (!contract.getTenantId().equals(userId) && !contract.getLandlordId().equals(userId)) {
             throw new BusinessException(403, "Not authorized");
         }
+        // 已签署的合同不可取消
         if ("SIGNED".equals(contract.getStatus())) {
             throw new BusinessException("Cannot cancel a signed contract");
         }
@@ -319,6 +395,12 @@ public class ContractServiceImpl implements ContractService {
         contractMapper.updateById(contract);
     }
 
+    /**
+     * 生成唯一合同编号
+     * 格式：HT{yyyyMMddHHmmss}{4位随机数}
+     *
+     * @return 合同编号字符串
+     */
     private String generateContractNo() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int random = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 9999);

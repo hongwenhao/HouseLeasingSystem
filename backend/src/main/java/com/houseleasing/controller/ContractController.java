@@ -23,6 +23,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 合同管理控制器
+ *
+ * @author HouseLeasingSystem开发团队
+ * @description 提供租赁合同相关的 REST API，包括合同生成、签署、查询、PDF 导出、
+ *              风险分析和取消，所有接口均需要 JWT 认证
+ */
 @Tag(name = "Contract", description = "Contract management")
 @RestController
 @RequestMapping("/api/contracts")
@@ -34,6 +41,13 @@ public class ContractController {
     private final ContractRiskService contractRiskService;
     private final UserMapper userMapper;
 
+    /**
+     * 根据订单生成租赁合同（包含自动风险分析）
+     *
+     * @param request     合同生成请求（订单ID和补充条款）
+     * @param userDetails 当前登录用户信息
+     * @return 生成的合同对象
+     */
     @Operation(summary = "Generate contract from order")
     @PostMapping("/generate")
     public Result<Contract> generateContract(@RequestBody ContractGenerateRequest request,
@@ -42,6 +56,14 @@ public class ContractController {
         return Result.success(contractService.generateContract(request, user.getId()));
     }
 
+    /**
+     * 用户对合同进行电子签署
+     *
+     * @param id          合同 ID
+     * @param request     请求体，包含 role 字段（TENANT 或 LANDLORD）
+     * @param userDetails 当前登录用户信息
+     * @return 签署后的合同对象
+     */
     @Operation(summary = "Sign contract")
     @PostMapping("/{id}/sign")
     public Result<Contract> signContract(@PathVariable Long id,
@@ -52,12 +74,27 @@ public class ContractController {
         return Result.success(contractService.signContract(id, user.getId(), role));
     }
 
+    /**
+     * 根据合同 ID 查询合同详情
+     *
+     * @param id 合同 ID
+     * @return 合同详情
+     */
     @Operation(summary = "Get contract detail")
     @GetMapping("/{id}")
     public Result<Contract> getContractById(@PathVariable Long id) {
         return Result.success(contractService.getContractById(id));
     }
 
+    /**
+     * 查询当前用户的合同列表（分页）
+     *
+     * @param userDetails 当前登录用户信息
+     * @param role        角色筛选（TENANT/LANDLORD，可选）
+     * @param page        当前页码
+     * @param size        每页大小
+     * @return 分页合同列表
+     */
     @Operation(summary = "List user's contracts")
     @GetMapping
     public Result<PageResult<Contract>> listContracts(
@@ -69,6 +106,12 @@ public class ContractController {
         return Result.success(contractService.listContracts(user.getId(), role, page, size));
     }
 
+    /**
+     * 下载合同的 PDF 文件
+     *
+     * @param id 合同 ID
+     * @return PDF 文件的字节流响应
+     */
     @Operation(summary = "Download contract PDF")
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
@@ -79,6 +122,12 @@ public class ContractController {
                 .body(pdfBytes);
     }
 
+    /**
+     * 对指定合同执行风险分析并返回风险条目
+     *
+     * @param id 合同 ID
+     * @return 风险分析结果列表
+     */
     @Operation(summary = "Run risk analysis on contract")
     @PostMapping("/{id}/risk-check")
     public Result<List<ContractRiskService.RiskItem>> riskCheck(@PathVariable Long id) {
@@ -88,6 +137,13 @@ public class ContractController {
         return Result.success(risks);
     }
 
+    /**
+     * 取消指定合同（仅限草稿或待签署状态）
+     *
+     * @param id          合同 ID
+     * @param userDetails 当前登录用户信息（必须是合同当事方）
+     * @return 操作成功的响应
+     */
     @Operation(summary = "Cancel contract")
     @PutMapping("/{id}/cancel")
     public Result<Void> cancelContract(@PathVariable Long id,
@@ -97,6 +153,12 @@ public class ContractController {
         return Result.success();
     }
 
+    /**
+     * 根据用户名解析用户信息
+     *
+     * @param username 用户名
+     * @return 对应的用户实体
+     */
     private User resolveUser(String username) {
         User user = userMapper.selectByUsername(username);
         if (user == null) {

@@ -16,6 +16,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 推荐系统控制器
+ *
+ * @author HouseLeasingSystem开发团队
+ * @description 提供个性化房源推荐的 REST API，基于用户行为数据进行协同过滤推荐，
+ *              需要 JWT 认证
+ */
 @Tag(name = "Recommendation", description = "House recommendations")
 @RestController
 @RequestMapping("/api/recommendations")
@@ -26,6 +33,13 @@ public class RecommendationController {
     private final RecommendationService recommendationService;
     private final UserMapper userMapper;
 
+    /**
+     * 为当前登录用户获取个性化推荐房源列表
+     *
+     * @param userDetails 当前登录用户信息
+     * @param limit       最多返回的推荐数量，默认 10 条
+     * @return 推荐的房源列表
+     */
     @Operation(summary = "Get recommended houses for current user")
     @GetMapping
     public Result<List<House>> getRecommendations(
@@ -35,6 +49,12 @@ public class RecommendationController {
         return Result.success(recommendationService.getRecommendedHouses(user.getId(), limit));
     }
 
+    /**
+     * 根据用户名解析用户信息
+     *
+     * @param username 用户名
+     * @return 对应的用户实体
+     */
     private User resolveUser(String username) {
         User user = userMapper.selectByUsername(username);
         if (user == null) {
