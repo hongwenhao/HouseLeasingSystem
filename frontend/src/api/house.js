@@ -1,0 +1,10 @@
+import request from './index'
+export const getHouses = (params) => request.get('/houses', { params })
+export const getHouseDetail = (id) => request.get(`/houses/${id}`)
+export const createHouse = (data) => request.post('/houses', data)
+export const updateHouse = (id, data) => request.put(`/houses/${id}`, data)
+export const deleteHouse = (id) => request.delete(`/houses/${id}`)
+export const getMyHouses = (params) => request.get('/houses/my', { params })
+export const getRecommended = () => request.get('/houses/recommended')
+export const searchHouses = (params) => request.get('/houses/search', { params })
+export const auditHouse = (id, data) => request.put(`/admin/houses/${id}/audit`, data)

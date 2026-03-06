@@ -1,0 +1,10 @@
+import request from './index'
+export const getStats = () => request.get('/admin/stats')
+export const getUserList = (params) => request.get('/admin/users', { params })
+export const getPendingHouses = (params) => request.get('/admin/houses/pending', { params })
+export const auditHouseAdmin = (id, data) => request.put(`/admin/houses/${id}/audit`, data)
+export const getAreaStats = () => request.get('/admin/stats/area')
+export const getPriceTrends = () => request.get('/admin/stats/price-trends')
+export const getCreditDistribution = () => request.get('/admin/stats/credit')
+export const banUser = (id) => request.put(`/admin/users/${id}/ban`)
+export const unbanUser = (id) => request.put(`/admin/users/${id}/unban`)
