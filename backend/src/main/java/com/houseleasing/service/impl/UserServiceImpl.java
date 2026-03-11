@@ -7,6 +7,7 @@ import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.common.utils.JwtUtil;
 import com.houseleasing.dto.LoginRequest;
 import com.houseleasing.dto.RegisterRequest;
+import com.houseleasing.dto.ResetPasswordRequest;
 import com.houseleasing.dto.UserUpdateRequest;
 import com.houseleasing.entity.User;
 import com.houseleasing.mapper.UserMapper;
@@ -155,6 +156,26 @@ public class UserServiceImpl implements UserService {
         user.setRealName(realName);
         user.setIdCard(idCard);
         user.setIsRealNameAuth(true); // 标记实名认证完成
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 重置用户密码（忘记密码功能）
+     * 通过用户名和手机号验证用户身份，验证通过后使用 BCrypt 加密新密码并更新
+     *
+     * @param request 包含用户名、手机号和新密码的请求对象
+     */
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userMapper.selectByUsername(request.getUsername());
+        // 使用统一的错误信息，防止用户名枚举攻击
+        if (user == null || user.getPhone() == null || !user.getPhone().equals(request.getPhone())) {
+            throw new BusinessException(400, "用户名或手机号不匹配");
+        }
+        // 使用 BCrypt 加密新密码并更新
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
     }

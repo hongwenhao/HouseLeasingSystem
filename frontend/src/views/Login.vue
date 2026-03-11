@@ -56,6 +56,11 @@
         </el-button>
       </el-form>
 
+      <!-- 忘记密码链接 -->
+      <div class="forgot-password">
+        <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
+      </div>
+
       <!-- 跳转注册页链接 -->
       <div class="login-footer">
         <span>还没有账户？</span>
@@ -168,6 +173,21 @@ async function handleLogin() {
   width: 100%;
   margin-top: 8px;
   font-size: 16px;
+}
+
+.forgot-password {
+  text-align: right;
+  margin-top: 8px;
+}
+
+.forgot-link {
+  color: #409eff;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
 }
 
 .login-footer {

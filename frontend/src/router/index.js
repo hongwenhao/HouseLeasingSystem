@@ -12,6 +12,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
+import ForgotPassword from '../views/ForgotPassword.vue'
 import HouseList from '../views/HouseList.vue'
 import HouseDetail from '../views/HouseDetail.vue'
 import UserCenter from '../views/UserCenter.vue'
@@ -27,6 +28,7 @@ const routes = [
   { path: '/', component: Home },                  // 首页
   { path: '/login', component: Login },             // 登录页
   { path: '/register', component: Register },       // 注册页
+  { path: '/forgot-password', component: ForgotPassword }, // 忘记密码页
   { path: '/houses', component: HouseList },        // 房源列表页
   { path: '/houses/:id', component: HouseDetail },  // 房源详情页（动态路由）
   // 以下路由需要登录（requiresAuth: true）

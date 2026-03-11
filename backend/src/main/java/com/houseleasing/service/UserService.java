@@ -3,6 +3,7 @@ package com.houseleasing.service;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.dto.LoginRequest;
 import com.houseleasing.dto.RegisterRequest;
+import com.houseleasing.dto.ResetPasswordRequest;
 import com.houseleasing.dto.UserUpdateRequest;
 import com.houseleasing.entity.User;
 
@@ -57,6 +58,14 @@ public interface UserService {
      * @param idCard   身份证号码
      */
     void realNameAuth(Long userId, String realName, String idCard);
+
+    /**
+     * 重置用户密码（忘记密码功能）
+     * 通过用户名和手机号验证用户身份，验证通过后更新密码
+     *
+     * @param request 包含用户名、手机号和新密码的请求对象
+     */
+    void resetPassword(ResetPasswordRequest request);
 
     /**
      * 更新用户信用评分
