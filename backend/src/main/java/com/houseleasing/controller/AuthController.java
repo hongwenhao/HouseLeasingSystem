@@ -3,6 +3,7 @@ package com.houseleasing.controller;
 import com.houseleasing.common.Result;
 import com.houseleasing.dto.LoginRequest;
 import com.houseleasing.dto.RegisterRequest;
+import com.houseleasing.dto.ResetPasswordRequest;
 import com.houseleasing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,5 +48,18 @@ public class AuthController {
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody LoginRequest request) {
         return Result.success(userService.login(request));
+    }
+
+    /**
+     * 重置密码接口（忘记密码），通过用户名和手机号验证身份后重置密码
+     *
+     * @param request 重置密码请求参数（用户名、手机号、新密码）
+     * @return 操作成功的响应
+     */
+    @Operation(summary = "Reset password")
+    @PostMapping("/reset-password")
+    public Result<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(request);
+        return Result.success();
     }
 }
