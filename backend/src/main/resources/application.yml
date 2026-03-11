@@ -13,7 +13,7 @@ spring:
     # 支持通过环境变量 DB_URL 覆盖，默认连接本地 house_leasing 数据库
     url: ${DB_URL:jdbc:mysql://localhost:3306/house_leasing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:1234561}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ---- Redis 缓存配置 ----
