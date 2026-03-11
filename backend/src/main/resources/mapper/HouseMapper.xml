@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  HouseMapper.xml —— 房源自定义 SQL 映射文件
+  命名空间对应 com.houseleasing.mapper.HouseMapper 接口
+  提供 MyBatis-Plus 无法直接支持的复杂多条件动态查询
+-->
+<mapper namespace="com.houseleasing.mapper.HouseMapper">
+
+    <!--
+      selectByCondition —— 多条件动态查询房源列表
+      支持以下筛选条件（均为可选，不传则不过滤）：
+        - keyword：关键词（模糊匹配 title / description / address）
+        - city：城市精确匹配
+        - district：区域精确匹配
+        - minPrice：最低月租金
+        - maxPrice：最高月租金
+        - houseType：房屋类型（APARTMENT/HOUSE/ROOM/VILLA）
+        - ownerType：房东类型（OWNER/SUBLEASE/AGENT）
+        - rooms：室数精确匹配
+        - decoration：装修情况（ROUGH/SIMPLE/MEDIUM/FINE/LUXURY）
+      仅返回 status = 'ONLINE'（已上架）的房源
+      支持以下排序方式（sortBy 参数）：
+        - price_asc：月租金升序
+        - price_desc：月租金降序
+        - popular：按浏览量降序（热度排序）
+        - 默认：按创建时间降序（最新发布优先）
+    -->
+    <select id="selectByCondition" resultType="com.houseleasing.entity.House">
+        SELECT * FROM houses
+        <where>
+            <!-- 关键词搜索：同时匹配标题、描述和地址字段 -->
+            <if test="req.keyword != null and req.keyword != ''">
+                AND (title LIKE CONCAT('%', #{req.keyword}, '%')
+                OR description LIKE CONCAT('%', #{req.keyword}, '%')
+                OR address LIKE CONCAT('%', #{req.keyword}, '%'))
+            </if>
+            <!-- 城市精确筛选 -->
+            <if test="req.city != null and req.city != ''">
+                AND city = #{req.city}
+            </if>
+            <!-- 区域精确筛选 -->
+            <if test="req.district != null and req.district != ''">
+                AND district = #{req.district}
+            </if>
+            <!-- 最低租金筛选（使用 &gt;= 避免 XML 中 > 的歧义） -->
+            <if test="req.minPrice != null">
+                AND price &gt;= #{req.minPrice}
+            </if>
+            <!-- 最高租金筛选（使用 &lt;= 避免 XML 中 < 的歧义） -->
+            <if test="req.maxPrice != null">
+                AND price &lt;= #{req.maxPrice}
+            </if>
+            <!-- 房屋类型精确筛选 -->
+            <if test="req.houseType != null and req.houseType != ''">
+                AND house_type = #{req.houseType}
+            </if>
+            <!-- 房东类型精确筛选（OWNER/SUBLEASE/AGENT） -->
+            <if test="req.ownerType != null and req.ownerType != ''">
+                AND owner_type = #{req.ownerType}
+            </if>
+            <!-- 室数精确筛选 -->
+            <if test="req.rooms != null">
+                AND rooms = #{req.rooms}
+            </if>
+            <!-- 装修情况精确筛选 -->
+            <if test="req.decoration != null and req.decoration != ''">
+                AND decoration = #{req.decoration}
+            </if>
+            <!-- 只查询已上架（ONLINE）状态的房源 -->
+            AND status = 'ONLINE'
+        </where>
+        <!-- 排序规则：根据 sortBy 参数动态选择排序方式 -->
+        <choose>
+            <when test="req.sortBy == 'price_asc'">ORDER BY price ASC</when>
+            <when test="req.sortBy == 'price_desc'">ORDER BY price DESC</when>
+            <when test="req.sortBy == 'popular'">ORDER BY view_count DESC</when>
+            <otherwise>ORDER BY create_time DESC</otherwise>
+        </choose>
+    </select>
+
+</mapper>

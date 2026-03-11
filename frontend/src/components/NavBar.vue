@@ -1,0 +1,464 @@
+<template>
+  <!-- 组件说明：顶部导航栏组件，固定定位在页面顶部，包含品牌 Logo、主导航链接、
+       用户头像下拉菜单（已登录）或登录/注册按钮（未登录），以及消息未读数角标。
+       支持移动端响应式：小屏下导航链接收起，通过汉堡按钮展开。 -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <!-- 品牌 Logo 区域，点击跳转首页 -->
+      <router-link to="/" class="navbar-brand">
+        <img src="../assets/logo.svg" alt="logo" class="logo-icon" />
+        <span class="brand-text">房屋租赁系统</span>
+      </router-link>
+
+      <!-- 主导航链接区域（移动端通过 :class="{ open: menuOpen }" 控制显隐） -->
+      <div class="nav-links" :class="{ open: menuOpen }">
+        <router-link to="/" class="nav-link" @click="menuOpen = false">首页</router-link>
+        <router-link to="/houses" class="nav-link" @click="menuOpen = false">房源列表</router-link>
+        <!-- 仅房东角色可见：房东中心入口 -->
+        <router-link
+          v-if="role === 'LANDLORD'"
+          to="/landlord-center"
+          class="nav-link"
+          @click="menuOpen = false"
+        >房东中心</router-link>
+        <!-- 仅房东角色可见：发布房源入口 -->
+        <router-link
+          v-if="role === 'LANDLORD'"
+          to="/publish-house"
+          class="nav-link"
+          @click="menuOpen = false"
+        >发布房源</router-link>
+        <!-- 仅管理员可见：管理后台入口 -->
+        <router-link
+          v-if="role === 'ADMIN'"
+          to="/admin"
+          class="nav-link"
+          @click="menuOpen = false"
+        >管理后台</router-link>
+      </div>
+
+      <!-- 右侧操作区域 -->
+      <div class="nav-right">
+        <!-- 消息角标：已登录时显示，展示未读消息数量 -->
+        <el-badge :value="unreadCount > 0 ? unreadCount : ''" class="msg-badge" v-if="isLoggedIn">
+          <router-link to="/user-center" class="icon-btn">
+            <el-icon size="20"><Bell /></el-icon>
+          </router-link>
+        </el-badge>
+
+        <!-- 已登录：显示用户头像和下拉菜单 -->
+        <template v-if="isLoggedIn">
+          <el-dropdown @command="handleCommand">
+            <span class="user-avatar-wrap">
+              <el-avatar
+                :size="32"
+                :src="userInfo.avatarUrl || ''"
+                :icon="UserFilled"
+                class="user-avatar"
+              />
+              <span class="username">{{ userInfo.username }}</span>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon> 个人中心
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+        <!-- 未登录：显示登录和注册按钮 -->
+        <template v-else>
+          <router-link to="/login" class="auth-btn">登录</router-link>
+          <router-link to="/register" class="auth-btn primary">注册</router-link>
+        </template>
+
+        <!-- 移动端汉堡菜单按钮（小屏下展示，点击切换导航展开/收起） -->
+        <button class="hamburger" @click="menuOpen = !menuOpen">
+          <el-icon><Menu /></el-icon>
+        </button>
+      </div>
+    </div>
+  </nav>
+</template>
+
+<script setup>
+// 说明：顶部导航栏逻辑，负责获取登录状态、未读消息数，以及处理用户下拉菜单命令
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '../stores/user.js'
+import { getUnreadCount } from '../api/message.js'
+import { UserFilled } from '@element-plus/icons-vue'
+
+const router = useRouter()
+const userStore = useUserStore()
+// 控制移动端汉堡菜单的展开/收起状态
+const menuOpen = ref(false)
+// 未读消息数量，用于消息角标
+const unreadCount = ref(0)
+
+// 从 Pinia store 读取登录状态和用户信息
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+const userInfo = computed(() => userStore.userInfo)
+// 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
+const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
+
+onMounted(async () => {
+  // 已登录时，异步拉取未读消息数量，展示在消息角标上
+  if (isLoggedIn.value) {
+    try {
+      const res = await getUnreadCount()
+      // 兼容后端直接返回数字或 { count: n } 两种格式
+      unreadCount.value = typeof res === 'number' ? res : (res?.count ?? 0)
+    } catch (e) {
+      // 获取未读数失败时不影响页面正常使用，静默忽略
+    }
+  }
+})
+
+/**
+ * 处理用户下拉菜单命令
+ * @param {string} cmd - 'profile'（跳转个人中心）或 'logout'（退出登录）
+ */
+async function handleCommand(cmd) {
+  if (cmd === 'profile') {
+    router.push('/user-center')
+  } else if (cmd === 'logout') {
+    await userStore.logout()
+    router.push('/')
+  }
+}
+</script>
+
+<style scoped>
+/* ===== 导航栏容器 ===== */
+.navbar {
+  position: sticky;      /* 粘性定位，滚动时保持在顶部 */
+  top: 0;
+  z-index: 1000;         /* 确保覆盖页面其他元素 */
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ===== 品牌 Logo 区域 ===== */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #409eff;
+}
+
+/* ===== 导航链接区域 ===== */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  text-decoration: none;
+  color: #606266;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+/* 链接悬停和当前激活状态 */
+.nav-link:hover,
+.nav-link.router-link-active {
+  color: #409eff;
+  background: #ecf5ff;
+}
+
+/* ===== 右侧用户操作区域 ===== */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.msg-badge {
+  cursor: pointer;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  color: #606266;
+  text-decoration: none;
+}
+
+.icon-btn:hover {
+  color: #409eff;
+}
+
+.user-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.username {
+  font-size: 14px;
+  color: #303133;
+}
+
+/* 登录/注册按钮样式 */
+.auth-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  color: #606266;
+  border: 1px solid #dcdfe6;
+  transition: all 0.2s;
+}
+
+.auth-btn:hover {
+  color: #409eff;
+  border-color: #409eff;
+}
+
+/* 注册按钮：主色填充样式 */
+.auth-btn.primary {
+  background: #409eff;
+  color: #fff;
+  border-color: #409eff;
+}
+
+.auth-btn.primary:hover {
+  background: #66b1ff;
+  border-color: #66b1ff;
+}
+
+/* ===== 移动端汉堡菜单按钮（默认隐藏） ===== */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #606266;
+}
+
+/* ===== 响应式：小屏幕适配 ===== */
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+    align-items: center;
+  }
+
+  /* 移动端导航链接：默认隐藏，展开时以下拉列表形式显示 */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: #fff;
+    flex-direction: column;
+    padding: 12px 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-link {
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 0;
+  }
+}
+</style>
+
+<style scoped>
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #409eff;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  text-decoration: none;
+  color: #606266;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.router-link-active {
+  color: #409eff;
+  background: #ecf5ff;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.msg-badge {
+  cursor: pointer;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  color: #606266;
+  text-decoration: none;
+}
+
+.icon-btn:hover {
+  color: #409eff;
+}
+
+.user-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.username {
+  font-size: 14px;
+  color: #303133;
+}
+
+.auth-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  color: #606266;
+  border: 1px solid #dcdfe6;
+  transition: all 0.2s;
+}
+
+.auth-btn:hover {
+  color: #409eff;
+  border-color: #409eff;
+}
+
+.auth-btn.primary {
+  background: #409eff;
+  color: #fff;
+  border-color: #409eff;
+}
+
+.auth-btn.primary:hover {
+  background: #66b1ff;
+  border-color: #66b1ff;
+}
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #606266;
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: #fff;
+    flex-direction: column;
+    padding: 12px 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-link {
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 0;
+  }
+}
+</style>
