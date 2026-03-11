@@ -170,12 +170,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
         User user = userMapper.selectByUsername(request.getUsername());
-        if (user == null) {
-            throw new BusinessException(400, "用户名不存在");
-        }
-        // 验证手机号是否与注册时一致
-        if (user.getPhone() == null || !user.getPhone().equals(request.getPhone())) {
-            throw new BusinessException(400, "手机号与注册信息不匹配");
+        // 使用统一的错误信息，防止用户名枚举攻击
+        if (user == null || user.getPhone() == null || !user.getPhone().equals(request.getPhone())) {
+            throw new BusinessException(400, "用户名或手机号不匹配");
         }
         // 使用 BCrypt 加密新密码并更新
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
