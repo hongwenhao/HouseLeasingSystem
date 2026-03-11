@@ -1,0 +1,17 @@
+# ============================================================
+# application-dev.yml —— 开发环境专用配置
+# 激活方式：spring.profiles.active=dev
+# 此文件中的配置会覆盖 application.yml 中的同名配置项
+# ============================================================
+
+spring:
+  # ---- 开发环境数据源配置（连接本地 house_leasing_dev 数据库） ----
+  datasource:
+    url: jdbc:mysql://localhost:3306/house_leasing_dev?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+
+# ---- 开发环境日志级别（更详细，输出 DEBUG 级别业务日志） ----
+logging:
+  level:
+    com.houseleasing: debug
