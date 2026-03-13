@@ -132,14 +132,3 @@ function handleSearch() {
 }
 </style>
 
-<style scoped>
-.search-bar {
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
-}
-
-.el-row {
-  row-gap: 12px;
-}
-</style>

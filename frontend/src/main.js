@@ -13,6 +13,8 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 // 引入 Element Plus 全局样式
 import 'element-plus/dist/index.css'
+// 引入 Element Plus 中文语言包，确保所有内置组件（日期选择器、分页、确认弹窗等）显示中文
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 // 引入 Element Plus 图标库（全量注册）
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
@@ -30,8 +32,8 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia())
 // 注册路由插件
 app.use(router)
-// 注册 Element Plus UI 库
-app.use(ElementPlus)
+// 注册 Element Plus UI 库，使用中文语言包
+app.use(ElementPlus, { locale: zhCn })
 
 // 将应用挂载到页面中的 #app 容器
 app.mount('#app')
