@@ -71,19 +71,20 @@ function goDetail() {
 </script>
 
 <style scoped>
-/* ===== 卡片容器 ===== */
+/* ===== 房源卡片容器：圆角 + 悬停上浮阴影动效 ===== */
 .house-card {
   cursor: pointer;
-  transition: transform 0.2s;  /* 悬停时上浮动效 */
-  border-radius: 8px;
+  transition: all 0.3s ease;
+  border-radius: 16px !important;
   overflow: hidden;
 }
 
 .house-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* ===== 图片区域 ===== */
+/* ===== 图片区域：悬停放大效果 ===== */
 .card-image {
   position: relative;
   height: 200px;
@@ -95,35 +96,42 @@ function goDetail() {
 .house-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;  /* 图片裁剪填充，保持宽高比 */
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+/* 卡片悬停时图片微微放大，增加动感 */
+.house-card:hover .house-img {
+  transform: scale(1.05);
 }
 
 /* 房东类型角标：覆盖在图片右上角 */
 .badge-overlay {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
 }
 
 /* ===== 信息主体 ===== */
 .card-body {
-  padding-top: 12px;
+  padding-top: 14px;
 }
 
 .title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 6px;
-  color: #303133;
+  margin-bottom: 8px;
+  color: #1a1a2e;
   overflow: hidden;
-  text-overflow: ellipsis;  /* 标题过长时截断显示省略号 */
+  text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .address {
   font-size: 13px;
   color: #909399;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -132,26 +140,32 @@ function goDetail() {
   white-space: nowrap;
 }
 
+/* 元信息标签行 */
 .meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-size: 13px;
   color: #606266;
 }
 
-/* ===== 价格区域 ===== */
+/* ===== 价格区域：红色渐变强调 ===== */
 .price-row {
   display: flex;
   align-items: baseline;
   gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f2f5;
 }
 
 .price {
-  font-size: 22px;
-  font-weight: 700;
-  color: #f56c6c;  /* 红色强调租金价格 */
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f56c6c, #e6413e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .unit {

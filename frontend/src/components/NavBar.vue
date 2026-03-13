@@ -134,20 +134,23 @@ async function handleCommand(cmd) {
 </script>
 
 <style scoped>
-/* ===== 导航栏容器 ===== */
+/* ===== 导航栏容器：毛玻璃效果 + 底部细线分隔 ===== */
 .navbar {
   position: sticky;      /* 粘性定位，滚动时保持在顶部 */
   top: 0;
   z-index: 1000;         /* 确保覆盖页面其他元素 */
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.85);   /* 半透明白色背景 */
+  backdrop-filter: blur(20px);              /* 毛玻璃模糊效果 */
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);  /* 细微底部分隔线 */
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
 }
 
 .navbar-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
-  height: 60px;
+  padding: 0 24px;
+  height: 64px;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -167,10 +170,14 @@ async function handleCommand(cmd) {
   height: 32px;
 }
 
+/* 品牌名称渐变色文字 */
 .brand-text {
   font-size: 18px;
   font-weight: 700;
-  color: #409eff;
+  background: linear-gradient(135deg, #409eff, #1a6ebd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ===== 导航链接区域 ===== */
@@ -190,11 +197,16 @@ async function handleCommand(cmd) {
   transition: all 0.2s;
 }
 
-/* 链接悬停和当前激活状态 */
-.nav-link:hover,
+/* 链接悬停：微妙的底部指示线；当前激活状态：蓝色文字 + 浅蓝背景 */
+.nav-link:hover {
+  color: #409eff;
+  background: rgba(64, 158, 255, 0.06);
+}
+
 .nav-link.router-link-active {
   color: #409eff;
   background: #ecf5ff;
+  font-weight: 500;
 }
 
 /* ===== 右侧用户操作区域 ===== */
@@ -232,32 +244,37 @@ async function handleCommand(cmd) {
   color: #303133;
 }
 
-/* 登录/注册按钮样式 */
+/* 登录/注册按钮样式（现代圆角胶囊风格） */
 .auth-btn {
-  padding: 6px 16px;
-  border-radius: 6px;
+  padding: 7px 20px;
+  border-radius: 20px;
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
   color: #606266;
   border: 1px solid #dcdfe6;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .auth-btn:hover {
   color: #409eff;
   border-color: #409eff;
+  transform: translateY(-1px);
 }
 
-/* 注册按钮：主色填充样式 */
+/* 注册按钮：渐变主色填充样式 */
 .auth-btn.primary {
-  background: #409eff;
+  background: linear-gradient(135deg, #409eff, #1a6ebd);
   color: #fff;
-  border-color: #409eff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
 .auth-btn.primary:hover {
-  background: #66b1ff;
-  border-color: #66b1ff;
+  background: linear-gradient(135deg, #66b1ff, #409eff);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 /* ===== 移动端汉堡菜单按钮（默认隐藏） ===== */

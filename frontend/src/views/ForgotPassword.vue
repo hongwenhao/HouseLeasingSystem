@@ -161,44 +161,76 @@ async function handleReset() {
 </script>
 
 <style scoped>
+/* ===== 忘记密码页背景：与登录页统一的渐变风格 ===== */
 .forgot-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a6ebd 0%, #0f4c8c 50%, #1a8a5e 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
+.forgot-page::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ===== 表单卡片：毛玻璃 + 入场动画 ===== */
 .forgot-container {
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 48px 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .forgot-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 
 .back-home {
   display: inline-block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  transition: transform 0.3s ease;
+}
+
+.back-home:hover {
+  transform: scale(1.1);
 }
 
 .logo {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 4px 8px rgba(64, 158, 255, 0.3));
 }
 
 .title {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
-  color: #303133;
-  margin-bottom: 6px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
 }
 
 .subtitle {
@@ -206,23 +238,39 @@ async function handleReset() {
   color: #909399;
 }
 
+/* ===== 重置密码按钮 ===== */
 .reset-btn {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 12px;
   font-size: 16px;
+  height: 44px;
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  border: none !important;
+  letter-spacing: 2px;
+  transition: all 0.3s ease !important;
+}
+
+.reset-btn:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+  transform: translateY(-1px) !important;
 }
 
 .forgot-footer {
   text-align: center;
-  margin-top: 24px;
+  margin-top: 28px;
   font-size: 14px;
   color: #606266;
 }
 
 .login-link {
-  color: #409eff;
+  color: #667eea;
   text-decoration: none;
   margin-left: 4px;
-  font-weight: 500;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.login-link:hover {
+  color: #764ba2;
 }
 </style>
