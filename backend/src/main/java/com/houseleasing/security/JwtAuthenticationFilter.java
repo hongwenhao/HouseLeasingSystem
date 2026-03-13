@@ -8,14 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * JWT 认证过滤器
@@ -30,6 +30,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
 
     /**
      * 过滤器核心逻辑：解析 Authorization 请求头中的 Bearer Token 并设置认证信息
@@ -50,15 +51,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7); // 截取 "Bearer " 后的 Token 部分
             try {
                 if (jwtUtil.validateToken(token)) {
-                    // Token 有效，从 Token 中提取用户名和角色
+                    // Token 有效，从 Token 中提取用户名
                     String username = jwtUtil.getUsernameFromToken(token);
-                    String role = jwtUtil.getRoleFromToken(token);
-                    // 构建 Spring Security 认证对象，角色需要加 "ROLE_" 前缀
+                    // 通过 UserDetailsService 加载完整的 UserDetails 对象，
+                    // 确保 @AuthenticationPrincipal 能正确注入 UserDetails
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    // 构建 Spring Security 认证对象
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    username,
+                                    userDetails,
                                     null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                                    userDetails.getAuthorities()
                             );
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     // 将认证信息注入 Security 上下文，后续的权限验证将使用此信息
