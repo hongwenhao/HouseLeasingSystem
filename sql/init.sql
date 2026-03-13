@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `avatar` VARCHAR(500),
   `credit_score` INT DEFAULT 100,
   `is_real_name_auth` TINYINT DEFAULT 0 COMMENT '是否实名认证',
-  `status` ENUM('ACTIVE','DISABLED') DEFAULT 'ACTIVE',
+  `status` ENUM('ACTIVE','BANNED') DEFAULT 'ACTIVE',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `houses` (
   `internet_fee` DECIMAL(6,2) COMMENT '网络费/月',
   `internet_fee_type` ENUM('METERED','FIXED','INCLUDED') DEFAULT 'FIXED',
   `cover_image` VARCHAR(500),
-  `images` TEXT COMMENT '图片列表JSON',
+  `images` JSON COMMENT '图片列表JSON',
   `tags` VARCHAR(500),
   `view_count` INT DEFAULT 0,
   `owner_id` BIGINT NOT NULL COMMENT '房东用户ID',
@@ -86,7 +86,9 @@ CREATE TABLE IF NOT EXISTS `house_images` (
   `house_id` BIGINT NOT NULL,
   `image_url` VARCHAR(500) NOT NULL,
   `sort` INT DEFAULT 0,
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_house_id` (`house_id`),
+  CONSTRAINT `fk_house_images_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -112,7 +114,13 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `payment_status` ENUM('UNPAID','PAID','REFUNDED') DEFAULT 'UNPAID',
   `remark` TEXT,
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_house_id` (`house_id`),
+  INDEX `idx_tenant_id` (`tenant_id`),
+  INDEX `idx_landlord_id` (`landlord_id`),
+  CONSTRAINT `fk_orders_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`),
+  CONSTRAINT `fk_orders_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`),
+  CONSTRAINT `fk_orders_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -131,7 +139,7 @@ CREATE TABLE IF NOT EXISTS `contracts` (
   `content` LONGTEXT COMMENT '合同内容',
   `status` ENUM('DRAFT','PENDING_SIGN','TENANT_SIGNED','LANDLORD_SIGNED','FULLY_SIGNED','CANCELLED') DEFAULT 'DRAFT',
   `risk_level` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'LOW',
-  `risk_items` TEXT COMMENT '风险条款JSON',
+  `risk_items` JSON COMMENT '风险条款JSON',
   `tenant_signed` TINYINT DEFAULT 0,
   `landlord_signed` TINYINT DEFAULT 0,
   `tenant_sign_time` DATETIME,
@@ -144,7 +152,15 @@ CREATE TABLE IF NOT EXISTS `contracts` (
   `sign_time` DATETIME COMMENT '最终签署时间',
   `workflow_instance_id` VARCHAR(100),
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_order_id` (`order_id`),
+  INDEX `idx_house_id` (`house_id`),
+  INDEX `idx_tenant_id` (`tenant_id`),
+  INDEX `idx_landlord_id` (`landlord_id`),
+  CONSTRAINT `fk_contracts_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`),
+  CONSTRAINT `fk_contracts_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`),
+  CONSTRAINT `fk_contracts_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`),
+  CONSTRAINT `fk_contracts_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -160,7 +176,9 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `type` ENUM('SYSTEM','ORDER','CONTRACT','APPOINTMENT','REVIEW') DEFAULT 'SYSTEM',
   `is_read` TINYINT DEFAULT 0,
   `related_id` BIGINT COMMENT '关联业务ID',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_user_id` (`user_id`),
+  CONSTRAINT `fk_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -176,7 +194,9 @@ CREATE TABLE IF NOT EXISTS `user_behaviors` (
   `score` DECIMAL(3,1) DEFAULT 1.0 COMMENT '行为评分(VIEW=1, COLLECT=3, ORDER=5)',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_house_id` (`house_id`)
+  INDEX `idx_house_id` (`house_id`),
+  CONSTRAINT `fk_behaviors_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
+  CONSTRAINT `fk_behaviors_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -190,7 +210,11 @@ CREATE TABLE IF NOT EXISTS `reviews` (
   `user_id` BIGINT NOT NULL,
   `rating` INT DEFAULT 5,
   `content` TEXT,
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_house_id` (`house_id`),
+  INDEX `idx_user_id` (`user_id`),
+  CONSTRAINT `fk_reviews_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`),
+  CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
