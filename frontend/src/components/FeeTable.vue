@@ -82,14 +82,3 @@ function feeAmount(fee, unit) {
 }
 </style>
 
-<style scoped>
-.fee-table {
-  margin: 16px 0;
-}
-
-.amount {
-  margin-left: 16px;
-  color: #f56c6c;
-  font-weight: 500;
-}
-</style>

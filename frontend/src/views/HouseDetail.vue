@@ -267,7 +267,7 @@ async function submitAppointment() {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #f0f2f5;
 }
 
 .loading-wrap {
@@ -279,7 +279,7 @@ async function submitAppointment() {
 
 .detail-content {
   flex: 1;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .detail-inner {
@@ -288,21 +288,24 @@ async function submitAppointment() {
 }
 
 .carousel {
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .carousel-img {
   width: 100%;
   height: 420px;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
 .info-section {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .title-row {
@@ -316,7 +319,7 @@ async function submitAppointment() {
 .house-title {
   font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: #1a1a2e;
   flex: 1;
 }
 
@@ -329,8 +332,11 @@ async function submitAppointment() {
 
 .price {
   font-size: 36px;
-  font-weight: 700;
-  color: #f56c6c;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .price-unit {
@@ -414,5 +420,15 @@ async function submitAppointment() {
 .book-btn {
   width: 200px;
   font-size: 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.book-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 </style>

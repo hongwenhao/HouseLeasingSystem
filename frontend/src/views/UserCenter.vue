@@ -403,12 +403,12 @@ function formatDate(date) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #f0f2f5;
 }
 
 .page-content {
   flex: 1;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .page-inner {
@@ -417,16 +417,30 @@ function formatDate(date) {
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #303133;
-  margin-bottom: 20px;
+  color: #1a1a2e;
+  margin-bottom: 24px;
+  position: relative;
+  padding-left: 16px;
+}
+
+.page-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #667eea, #764ba2);
 }
 
 .center-tabs {
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .profile-section {
@@ -440,12 +454,17 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(102,126,234,0.06), rgba(118,75,162,0.06));
+  border-radius: 16px;
   align-self: center;
-  width: 200px;
+  width: 220px;
+  transition: box-shadow 0.3s ease;
+}
+
+.avatar-area:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .profile-form {
@@ -499,8 +518,8 @@ function formatDate(date) {
 }
 
 .credit-score-card {
-  background: linear-gradient(135deg, #409eff, #1a6ebd);
-  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 16px;
   padding: 32px;
   color: #fff;
   min-width: 240px;

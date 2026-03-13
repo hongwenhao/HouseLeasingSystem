@@ -22,38 +22,50 @@
 </script>
 
 <style scoped>
+/* ===== 404 页面：渐变背景 + 居中内容 ===== */
 .not-found-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f0f2f5 0%, #e8ecf4 50%, #dce3ed 100%);
   padding: 20px;
 }
 
 .not-found-content {
   text-align: center;
+  animation: fadeIn 0.6s ease-out;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 大号 404 错误码：渐变色文字 + 光影效果 */
 .error-code {
-  font-size: 120px;
+  font-size: 140px;
   font-weight: 900;
-  color: #409eff;
   line-height: 1;
-  text-shadow: 4px 4px 20px rgba(64, 158, 255, 0.3);
   margin-bottom: 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 4px 20px rgba(102, 126, 234, 0.3));
 }
 
 .error-title {
   font-size: 28px;
   font-weight: 700;
-  color: #303133;
+  color: #1a1a2e;
   margin-bottom: 12px;
 }
 
 .error-desc {
   font-size: 15px;
   color: #909399;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 </style>

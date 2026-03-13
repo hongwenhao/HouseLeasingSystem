@@ -178,47 +178,98 @@ function handleSearch(searchFilters) {
 </script>
 
 <style scoped>
+/* ===== 首页布局 ===== */
 .home-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+/* ===== Hero 主视觉区域：大面积渐变 + 装饰光圈 ===== */
 .hero {
-  background: linear-gradient(135deg, #1a6ebd 0%, #0f4c8c 40%, #1a8a5e 100%);
-  padding: 80px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 40%, #f093fb 100%);
+  padding: 100px 20px 80px;
   color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hero 背景装饰光圈 */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -15%;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .hero-content {
   max-width: 900px;
   margin: 0 auto;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
+/* Hero 大标题：白色 + 文字阴影增强可读性 */
 .hero-title {
-  font-size: 42px;
-  font-weight: 700;
-  margin-bottom: 12px;
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 16px;
   color: #fff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+  letter-spacing: 2px;
+  animation: fadeInDown 0.8s ease-out;
 }
 
+/* Hero 副标题 */
 .hero-subtitle {
   font-size: 18px;
-  margin-bottom: 32px;
-  opacity: 0.9;
+  margin-bottom: 40px;
+  opacity: 0.92;
+  font-weight: 300;
+  letter-spacing: 1px;
+  animation: fadeInDown 0.8s ease-out 0.2s both;
 }
 
+/* 搜索栏容器：毛玻璃白色背景 */
 .hero-search {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 
+/* 入场动画 */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 数据统计横幅 ===== */
 .stats-banner {
-  background: #409eff;
-  padding: 24px 20px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  padding: 32px 20px;
 }
 
 .stats-inner {
@@ -227,7 +278,7 @@ function handleSearch(searchFilters) {
   display: flex;
   justify-content: space-around;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
 }
 
 .stat-item {
@@ -237,20 +288,27 @@ function handleSearch(searchFilters) {
   color: #fff;
 }
 
+/* 统计数字：大号 + 渐变色文字 */
 .stat-num {
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 36px;
+  font-weight: 800;
   line-height: 1;
+  background: linear-gradient(135deg, #667eea, #f093fb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .stat-label {
   font-size: 14px;
-  opacity: 0.9;
-  margin-top: 4px;
+  opacity: 0.7;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
 }
 
+/* ===== 推荐房源区域 ===== */
 .section {
-  padding: 60px 20px;
+  padding: 64px 20px;
 }
 
 .section-inner {
@@ -262,39 +320,70 @@ function handleSearch(searchFilters) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
+/* 区块标题：左侧装饰线条 */
 .section-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #303133;
+  color: #1a1a2e;
+  position: relative;
+  padding-left: 16px;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #667eea, #764ba2);
 }
 
 .section-title.center {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 48px;
+  padding-left: 0;
 }
 
+.section-title.center::before {
+  display: none;
+}
+
+/* "查看更多"链接 */
 .view-more {
-  color: #409eff;
+  color: #667eea;
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
+.view-more:hover {
+  color: #764ba2;
+}
+
+/* 房源卡片网格 */
 .house-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 
 .loading-wrap {
   padding: 40px 0;
 }
 
+/* ===== 平台优势区域 ===== */
 .advantages {
-  background: #f5f7fa;
-  padding: 60px 20px;
+  background: linear-gradient(180deg, #f8f9fe 0%, #f0f2f5 100%);
+  padding: 64px 20px;
 }
 
 .advantages-inner {
@@ -308,35 +397,63 @@ function handleSearch(searchFilters) {
   gap: 28px;
 }
 
+/* 优势卡片：悬停上浮 + 渐变边框指示 */
 .advantage-item {
   background: #fff;
-  border-radius: 12px;
-  padding: 32px 24px;
+  border-radius: 16px;
+  padding: 36px 28px;
   text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.advantage-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .advantage-item:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
+.advantage-item:hover::before {
+  opacity: 1;
+}
+
+/* 优势图标：浅色圆形背景 */
 .adv-icon {
-  font-size: 48px;
-  color: #409eff;
-  margin-bottom: 16px;
+  font-size: 40px;
+  color: #667eea;
+  margin-bottom: 20px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .advantage-item h3 {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #303133;
+  color: #1a1a2e;
 }
 
 .advantage-item p {
   font-size: 14px;
   color: #909399;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 </style>

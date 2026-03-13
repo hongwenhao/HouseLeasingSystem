@@ -119,11 +119,11 @@ function handleSearch() {
 </script>
 
 <style scoped>
-/* ===== 搜索栏容器 ===== */
+/* ===== 搜索栏容器：圆角 + 柔和阴影 ===== */
 .search-bar {
-  padding: 16px;
+  padding: 20px;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 /* 行间距：每行筛选器之间保持 12px 垂直间距 */
@@ -132,14 +132,3 @@ function handleSearch() {
 }
 </style>
 
-<style scoped>
-.search-bar {
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
-}
-
-.el-row {
-  row-gap: 12px;
-}
-</style>
