@@ -109,9 +109,15 @@ public class HouseServiceImpl implements HouseService {
         if (house.getOwnerId() != null) {
             User owner = userMapper.selectById(house.getOwnerId());
             if (owner != null) {
-                owner.setPassword(null);
-                owner.setIdCard(null);
-                house.setLandlord(owner);
+                User sanitized = new User();
+                sanitized.setId(owner.getId());
+                sanitized.setUsername(owner.getUsername());
+                sanitized.setPhone(owner.getPhone());
+                sanitized.setAvatar(owner.getAvatar());
+                sanitized.setRealName(owner.getRealName());
+                sanitized.setCreditScore(owner.getCreditScore());
+                sanitized.setIsRealNameAuth(owner.getIsRealNameAuth());
+                house.setLandlord(sanitized);
             }
         }
         return house;
