@@ -362,6 +362,9 @@ async function handleSubmit() {
   if (!valid) return
   submitting.value = true
   try {
+    // 获取费用金额：INCLUDED 类型费用为 0，其余取实际金额
+    const feeAmount = (cfg) => cfg.type !== 'INCLUDED' ? cfg.amount : 0
+    const validImages = form.images.filter(url => url)
     // 构造后端期望的扁平数据结构
     const payload = {
       title: form.title,
@@ -384,20 +387,20 @@ async function handleSubmit() {
       deposit: form.deposit,
       availableDate: form.availableDate,
       // 将嵌套的 feeConfig 展开为扁平的费用字段
-      waterFee: form.feeConfig.waterFee.type !== 'INCLUDED' ? form.feeConfig.waterFee.amount : 0,
+      waterFee: feeAmount(form.feeConfig.waterFee),
       waterFeeType: form.feeConfig.waterFee.type,
-      electricFee: form.feeConfig.electricFee.type !== 'INCLUDED' ? form.feeConfig.electricFee.amount : 0,
+      electricFee: feeAmount(form.feeConfig.electricFee),
       electricFeeType: form.feeConfig.electricFee.type,
-      gasFee: form.feeConfig.gasFee.type !== 'INCLUDED' ? form.feeConfig.gasFee.amount : 0,
+      gasFee: feeAmount(form.feeConfig.gasFee),
       gasFeeType: form.feeConfig.gasFee.type,
-      propertyFee: form.feeConfig.propertyFee.type !== 'INCLUDED' ? form.feeConfig.propertyFee.amount : 0,
+      propertyFee: feeAmount(form.feeConfig.propertyFee),
       propertyFeeType: form.feeConfig.propertyFee.type,
-      internetFee: form.feeConfig.internetFee.type !== 'INCLUDED' ? form.feeConfig.internetFee.amount : 0,
+      internetFee: feeAmount(form.feeConfig.internetFee),
       internetFeeType: form.feeConfig.internetFee.type,
       // 将设施数组转为逗号分隔的标签字符串
       tags: form.amenities.length > 0 ? form.amenities.join(',') : null,
       // 将图片数组转为 JSON 字符串
-      images: form.images.filter(url => url).length > 0 ? JSON.stringify(form.images.filter(url => url)) : null
+      images: validImages.length > 0 ? JSON.stringify(validImages) : null
     }
     if (isEdit.value) {
       await updateHouse(route.params.id, payload)
