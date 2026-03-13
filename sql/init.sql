@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS `house_images` (
   `sort` INT DEFAULT 0,
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_house_id` (`house_id`),
-  CONSTRAINT `fk_house_images_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`)
+  CONSTRAINT `fk_house_images_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -118,9 +118,9 @@ CREATE TABLE IF NOT EXISTS `orders` (
   INDEX `idx_house_id` (`house_id`),
   INDEX `idx_tenant_id` (`tenant_id`),
   INDEX `idx_landlord_id` (`landlord_id`),
-  CONSTRAINT `fk_orders_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`),
-  CONSTRAINT `fk_orders_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`),
-  CONSTRAINT `fk_orders_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`)
+  CONSTRAINT `fk_orders_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_orders_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_orders_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -157,10 +157,10 @@ CREATE TABLE IF NOT EXISTS `contracts` (
   INDEX `idx_house_id` (`house_id`),
   INDEX `idx_tenant_id` (`tenant_id`),
   INDEX `idx_landlord_id` (`landlord_id`),
-  CONSTRAINT `fk_contracts_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`),
-  CONSTRAINT `fk_contracts_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`),
-  CONSTRAINT `fk_contracts_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`),
-  CONSTRAINT `fk_contracts_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`)
+  CONSTRAINT `fk_contracts_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_contracts_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_contracts_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_contracts_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `related_id` BIGINT COMMENT '关联业务ID',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_user_id` (`user_id`),
-  CONSTRAINT `fk_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+  CONSTRAINT `fk_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -195,8 +195,8 @@ CREATE TABLE IF NOT EXISTS `user_behaviors` (
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_user_id` (`user_id`),
   INDEX `idx_house_id` (`house_id`),
-  CONSTRAINT `fk_behaviors_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),
-  CONSTRAINT `fk_behaviors_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`)
+  CONSTRAINT `fk_behaviors_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_behaviors_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -213,8 +213,8 @@ CREATE TABLE IF NOT EXISTS `reviews` (
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_house_id` (`house_id`),
   INDEX `idx_user_id` (`user_id`),
-  CONSTRAINT `fk_reviews_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`),
-  CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+  CONSTRAINT `fk_reviews_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
