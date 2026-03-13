@@ -279,12 +279,12 @@ function formatDateTime(date) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #f0f2f5;
 }
 
 .page-content {
   flex: 1;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .page-inner {
@@ -296,13 +296,13 @@ function formatDateTime(date) {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: #1a1a2e;
 }
 
 .detail-grid {
@@ -312,7 +312,8 @@ function formatDateTime(date) {
 }
 
 .status-card {
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .status-display {
@@ -332,7 +333,8 @@ function formatDateTime(date) {
 }
 
 .info-card {
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .house-summary {
@@ -374,7 +376,8 @@ function formatDateTime(date) {
 }
 
 .actions-card {
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .action-buttons {

@@ -338,12 +338,12 @@ function formatDate(date) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #f0f2f5;
 }
 
 .page-content {
   flex: 1;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .page-inner {
@@ -352,16 +352,30 @@ function formatDate(date) {
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #303133;
-  margin-bottom: 20px;
+  color: #1a1a2e;
+  margin-bottom: 24px;
+  position: relative;
+  padding-left: 16px;
+}
+
+.page-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #667eea, #764ba2);
 }
 
 .center-tabs {
   background: #fff;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .tab-toolbar {
@@ -374,9 +388,14 @@ function formatDate(date) {
   gap: 16px;
   padding: 16px;
   border: 1px solid #ebeef5;
-  border-radius: 8px;
+  border-radius: 16px;
   margin-bottom: 12px;
   background: #fafafa;
+  transition: box-shadow 0.3s ease;
+}
+
+.house-item:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .house-thumb {
@@ -468,13 +487,23 @@ function formatDate(date) {
 
 .stat-card {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
+  border-radius: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
 .stat-num {
   font-size: 32px;
-  font-weight: 700;
-  color: #409eff;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 8px;
 }
 

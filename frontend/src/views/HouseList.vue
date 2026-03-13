@@ -157,12 +157,13 @@ onMounted(fetchData)
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #f0f2f5;
 }
 
 .page-content {
   max-width: 1200px;
-  margin: 24px auto;
-  padding: 0 20px;
+  margin: 32px auto;
+  padding: 0 24px;
   display: flex;
   gap: 24px;
   flex: 1;
@@ -190,8 +191,10 @@ onMounted(fetchData)
   flex-wrap: wrap;
   gap: 12px;
   background: #fff;
-  padding: 12px 16px;
-  border-radius: 8px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  transition: box-shadow 0.3s ease;
 }
 
 .count-info {
@@ -208,19 +211,25 @@ onMounted(fetchData)
 .empty-state {
   padding: 60px 0;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .loading-wrap {
   background: #fff;
   padding: 24px;
-  border-radius: 8px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .pagination-wrap {
-  margin-top: 24px;
+  margin-top: 32px;
   display: flex;
   justify-content: center;
+  background: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 @media (max-width: 768px) {

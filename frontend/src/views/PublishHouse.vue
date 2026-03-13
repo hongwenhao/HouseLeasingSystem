@@ -350,12 +350,12 @@ async function handleSubmit() {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #f0f2f5;
 }
 
 .page-content {
   flex: 1;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .page-inner {
@@ -364,10 +364,23 @@ async function handleSubmit() {
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #303133;
-  margin-bottom: 20px;
+  color: #1a1a2e;
+  margin-bottom: 24px;
+  position: relative;
+  padding-left: 16px;
+}
+
+.page-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #667eea, #764ba2);
 }
 
 .publish-form {
@@ -377,7 +390,8 @@ async function handleSubmit() {
 }
 
 .form-card {
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .owner-type-group {
@@ -452,5 +466,17 @@ async function handleSubmit() {
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 0;
+}
+
+.form-footer :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 8px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.form-footer :deep(.el-button--primary:hover) {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 </style>

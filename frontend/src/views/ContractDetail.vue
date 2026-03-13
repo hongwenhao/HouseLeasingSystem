@@ -256,12 +256,12 @@ function formatDate(date) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #f0f2f5;
 }
 
 .page-content {
   flex: 1;
-  padding: 24px 20px;
+  padding: 32px 20px;
 }
 
 .page-inner {
@@ -273,19 +273,20 @@ function formatDate(date) {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: #1a1a2e;
   flex: 1;
 }
 
 .contract-card {
-  border-radius: 12px;
+  border-radius: 16px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 .card-header {
@@ -313,7 +314,7 @@ function formatDate(date) {
 }
 
 .party-card.landlord {
-  border-left: 4px solid #409eff;
+  border-left: 4px solid #667eea;
 }
 
 .party-card.tenant {
