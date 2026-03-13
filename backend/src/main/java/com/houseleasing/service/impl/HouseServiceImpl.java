@@ -6,9 +6,11 @@ import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
+import com.houseleasing.entity.User;
 import com.houseleasing.entity.UserBehavior;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserBehaviorMapper;
+import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.service.HouseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class HouseServiceImpl implements HouseService {
 
     private final HouseMapper houseMapper;
     private final UserBehaviorMapper userBehaviorMapper;
+    private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
@@ -101,6 +104,15 @@ public class HouseServiceImpl implements HouseService {
             houseMapper.incrementViewCount(id);
         } catch (Exception e) {
             log.warn("Failed to increment view count: {}", e.getMessage());
+        }
+        // 关联填充房东信息（隐去密码等敏感字段）
+        if (house.getOwnerId() != null) {
+            User owner = userMapper.selectById(house.getOwnerId());
+            if (owner != null) {
+                owner.setPassword(null);
+                owner.setIdCard(null);
+                house.setLandlord(owner);
+            }
         }
         return house;
     }
