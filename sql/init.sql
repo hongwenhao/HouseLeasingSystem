@@ -69,10 +69,12 @@ CREATE TABLE IF NOT EXISTS `houses` (
   `images` TEXT COMMENT '图片列表JSON',
   `tags` VARCHAR(500),
   `view_count` INT DEFAULT 0,
-  `owner_id` BIGINT,
+  `owner_id` BIGINT NOT NULL COMMENT '房东用户ID',
   `workflow_instance_id` VARCHAR(100),
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_owner_id` (`owner_id`),
+  CONSTRAINT `fk_houses_owner` FOREIGN KEY (`owner_id`) REFERENCES `users`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================

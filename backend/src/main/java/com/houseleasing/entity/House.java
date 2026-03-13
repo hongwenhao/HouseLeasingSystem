@@ -85,6 +85,9 @@ public class House {
     private Long ownerId;
     /** 浏览次数，默认为 0 */
     private Integer viewCount = 0;
+    /** 房东用户信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private User landlord;
     /** 创建时间，插入时自动填充 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
