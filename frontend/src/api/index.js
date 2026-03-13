@@ -61,9 +61,10 @@ function translateErrorMessage(msg) {
     'invalid email': '邮箱格式不正确',
   }
 
-  // 将消息转小写后在映射表中查找匹配项
+  // 将消息转小写后在映射表中查找匹配项（优先匹配更长的关键词，避免短关键词误匹配）
   const lowerMsg = msg.toLowerCase().trim()
-  for (const [key, value] of Object.entries(errorMap)) {
+  const sortedEntries = Object.entries(errorMap).sort((a, b) => b[0].length - a[0].length)
+  for (const [key, value] of sortedEntries) {
     if (lowerMsg.includes(key)) {
       return value
     }
