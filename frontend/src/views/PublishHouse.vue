@@ -68,15 +68,22 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="户型" prop="rooms">
-                  <el-input v-model="form.rooms" placeholder="如：2室1厅" />
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <el-input-number v-model="form.rooms" :min="1" :max="20" controls-position="right" style="width:80px" />
+                    <span>室</span>
+                    <el-input-number v-model="form.halls" :min="0" :max="10" controls-position="right" style="width:80px" />
+                    <span>厅</span>
+                    <el-input-number v-model="form.bathrooms" :min="0" :max="10" controls-position="right" style="width:80px" />
+                    <span>卫</span>
+                  </div>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="房屋类型">
                   <el-select v-model="form.houseType" style="width:100%">
-                    <el-option label="住宅" value="RESIDENTIAL" />
                     <el-option label="公寓" value="APARTMENT" />
-                    <el-option label="合租" value="SHARED" />
+                    <el-option label="住宅" value="HOUSE" />
+                    <el-option label="单间" value="ROOM" />
                     <el-option label="别墅" value="VILLA" />
                   </el-select>
                 </el-form-item>
@@ -261,16 +268,18 @@ const form = reactive({
   longitude: null,    // 可选：经度（用于地图定位）
   latitude: null,     // 可选：纬度
   area: 50,           // 面积（平米），默认50
-  rooms: '2室1厅',    // 户型描述
+  rooms: 2,           // 室（整数）
+  halls: 1,           // 厅（整数）
+  bathrooms: 1,       // 卫（整数）
   floor: 1,
   totalFloor: 20,
   decoration: 'SIMPLE',        // 装修情况：FINE/SIMPLE/ROUGH
-  houseType: 'RESIDENTIAL',    // 房屋类型
+  houseType: 'APARTMENT',      // 房屋类型：APARTMENT/HOUSE/ROOM/VILLA
   ownerType: 'OWNER',          // 房东类型：OWNER/SUBLEASE/AGENT
   price: 3000,                 // 月租金（元）
   deposit: 1,                  // 押金月数
   availableDate: null,         // 可入住日期（可选）
-  // 五项费用配置：每项包含类型（METERED/FIXED/INCLUDED）和金额
+  // 五项费用配置：每项包含类型（METERED/FIXED/INCLUDED）和金额（UI 用）
   feeConfig: {
     waterFee: { type: 'METERED', amount: 3.5 },
     electricFee: { type: 'METERED', amount: 0.6 },
@@ -278,8 +287,8 @@ const form = reactive({
     propertyFee: { type: 'FIXED', amount: 200 },
     internetFee: { type: 'FIXED', amount: 100 }
   },
-  amenities: [],  // 配套设施列表（字符串数组）
-  images: []      // 图片 URL 列表
+  amenities: [],  // 配套设施列表（字符串数组，提交时转为 tags）
+  images: []      // 图片 URL 列表（提交时转为 JSON 字符串）
 })
 
 // 表单必填项校验规则
@@ -289,7 +298,7 @@ const rules = {
   district: [{ required: true, message: '请输入区域', trigger: 'blur' }],
   address: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
   area: [{ required: true, message: '请输入面积', trigger: 'blur' }],
-  rooms: [{ required: true, message: '请输入户型', trigger: 'blur' }],
+  rooms: [{ required: true, type: 'number', message: '请输入室数', trigger: 'blur' }],
   floor: [{ required: true, message: '请输入楼层', trigger: 'blur' }],
   decoration: [{ required: true, message: '请选择装修情况', trigger: 'change' }],
   ownerType: [{ required: true, message: '请选择房东类型', trigger: 'change' }],
@@ -301,19 +310,42 @@ onMounted(async () => {
   if (isEdit.value) {
     try {
       const res = await getHouseDetail(route.params.id)
-      Object.assign(form, res)
-      // 兼容老数据无 feeConfig 的情况，使用默认费用配置
-      if (!form.feeConfig) {
-        form.feeConfig = {
-          waterFee: { type: 'METERED', amount: 3.5 },
-          electricFee: { type: 'METERED', amount: 0.6 },
-          gasFee: { type: 'METERED', amount: 2.5 },
-          propertyFee: { type: 'FIXED', amount: 200 },
-          internetFee: { type: 'FIXED', amount: 100 }
-        }
+      // 映射后端扁平字段到前端表单结构
+      form.title = res.title || ''
+      form.description = res.description || ''
+      form.city = res.city || ''
+      form.district = res.district || ''
+      form.address = res.address || ''
+      form.longitude = res.longitude
+      form.latitude = res.latitude
+      form.area = res.area || 50
+      form.rooms = res.rooms || 2
+      form.halls = res.halls || 1
+      form.bathrooms = res.bathrooms || 1
+      form.floor = res.floor || 1
+      form.totalFloor = res.totalFloor || 20
+      form.decoration = res.decoration || 'SIMPLE'
+      form.houseType = res.houseType || 'APARTMENT'
+      form.ownerType = res.ownerType || 'OWNER'
+      form.price = res.price || 3000
+      form.deposit = res.deposit || 1
+      form.availableDate = res.availableDate || null
+      // 将后端扁平的费用字段还原为嵌套的 feeConfig
+      form.feeConfig = {
+        waterFee: { type: res.waterFeeType || 'METERED', amount: res.waterFee || 0 },
+        electricFee: { type: res.electricFeeType || 'METERED', amount: res.electricFee || 0 },
+        gasFee: { type: res.gasFeeType || 'METERED', amount: res.gasFee || 0 },
+        propertyFee: { type: res.propertyFeeType || 'FIXED', amount: res.propertyFee || 0 },
+        internetFee: { type: res.internetFeeType || 'FIXED', amount: res.internetFee || 0 }
       }
-      if (!form.amenities) form.amenities = []
-      if (!form.images) form.images = []
+      // 将 tags 字符串还原为设施数组
+      form.amenities = res.tags ? res.tags.split(',') : []
+      // 将 images JSON 字符串还原为数组
+      try {
+        form.images = res.images ? JSON.parse(res.images) : []
+      } catch {
+        form.images = []
+      }
     } catch (e) {
       ElMessage.error('加载房源信息失败')
     }
@@ -322,6 +354,7 @@ onMounted(async () => {
 
 /**
  * 提交房源表单
+ * 将前端表单数据转换为后端 House 实体结构后提交
  * 编辑模式调用 updateHouse，发布模式调用 createHouse，成功后跳转到房东中心
  */
 async function handleSubmit() {
@@ -329,11 +362,51 @@ async function handleSubmit() {
   if (!valid) return
   submitting.value = true
   try {
+    // 获取费用金额：INCLUDED 类型费用为 0，其余取实际金额
+    const feeAmount = (cfg) => cfg.type !== 'INCLUDED' ? cfg.amount : 0
+    const validImages = form.images.filter(url => url)
+    // 构造后端期望的扁平数据结构
+    const payload = {
+      title: form.title,
+      description: form.description,
+      city: form.city,
+      district: form.district,
+      address: form.address,
+      longitude: form.longitude,
+      latitude: form.latitude,
+      area: form.area,
+      rooms: form.rooms,
+      halls: form.halls,
+      bathrooms: form.bathrooms,
+      floor: form.floor,
+      totalFloor: form.totalFloor,
+      decoration: form.decoration,
+      houseType: form.houseType,
+      ownerType: form.ownerType,
+      price: form.price,
+      deposit: form.deposit,
+      availableDate: form.availableDate,
+      // 将嵌套的 feeConfig 展开为扁平的费用字段
+      waterFee: feeAmount(form.feeConfig.waterFee),
+      waterFeeType: form.feeConfig.waterFee.type,
+      electricFee: feeAmount(form.feeConfig.electricFee),
+      electricFeeType: form.feeConfig.electricFee.type,
+      gasFee: feeAmount(form.feeConfig.gasFee),
+      gasFeeType: form.feeConfig.gasFee.type,
+      propertyFee: feeAmount(form.feeConfig.propertyFee),
+      propertyFeeType: form.feeConfig.propertyFee.type,
+      internetFee: feeAmount(form.feeConfig.internetFee),
+      internetFeeType: form.feeConfig.internetFee.type,
+      // 将设施数组转为逗号分隔的标签字符串
+      tags: form.amenities.length > 0 ? form.amenities.join(',') : null,
+      // 将图片数组转为 JSON 字符串
+      images: validImages.length > 0 ? JSON.stringify(validImages) : null
+    }
     if (isEdit.value) {
-      await updateHouse(route.params.id, form)
+      await updateHouse(route.params.id, payload)
       ElMessage.success('房源更新成功')
     } else {
-      await createHouse(form)
+      await createHouse(payload)
       ElMessage.success('房源发布成功，请等待审核')
     }
     router.push('/landlord-center')  // 返回房东中心查看房源状态
