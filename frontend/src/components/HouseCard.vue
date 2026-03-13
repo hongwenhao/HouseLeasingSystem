@@ -25,7 +25,7 @@
       </p>
       <!-- 房源元信息：室数 / 面积 / 装修情况 -->
       <div class="meta">
-        <span class="rooms">{{ house.rooms }}</span>
+        <span class="rooms">{{ house.rooms }}室{{ house.halls }}厅{{ house.bathrooms }}卫</span>
         <span class="area">{{ house.area }}㎡</span>
         <el-tag size="small" type="info">{{ decorationLabel }}</el-tag>
       </div>

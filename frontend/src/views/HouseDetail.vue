@@ -43,7 +43,7 @@
             <el-descriptions-item label="城市">{{ house.city }}</el-descriptions-item>
             <el-descriptions-item label="区域">{{ house.district }}</el-descriptions-item>
             <el-descriptions-item label="面积">{{ house.area }}㎡</el-descriptions-item>
-            <el-descriptions-item label="户型">{{ house.rooms }}</el-descriptions-item>
+            <el-descriptions-item label="户型">{{ house.rooms }}室{{ house.halls }}厅{{ house.bathrooms }}卫</el-descriptions-item>
             <el-descriptions-item label="楼层">{{ house.floor }}/{{ house.totalFloor }}层</el-descriptions-item>
             <el-descriptions-item label="装修">{{ decorationLabel }}</el-descriptions-item>
             <el-descriptions-item label="地址" :span="3">{{ house.address }}</el-descriptions-item>
