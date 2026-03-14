@@ -21,7 +21,8 @@
         label-position="top"
       >
         <!-- 用户名 -->
-        <el-form-item label="用户名" prop="username">
+        <el-form-item prop="username">
+          <template #label>用户名 <span class="required-mark">*</span></template>
           <el-input
             v-model="form.username"
             placeholder="请输入用户名（4-20个字符）"
@@ -31,7 +32,8 @@
           />
         </el-form-item>
         <!-- 手机号 -->
-        <el-form-item label="手机号" prop="phone">
+        <el-form-item prop="phone">
+          <template #label>手机号 <span class="required-mark">*</span></template>
           <el-input
             v-model="form.phone"
             placeholder="请输入手机号"
@@ -51,7 +53,8 @@
           />
         </el-form-item>
         <!-- 密码 -->
-        <el-form-item label="密码" prop="password">
+        <el-form-item prop="password">
+          <template #label>密码 <span class="required-mark">*</span></template>
           <el-input
             v-model="form.password"
             type="password"
@@ -62,7 +65,8 @@
           />
         </el-form-item>
         <!-- 确认密码 -->
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item prop="confirmPassword">
+          <template #label>确认密码 <span class="required-mark">*</span></template>
           <el-input
             v-model="form.confirmPassword"
             type="password"
@@ -351,5 +355,10 @@ async function handleRegister() {
 
 .login-link:hover {
   color: #764ba2;
+}
+
+.required-mark {
+  color: #f56c6c;
+  font-weight: bold;
 }
 </style>
