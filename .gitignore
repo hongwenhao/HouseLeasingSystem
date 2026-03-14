@@ -38,3 +38,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated thesis documents
+*.pyc
+__pycache__/
