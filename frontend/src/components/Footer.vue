@@ -6,7 +6,7 @@
       <!-- 品牌信息区域 -->
       <div class="footer-brand">
         <span class="brand-name">房屋租赁系统</span>
-        <span class="copyright">© 2024 版权所有</span>
+        <span class="copyright">© 2026 版权所有</span>
       </div>
       <!-- 快捷链接区域 -->
       <div class="footer-links">
