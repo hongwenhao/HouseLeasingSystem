@@ -70,8 +70,8 @@ public class ContractController {
                                           @RequestBody Map<String, String> request,
                                           @AuthenticationPrincipal UserDetails userDetails) {
         User user = resolveUser(userDetails.getUsername());
-        String role = request.get("role");
-        return Result.success(contractService.signContract(id, user.getId(), role));
+        String role = request.get("role");// TENANT 或 LANDLORD
+        return Result.success(contractService.signContract(id, user.getId(), role));// 双方均签署后合同状态自动变更为 ACTIVE（生效）
     }
 
     /**

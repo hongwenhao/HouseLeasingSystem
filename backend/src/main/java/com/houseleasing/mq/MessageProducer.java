@@ -61,14 +61,15 @@ public class MessageProducer {
         String content = "合同状态更新：" + contractStatus;
         try {
             if (rabbitTemplate != null) {
+                // RabbitMQ可用：发送到队列异步处理
                 rabbitTemplate.convertAndSend("house.exchange", "contract.status",
                         buildMessage(userId, "合同状态通知", content));
-                log.debug("Sent contract status change to queue for user {}", userId);
+                log.debug("已把该用户的合约状态变更请求放入消息队列，等待处理 {}", userId);
             } else {
                 saveMessageDirectly(userId, "合同状态通知", content, "CONTRACT");
             }
         } catch (Exception e) {
-            log.warn("RabbitMQ unavailable, saving message directly: {}", e.getMessage());
+            log.warn("由于RabbitMQ 服务不可用，系统已将消息暂存至本地（或数据库），等待后续处理: {}", e.getMessage());
             saveMessageDirectly(userId, "合同状态通知", content, "CONTRACT");
         }
     }

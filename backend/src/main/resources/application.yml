@@ -33,7 +33,7 @@ spring:
     host: localhost
     port: 5672
     username: guest
-    password: guest
+    password:
     virtual-host: /
     listener:
       simple:

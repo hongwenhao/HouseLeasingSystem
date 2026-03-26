@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @author HouseLeasingSystem开发团队
  * @description 实现房源相关的所有业务逻辑，包括房源的发布、更新、搜索、审核、
- *              收藏和浏览量统计，热门房源使用 Redis 缓存提高查询性能
+ * 收藏和浏览量统计，热门房源使用 Redis 缓存提高查询性能
  */
 @Slf4j
 @Service
@@ -138,7 +138,7 @@ public class HouseServiceImpl implements HouseService {
             return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize());
         } catch (Exception e) {
             // 降级处理：复杂查询失败时退回简单查询
-            log.error("Search houses failed, falling back to simple query: {}", e.getMessage());
+            log.error("复杂的房屋搜索出错了，系统正在改用基础搜索方式重试: {}", e.getMessage());
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(House::getStatus, "ONLINE");
             wrapper.orderByDesc(House::getCreateTime);

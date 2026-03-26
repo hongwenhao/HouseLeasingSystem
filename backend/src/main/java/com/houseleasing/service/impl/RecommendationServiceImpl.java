@@ -38,11 +38,11 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<House> getRecommendedHouses(Long userId, int limit) {
         try {
-            // 第一步：获取当前用户有过交互的所有房源
+            // 第一步：获取当前用户有过交互的所有房源集合
             List<Long> userHouseIds = userBehaviorMapper.selectHouseIdsByUserId(userId);
             Set<Long> userHouseSet = new HashSet<>(userHouseIds);
 
-            // 第二步：找到与当前用户行为相似的其他用户（基于共同感兴趣的房源）
+            // 第二步：找到与当前用户行为相似的其他用户（基于共同感兴趣的房源>=1）
             Set<Long> similarUsers = new HashSet<>();
             for (Long houseId : userHouseIds) {
                 List<Long> otherUsers = userBehaviorMapper.selectUserIdsByHouseId(houseId, userId);
@@ -75,7 +75,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 wrapper.in(House::getId, recommendedIds)
                         .eq(House::getStatus, "ONLINE");
                 recommended = houseMapper.selectList(wrapper);
-            }
+            }//…（查询并返回，降级保底：异常时直接返回热门房源）
 
             // 第五步：如果推荐数量不足，用热门房源补充到指定数量
             if (recommended.size() < limit) {

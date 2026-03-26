@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService {
         }
         // 检查账号是否被封禁
         if ("BANNED".equals(user.getStatus())) {
-            throw new BusinessException(403, "Account is banned");
+            throw new BusinessException(403, "账号已被禁用");
         }
         // 生成 JWT Token（包含用户名和角色）
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());

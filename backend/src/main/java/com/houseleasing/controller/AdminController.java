@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * @author HouseLeasingSystem开发团队
  * @description 提供系统管理员专用的后台管理 REST API，包括用户管理、房源审核、
- *              订单查看、合同查看和系统统计，所有接口仅限 ADMIN 角色访问
+ * 订单查看、合同查看和系统统计，所有接口仅限 ADMIN 角色访问
  */
 @Tag(name = "Admin", description = "Admin management endpoints")
 @RestController
@@ -123,7 +123,7 @@ public class AdminController {
     @Operation(summary = "Approve house")
     @PutMapping("/houses/{id}/approve")
     public Result<Void> approveHouse(@PathVariable Long id,
-                                      @RequestBody(required = false) Map<String, String> request) {
+                                     @RequestBody(required = false) Map<String, String> request) {
         String reason = request != null ? request.get("reason") : null;
         houseService.approveHouse(id, true, reason);
         return Result.success();
@@ -139,7 +139,7 @@ public class AdminController {
     @Operation(summary = "Reject house")
     @PutMapping("/houses/{id}/reject")
     public Result<Void> rejectHouse(@PathVariable Long id,
-                                     @RequestBody(required = false) Map<String, String> request) {
+                                    @RequestBody(required = false) Map<String, String> request) {
         String reason = request != null ? request.get("reason") : null;
         houseService.approveHouse(id, false, reason);
         return Result.success();
