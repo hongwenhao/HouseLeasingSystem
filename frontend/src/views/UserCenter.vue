@@ -8,9 +8,6 @@
             <p class="breadcrumb">首页 / 个人中心</p>
             <h2 class="page-title">个人中心</h2>
           </div>
-          <el-tag type="success" effect="dark" class="credit-chip">
-            信用分 {{ creditScore }}
-          </el-tag>
         </div>
 
         <div class="stats-row">
@@ -497,7 +494,8 @@ function formatDate(date) {
   flex-direction: column;
   background: #eef1f6;
   --user-center-text-muted: #9aa3b1;
-  /* profile grid: avatar | forms (form side stays about 50% wider) */
+  --user-center-stat-min: 180px;
+  /* profile grid: avatar | forms (~50% wider on form side) */
   --profile-section-grid-columns: 1fr 1.5fr;
   /* table columns (title | appointment | created | status | actions) */
   --user-center-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;
@@ -543,7 +541,7 @@ function formatDate(date) {
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--user-center-stat-min), 1fr));
   gap: 16px;
   margin: 12px 0 18px;
 }
@@ -774,6 +772,7 @@ function formatDate(date) {
 @media (max-width: 900px) {
   .user-center-page {
     --profile-section-grid-columns: 1fr;
+    --user-center-stat-min: 150px;
   }
 }
 </style>
