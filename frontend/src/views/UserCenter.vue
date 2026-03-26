@@ -496,6 +496,8 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   background: #eef1f6;
+  --profile-form-ratio: 1.4;
+  --table-cols: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
 }
 
 .page-content {
@@ -626,7 +628,7 @@ function formatDate(date) {
 
 .profile-section {
   display: grid;
-  grid-template-columns: 1fr 1.4fr;
+  grid-template-columns: 1fr var(--profile-form-ratio);
   gap: 24px;
   align-items: start;
 }
@@ -666,7 +668,7 @@ function formatDate(date) {
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
+  grid-template-columns: var(--table-cols);
   align-items: center;
   padding: 14px 16px;
 }
