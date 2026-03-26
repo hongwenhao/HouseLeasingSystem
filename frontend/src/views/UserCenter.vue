@@ -496,10 +496,11 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   background: #eef1f6;
-  /* profile grid: avatar | forms */
-  --profile-section-grid-columns: 1fr 1.4fr;
+  --user-center-text-muted: #9aa3b1;
+  /* profile grid: avatar | forms (form side stays about 50% wider) */
+  --profile-section-grid-columns: 1fr 1.5fr;
   /* table columns (title | appointment | created | status | actions) */
-  --user-center-table-cols: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
+  --user-center-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;
 }
 
 .page-content {
@@ -521,7 +522,7 @@ function formatDate(date) {
 
 .breadcrumb {
   margin: 0 0 6px;
-  color: #9aa3b1;
+  color: var(--user-center-text-muted);
   font-size: 13px;
 }
 
