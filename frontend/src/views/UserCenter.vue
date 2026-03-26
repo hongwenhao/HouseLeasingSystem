@@ -496,8 +496,9 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   background: #eef1f6;
-  --profile-form-ratio: 1.4;
-  --table-cols: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
+  --profile-form-width-fr: 1.4fr;
+  /* table columns: title | appointment | created | status | actions */
+  --user-center-table-cols: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
 }
 
 .page-content {
@@ -628,7 +629,7 @@ function formatDate(date) {
 
 .profile-section {
   display: grid;
-  grid-template-columns: 1fr var(--profile-form-ratio);
+  grid-template-columns: 1fr var(--profile-form-width-fr);
   gap: 24px;
   align-items: start;
 }
@@ -668,7 +669,7 @@ function formatDate(date) {
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: var(--table-cols);
+  grid-template-columns: var(--user-center-table-cols);
   align-items: center;
   padding: 14px 16px;
 }
