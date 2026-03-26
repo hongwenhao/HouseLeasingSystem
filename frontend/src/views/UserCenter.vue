@@ -496,7 +496,7 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   background: #eef1f6;
-  --profile-form-width-fr: 1.4fr;
+  --profile-section-cols: 1fr 1.4fr;
   /* table columns: title | appointment | created | status | actions */
   --user-center-table-cols: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
 }
@@ -629,7 +629,7 @@ function formatDate(date) {
 
 .profile-section {
   display: grid;
-  grid-template-columns: 1fr var(--profile-form-width-fr);
+  grid-template-columns: var(--profile-section-cols);
   gap: 24px;
   align-items: start;
 }
@@ -652,7 +652,6 @@ function formatDate(date) {
 
 .profile-form {
   width: 100%;
-  max-width: 520px;
 }
 
 .profile-form :deep(.el-form-item) {
