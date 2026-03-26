@@ -168,6 +168,7 @@
 <script setup>
 // 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'     // 用于密码修改后跳转到登录页
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
@@ -179,6 +180,7 @@ import { getMyOrders, cancelOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 
+const router = useRouter()                 // 获取路由实例以便在密码修改后跳转
 const userStore = useUserStore()
 const activeTab = ref('profile')      // 当前激活的 tab 标签名
 const savingProfile = ref(false)      // 保存资料按钮 loading 状态
@@ -306,6 +308,10 @@ async function changePassword() {
     await changePasswordApi({ oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
     ElMessage.success('密码修改成功，请重新登录')
     await userStore.logout()  // 清除本地登录态
+    await router.replace('/login').catch(err => {
+      console.error('修改密码后跳转登录页失败：', err) // 记录跳转异常便于排查
+      ElMessage.error('跳转登录页失败，请手动重新登录') // 提示用户自行重新登录
+    }) // 跳转到登录页并记录潜在导航错误
   } catch (e) {
     ElMessage.error(e.message || '密码修改失败')
   } finally {
@@ -446,7 +452,7 @@ function formatDate(date) {
 .profile-section {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 20px;
 }
 
@@ -470,6 +476,13 @@ function formatDate(date) {
 .profile-form {
   width: 100%;
   max-width: 500px;
+  margin: 0 auto; /* 输入表单整体居中 */
+}
+
+.profile-form :deep(.el-form-item) {
+  width: 100%; /* 确保每个表单项占满可用宽度 */
+  max-width: 500px; /* 与表单容器宽度保持一致便于居中 */
+  margin: 0 auto; /* 将表单项居中对齐 */
 }
 
 .order-item, .contract-item {
