@@ -496,8 +496,9 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   background: #eef1f6;
-  --profile-section-cols: 1fr 1.4fr;
-  /* table columns: title | appointment | created | status | actions */
+  /* profile grid: avatar | forms */
+  --profile-section-grid-columns: 1fr 1.4fr;
+  /* table columns (title | appointment | created | status | actions) */
   --user-center-table-cols: 2fr 1.2fr 1.2fr 0.9fr 1.2fr;
 }
 
@@ -629,7 +630,7 @@ function formatDate(date) {
 
 .profile-section {
   display: grid;
-  grid-template-columns: var(--profile-section-cols);
+  grid-template-columns: var(--profile-section-grid-columns);
   gap: 24px;
   align-items: start;
 }
@@ -770,8 +771,8 @@ function formatDate(date) {
 }
 
 @media (max-width: 900px) {
-  .profile-section {
-    grid-template-columns: 1fr;
+  .user-center-page {
+    --profile-section-grid-columns: 1fr;
   }
 }
 </style>
