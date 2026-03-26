@@ -2,6 +2,7 @@ package com.houseleasing.controller;
 
 import com.houseleasing.common.Result;
 import com.houseleasing.common.exception.BusinessException;
+import com.houseleasing.dto.ChangePasswordRequest;
 import com.houseleasing.dto.UserUpdateRequest;
 import com.houseleasing.entity.User;
 import com.houseleasing.mapper.UserMapper;
@@ -14,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.Map;
 
 /**
@@ -74,6 +76,22 @@ public class UserController {
                                       @RequestBody Map<String, String> request) {
         User user = resolveUser(userDetails.getUsername());
         userService.realNameAuth(user.getId(), request.get("realName"), request.get("idCard"));
+        return Result.success();
+    }
+
+    /**
+     * 修改当前用户密码（需验证旧密码）
+     *
+     * @param userDetails 当前登录用户信息
+     * @param request     包含旧密码和新密码的请求对象
+     * @return 操作成功的响应
+     */
+    @Operation(summary = "Change user password")
+    @PutMapping("/password")
+    public Result<Void> changePassword(@AuthenticationPrincipal UserDetails userDetails,
+                                        @Valid @RequestBody ChangePasswordRequest request) {
+        User user = resolveUser(userDetails.getUsername());
+        userService.changePassword(user.getId(), request);
         return Result.success();
     }
 
