@@ -109,7 +109,7 @@
               <div v-if="ordersLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-              <div v-else-if="myOrders.length > 0" class="table-card">
+              <div v-else-if="myOrders.length > 0" class="table-card orders-table">
                 <div class="table-head">
                   <span>预约房源</span>
                   <span>预约时间</span>
@@ -155,7 +155,7 @@
               <div v-if="contractsLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-              <div v-else-if="myContracts.length > 0" class="table-card">
+              <div v-else-if="myContracts.length > 0" class="table-card contracts-table">
                 <div class="table-head">
                   <span>合同编号</span>
                   <span>租期</span>
@@ -497,9 +497,11 @@ function formatDate(date) {
   --user-center-text-muted: #9aa3b1;
   --user-center-stat-min: 180px;
   /* profile grid: avatar | forms (1 : 1.5 ratio, form side wider) */
-  --profile-section-grid-columns: 1fr 1.5fr;
-  /* table columns: orders(title | appointment | created | status | actions) / contracts(number | lease | rent | status | actions) */
-  --user-center-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;
+  --profile-avatar-form-cols: 1fr 1.5fr;
+  /* table columns */
+  --orders-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;       /* title | appointment | created | status | actions */
+  --contracts-table-cols: 2fr 1.4fr 1.1fr 1fr 1.2fr;   /* number | lease | rent | status | actions */
+  --avatar-area-inset-shadow-alpha: 0.8;
 }
 
 .page-content {
@@ -623,7 +625,7 @@ function formatDate(date) {
 
 .profile-section {
   display: grid;
-  grid-template-columns: var(--profile-section-grid-columns);
+  grid-template-columns: var(--profile-avatar-form-cols);
   gap: 24px;
   align-items: start;
 }
@@ -637,7 +639,7 @@ function formatDate(date) {
   background: linear-gradient(135deg, #f3f4ff, #f7f8ff);
   border-radius: 14px;
   border: 1px solid #e5e8f3;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,var(--avatar-area-inset-shadow-alpha));
 }
 
 .avatar-area:hover {
@@ -658,7 +660,7 @@ function formatDate(date) {
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: var(--user-center-table-cols);
+  grid-template-columns: var(--orders-table-cols);
   align-items: center;
   padding: 14px 16px;
 }
@@ -678,6 +680,11 @@ function formatDate(date) {
 .messages-toolbar {
   margin: 14px 0;
   text-align: right;
+}
+
+.contracts-table .table-head,
+.contracts-table .table-row {
+  grid-template-columns: var(--contracts-table-cols);
 }
 
 .title-cell {
@@ -761,7 +768,7 @@ function formatDate(date) {
 
 @media (max-width: 900px) {
   .user-center-page {
-    --profile-section-grid-columns: 1fr;
+    --profile-avatar-form-cols: 1fr;
     --user-center-stat-min: 150px;
   }
 }
