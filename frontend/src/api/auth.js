@@ -6,9 +6,9 @@
  *   - POST /auth/register 新用户注册（租客或房东）
  *   - POST /auth/reset-password 忘记密码时通过用户名+手机号重置密码
  *   - POST /auth/logout   服务端登出（使 token 失效）
- *   - GET  /user/profile  获取当前登录用户的详细信息
- *   - PUT  /user/profile  更新用户资料（用户名、手机、邮箱、头像等）
- *   - PUT  /user/password 修改登录密码（需提供旧密码验证）
+ *   - GET  /users/me    获取当前登录用户的详细信息
+ *   - PUT  /users/me    更新用户资料（用户名、手机、邮箱、头像等）
+ *   - PUT  /users/password 修改登录密码（需提供旧密码验证）
  */
 
 import request from './index'
@@ -23,13 +23,13 @@ export const register = (data) => request.post('/auth/register', data)
 export const logout = () => request.post('/auth/logout')
 
 /** 获取当前登录用户的个人信息 */
-export const getProfile = () => request.get('/user/profile')
+export const getProfile = () => request.get('/users/me')
 
 /** 更新当前用户的个人资料 */
-export const updateProfile = (data) => request.put('/user/profile', data)
+export const updateProfile = (data) => request.put('/users/me', data)
 
 /** 修改密码，data 包含 { oldPassword, newPassword } */
-export const changePassword = (data) => request.put('/user/password', data)
+export const changePassword = (data) => request.put('/users/password', data)
 
 /** 重置密码（忘记密码），data 包含 { username, phone, newPassword } */
 export const resetPassword = (data) => request.post('/auth/reset-password', data)

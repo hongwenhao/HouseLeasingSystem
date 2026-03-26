@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.common.utils.JwtUtil;
+import com.houseleasing.dto.ChangePasswordRequest;
 import com.houseleasing.dto.LoginRequest;
 import com.houseleasing.dto.RegisterRequest;
 import com.houseleasing.dto.ResetPasswordRequest;
@@ -156,6 +157,29 @@ public class UserServiceImpl implements UserService {
         user.setRealName(realName);
         user.setIdCard(idCard);
         user.setIsRealNameAuth(true); // 标记实名认证完成
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 修改用户密码：验证旧密码后使用 BCrypt 加密新密码并更新
+     *
+     * @param userId  当前登录用户 ID
+     * @param request 包含旧密码和新密码的请求对象
+     */
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "User not found");
+        }
+        // 验证旧密码是否正确
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BusinessException(400, "旧密码不正确");
+        }
+        // 使用 BCrypt 加密新密码并更新
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
     }
