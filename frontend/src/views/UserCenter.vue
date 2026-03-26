@@ -532,13 +532,6 @@ function formatDate(date) {
   letter-spacing: 0.2px;
 }
 
-.credit-chip {
-  background: linear-gradient(135deg, #56d9a3, #4cb784);
-  border: none;
-  color: #fff;
-  font-weight: 700;
-}
-
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--user-center-stat-min), 1fr));
@@ -648,10 +641,6 @@ function formatDate(date) {
 
 .avatar-area:hover {
   box-shadow: 0 10px 24px rgba(31, 45, 61, 0.08);
-}
-
-.profile-form {
-  width: 100%;
 }
 
 .profile-form :deep(.el-form-item) {
