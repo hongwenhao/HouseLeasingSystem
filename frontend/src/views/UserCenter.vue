@@ -3,162 +3,237 @@
     <NavBar />
     <div class="page-content">
       <div class="page-inner">
-        <h2 class="page-title">个人中心</h2>
-        <el-tabs v-model="activeTab" class="center-tabs">
-          <!-- Profile Tab -->
-          <el-tab-pane label="个人信息" name="profile">
-            <div class="profile-section">
-              <div class="avatar-area">
-                <el-avatar :size="80" :src="userInfo.avatarUrl || ''" :icon="UserFilled" />
-                <h3>{{ userInfo.username }}</h3>
-                <el-tag>{{ roleLabel }}</el-tag>
-              </div>
-              <el-form
-                ref="profileFormRef"
-                :model="profileForm"
-                label-width="100px"
-                class="profile-form"
-              >
-                <el-form-item label="用户名">
-                  <el-input v-model="profileForm.username" />
-                </el-form-item>
-                <el-form-item label="手机号">
-                  <el-input v-model="profileForm.phone" />
-                </el-form-item>
-                <el-form-item label="邮箱">
-                  <el-input v-model="profileForm.email" />
-                </el-form-item>
-                <el-form-item label="头像URL">
-                  <el-input v-model="profileForm.avatarUrl" placeholder="输入头像图片链接" />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" :loading="savingProfile" @click="saveProfile">保存修改</el-button>
-                </el-form-item>
-              </el-form>
+        <div class="page-header">
+          <div>
+            <p class="breadcrumb">首页 / 个人中心</p>
+            <h2 class="page-title">个人中心</h2>
+          </div>
+        </div>
 
-              <el-divider>修改密码</el-divider>
-              <el-form
-                ref="pwdFormRef"
-                :model="pwdForm"
-                :rules="pwdRules"
-                label-width="100px"
-                class="profile-form"
-              >
-                <el-form-item label="旧密码" prop="oldPassword">
-                  <el-input v-model="pwdForm.oldPassword" type="password" show-password />
-                </el-form-item>
-                <el-form-item label="新密码" prop="newPassword">
-                  <el-input v-model="pwdForm.newPassword" type="password" show-password />
-                </el-form-item>
-                <el-form-item label="确认新密码" prop="confirmPassword">
-                  <el-input v-model="pwdForm.confirmPassword" type="password" show-password />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="warning" :loading="changingPwd" @click="changePassword">修改密码</el-button>
-                </el-form-item>
-              </el-form>
-            </div>
-          </el-tab-pane>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-title">总预约</div>
+            <div class="stat-number primary">{{ myOrders.length }}</div>
+            <div class="stat-desc">全部预约记录</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">合同总数</div>
+            <div class="stat-number warning">{{ myContracts.length }}</div>
+            <div class="stat-desc">所有合同记录</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">未读消息</div>
+            <div class="stat-number success">{{ unreadMessages }}</div>
+            <div class="stat-desc">消息中心未读</div>
+          </div>
+          <!-- 信用分快速概览，详情见“信用评分”标签页 -->
+          <div class="stat-card">
+            <div class="stat-title">信用评分</div>
+            <div class="stat-number" :class="creditStatClass">{{ creditScore }}</div>
+            <div class="stat-desc">保持良好信用</div>
+          </div>
+        </div>
 
-          <!-- Orders Tab -->
-          <el-tab-pane label="我的预约" name="orders">
-            <div v-if="ordersLoading">
-              <el-skeleton :rows="4" animated />
-            </div>
-            <div v-else-if="myOrders.length > 0">
-              <div
-                v-for="order in myOrders"
-                :key="order.id"
-                class="order-item"
-              >
-                <div class="order-info">
-                  <span class="order-title">{{ order.houseTitle || `房源#${order.houseId}` }}</span>
-                  <el-tag :type="orderStatusType(order.status)" size="small">
-                    {{ orderStatusLabel(order.status) }}
-                  </el-tag>
+        <div class="content-card">
+          <el-tabs v-model="activeTab" class="center-tabs" stretch>
+            <el-tab-pane name="profile">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><UserFilled /></el-icon>
+                  <span>个人信息</span>
                 </div>
-                <div class="order-meta">
-                  <span>预约时间：{{ formatDate(order.appointmentDate) }}</span>
-                  <span>创建时间：{{ formatDate(order.createdAt) }}</span>
+              </template>
+              <!-- Profile Tab -->
+              <div class="section-title">账户信息</div>
+              <div class="profile-section">
+                <div class="avatar-area">
+                  <el-avatar :size="80" :src="userInfo.avatarUrl || ''" :icon="UserFilled" />
+                  <h3>{{ userInfo.username }}</h3>
+                  <el-tag>{{ roleLabel }}</el-tag>
                 </div>
-                <div class="order-actions">
-                  <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看详情</el-button>
-                  <el-button
-                    size="small"
-                    type="danger"
-                    v-if="order.status === 'PENDING'"
-                    @click="cancelMyOrder(order.id)"
-                  >取消预约</el-button>
+                <el-form
+                  ref="profileFormRef"
+                  :model="profileForm"
+                  label-width="100px"
+                  class="profile-form"
+                >
+                  <el-form-item label="用户名">
+                    <el-input v-model="profileForm.username" />
+                  </el-form-item>
+                  <el-form-item label="手机号">
+                    <el-input v-model="profileForm.phone" />
+                  </el-form-item>
+                  <el-form-item label="邮箱">
+                    <el-input v-model="profileForm.email" />
+                  </el-form-item>
+                  <el-form-item label="头像URL">
+                    <el-input v-model="profileForm.avatarUrl" placeholder="输入头像图片链接" />
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button type="primary" :loading="savingProfile" @click="saveProfile">保存修改</el-button>
+                  </el-form-item>
+                </el-form>
+
+                <el-divider>修改密码</el-divider>
+                <el-form
+                  ref="pwdFormRef"
+                  :model="pwdForm"
+                  :rules="pwdRules"
+                  label-width="100px"
+                  class="profile-form"
+                >
+                  <el-form-item label="旧密码" prop="oldPassword">
+                    <el-input v-model="pwdForm.oldPassword" type="password" show-password />
+                  </el-form-item>
+                  <el-form-item label="新密码" prop="newPassword">
+                    <el-input v-model="pwdForm.newPassword" type="password" show-password />
+                  </el-form-item>
+                  <el-form-item label="确认新密码" prop="confirmPassword">
+                    <el-input v-model="pwdForm.confirmPassword" type="password" show-password />
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button type="warning" :loading="changingPwd" @click="changePassword">修改密码</el-button>
+                  </el-form-item>
+                </el-form>
+              </div>
+            </el-tab-pane>
+
+            <!-- Orders Tab -->
+            <el-tab-pane name="orders">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><Calendar /></el-icon>
+                  <span>预约管理</span>
+                </div>
+              </template>
+              <div v-if="ordersLoading">
+                <el-skeleton :rows="4" animated />
+              </div>
+              <div v-else-if="myOrders.length > 0" class="table-card orders-table">
+                <div class="table-head">
+                  <span>预约房源</span>
+                  <span>预约时间</span>
+                  <span>创建时间</span>
+                  <span>状态</span>
+                  <span>操作</span>
+                </div>
+                <div
+                  v-for="order in myOrders"
+                  :key="order.id"
+                  class="table-row"
+                >
+                  <span class="title-cell">{{ order.houseTitle || `房源#${order.houseId}` }}</span>
+                  <span>{{ formatDate(order.appointmentDate) }}</span>
+                  <span>{{ formatDate(order.createdAt) }}</span>
+                  <span>
+                    <el-tag :type="orderStatusType(order.status)" size="small">
+                      {{ orderStatusLabel(order.status) }}
+                    </el-tag>
+                  </span>
+                  <div class="row-actions">
+                    <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看</el-button>
+                    <el-button
+                      size="small"
+                      type="danger"
+                      v-if="order.status === 'PENDING'"
+                      @click="cancelMyOrder(order.id)"
+                    >取消</el-button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <el-empty v-else description="暂无预约记录" />
-          </el-tab-pane>
+              <el-empty v-else description="暂无预约记录" />
+            </el-tab-pane>
 
-          <!-- Contracts Tab -->
-          <el-tab-pane label="我的合同" name="contracts">
-            <div v-if="contractsLoading">
-              <el-skeleton :rows="4" animated />
-            </div>
-            <div v-else-if="myContracts.length > 0">
-              <div
-                v-for="contract in myContracts"
-                :key="contract.id"
-                class="contract-item"
-              >
-                <div class="contract-info">
-                  <span class="contract-no">合同编号：{{ contract.contractNo || contract.id }}</span>
-                  <el-tag :type="contractStatusType(contract.status)" size="small">
-                    {{ contractStatusLabel(contract.status) }}
-                  </el-tag>
+            <!-- Contracts Tab -->
+            <el-tab-pane name="contracts">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><Memo /></el-icon>
+                  <span>合同管理</span>
                 </div>
-                <div class="contract-meta">
-                  <span>租期：{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                  <span>月租：¥{{ contract.rent }}</span>
-                </div>
-                <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
+              </template>
+              <div v-if="contractsLoading">
+                <el-skeleton :rows="4" animated />
               </div>
-            </div>
-            <el-empty v-else description="暂无合同记录" />
-          </el-tab-pane>
+              <div v-else-if="myContracts.length > 0" class="table-card contracts-table">
+                <div class="table-head">
+                  <span>合同编号</span>
+                  <span>租期</span>
+                  <span>月租</span>
+                  <span>状态</span>
+                  <span>操作</span>
+                </div>
+                <div
+                  v-for="contract in myContracts"
+                  :key="contract.id"
+                  class="table-row"
+                >
+                  <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
+                  <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
+                  <span>¥{{ contract.rent }}</span>
+                  <span>
+                    <el-tag :type="contractStatusType(contract.status)" size="small">
+                      {{ contractStatusLabel(contract.status) }}
+                    </el-tag>
+                  </span>
+                  <div class="row-actions">
+                    <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看</el-button>
+                  </div>
+                </div>
+              </div>
+              <el-empty v-else description="暂无合同记录" />
+            </el-tab-pane>
 
-          <!-- Messages Tab -->
-          <el-tab-pane label="消息中心" name="messages">
-            <div class="messages-toolbar">
-              <el-button size="small" @click="markAllMessagesRead">全部标记已读</el-button>
-            </div>
-            <MessageList :messages="messages" @read="handleMarkRead" />
-          </el-tab-pane>
-
-          <!-- Credit Tab -->
-          <el-tab-pane label="信用评分" name="credit">
-            <div class="credit-section">
-              <div class="credit-score-card">
-                <div class="score-display">
-                  <span class="score-num">{{ userInfo.creditScore || 100 }}</span>
-                  <span class="score-total">/100</span>
+            <!-- Messages Tab -->
+            <el-tab-pane name="messages">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><ChatLineSquare /></el-icon>
+                  <span>消息中心</span>
                 </div>
-                <el-progress
-                  :percentage="userInfo.creditScore || 100"
-                  :color="creditColor(userInfo.creditScore)"
-                  :stroke-width="16"
-                  class="credit-progress"
-                />
-                <p class="credit-label">{{ creditLabel(userInfo.creditScore) }}</p>
+              </template>
+              <div class="messages-toolbar">
+                <el-button size="small" @click="markAllMessagesRead">全部标记已读</el-button>
               </div>
-              <div class="credit-desc">
-                <h4>信用评分说明</h4>
-                <p>信用评分反映您在平台上的信誉状况，由交易记录、合同履约情况等综合计算。</p>
-                <ul>
-                  <li>90-100分：优秀信用，享受优先推荐</li>
-                  <li>70-89分：良好信用</li>
-                  <li>60-69分：一般信用</li>
-                  <li>60分以下：信用较低，部分功能受限</li>
-                </ul>
+              <MessageList :messages="messages" @read="handleMarkRead" />
+            </el-tab-pane>
+
+            <!-- Credit Tab -->
+            <el-tab-pane name="credit">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><StarFilled /></el-icon>
+                  <span>信用评分</span>
+                </div>
+              </template>
+              <div class="credit-section">
+                <div class="credit-score-card">
+                  <div class="score-display">
+                    <span class="score-num">{{ creditScore }}</span>
+                    <span class="score-total">/100</span>
+                  </div>
+                  <el-progress
+                    :percentage="creditScore"
+                    :color="creditColor(creditScore)"
+                    :stroke-width="16"
+                    class="credit-progress"
+                  />
+                  <p class="credit-label">{{ creditLabel(creditScore) }}</p>
+                </div>
+                <div class="credit-desc">
+                  <h4>信用评分说明</h4>
+                  <p>信用评分反映您在平台上的信誉状况，由交易记录、合同履约情况等综合计算。</p>
+                  <ul>
+                    <li>90-100分：优秀信用，享受优先推荐</li>
+                    <li>70-89分：良好信用</li>
+                    <li>60-69分：一般信用</li>
+                    <li>60分以下：信用较低，部分功能受限</li>
+                  </ul>
+                </div>
               </div>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
       </div>
     </div>
     <Footer />
@@ -170,7 +245,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'     // 用于密码修改后跳转到登录页
 import { ElMessage } from 'element-plus'
-import { UserFilled } from '@element-plus/icons-vue'
+import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import MessageList from '../components/MessageList.vue'
@@ -195,6 +270,15 @@ const pwdFormRef = ref(null)
 
 // 从 Pinia store 计算用户信息
 const userInfo = computed(() => userStore.userInfo)
+const creditScore = computed(() => userInfo.value.creditScore || 100)
+const unreadMessages = computed(() => messages.value.filter(m => !m.isRead).length)
+const creditStatClass = computed(() => {
+  const score = creditScore.value
+  if (score >= 90) return 'success'
+  if (score >= 70) return 'primary'
+  if (score >= 60) return 'warning'
+  return 'danger'
+})
 
 /** 将角色枚举值映射为中文标签 */
 const roleLabel = computed(() => {
@@ -409,51 +493,141 @@ function formatDate(date) {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f0f2f5;
+  background: #eef1f6;
+  --user-center-text-muted: #9aa3b1;
+  --user-center-stat-min: 180px;
+  /* profile grid: avatar | forms (1 : 1.5 ratio, form side wider) */
+  --profile-avatar-form-cols: 1fr 1.5fr;
+  /* table columns */
+  --orders-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;       /* title | appointment | created | status | actions */
+  --contracts-table-cols: 2fr 1.4fr 1.1fr 1fr 1.2fr;   /* number | lease | rent | status | actions */
+  --avatar-area-inset-shadow-alpha: 0.8;
 }
 
 .page-content {
   flex: 1;
-  padding: 32px 20px;
+  padding: 32px 20px 48px;
 }
 
 .page-inner {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
-.page-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin-bottom: 24px;
-  position: relative;
-  padding-left: 16px;
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.page-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 4px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #667eea, #764ba2);
+.breadcrumb {
+  margin: 0 0 6px;
+  color: var(--user-center-text-muted);
+  font-size: 13px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #1a1a2e;
+  letter-spacing: 0.2px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--user-center-stat-min), 1fr));
+  gap: 16px;
+  margin: 12px 0 18px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(31, 45, 61, 0.05);
+  border: 1px solid #edf0f7;
+}
+
+.stat-title {
+  color: #7a8597;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.stat-number.primary { color: #5b6dff; }
+.stat-number.warning { color: #ff8f3f; }
+.stat-number.success { color: #2eb872; }
+.stat-number.danger { color: #e55673; }
+
+.stat-desc {
+  color: #9aa3b1;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.content-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(31, 45, 61, 0.08);
+  border: 1px solid #e8ebf3;
+  overflow: hidden;
 }
 
 .center-tabs {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  padding: 0 20px 24px;
+}
+
+.center-tabs :deep(.el-tabs__header) {
+  margin: 0;
+  border-bottom: 1px solid #eef0f6;
+}
+
+.center-tabs :deep(.el-tabs__nav-wrap)::after {
+  display: none;
+}
+
+.center-tabs :deep(.el-tabs__item) {
+  padding: 16px 22px;
+  font-weight: 700;
+  color: #7a8597;
+  transition: color 0.2s ease;
+}
+
+.center-tabs :deep(.is-active) {
+  color: #5b6dff;
+}
+
+.center-tabs :deep(.el-tabs__active-bar) {
+  height: 3px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title {
+  margin: 20px 0 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1f2d3d;
 }
 
 .profile-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: var(--profile-avatar-form-cols);
+  gap: 24px;
+  align-items: start;
 }
 
 .avatar-area {
@@ -461,73 +635,77 @@ function formatDate(date) {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 24px;
-  background: linear-gradient(135deg, rgba(102,126,234,0.06), rgba(118,75,162,0.06));
-  border-radius: 16px;
-  align-self: center;
-  width: 220px;
-  transition: box-shadow 0.3s ease;
+  padding: 26px 20px;
+  background: linear-gradient(135deg, #f3f4ff, #f7f8ff);
+  border-radius: 14px;
+  border: 1px solid #e5e8f3;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,var(--avatar-area-inset-shadow-alpha));
 }
 
 .avatar-area:hover {
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
-
-.profile-form {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto; /* 输入表单整体居中 */
+  box-shadow: 0 10px 24px rgba(31, 45, 61, 0.08);
 }
 
 .profile-form :deep(.el-form-item) {
-  width: 100%; /* 确保每个表单项占满可用宽度 */
-  max-width: 500px; /* 与表单容器宽度保持一致便于居中 */
-  margin: 0 auto; /* 将表单项居中对齐 */
+  margin-bottom: 14px;
 }
 
-.order-item, .contract-item {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  border: 1px solid #ebeef5;
+.table-card {
+  border: 1px solid #edf0f7;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(31, 45, 61, 0.04);
 }
 
-.order-info, .contract-info {
-  display: flex;
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: var(--orders-table-cols);
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  padding: 14px 16px;
 }
 
-.order-title, .contract-no {
-  font-weight: 600;
-  color: #303133;
-}
-
-.order-meta, .contract-meta {
-  display: flex;
-  gap: 20px;
+.table-head {
+  background: #f7f8fb;
+  color: #6c7686;
+  font-weight: 700;
   font-size: 13px;
-  color: #909399;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
 }
 
-.order-actions {
-  display: flex;
-  gap: 8px;
+.table-row {
+  background: #fff;
+  border-top: 1px solid #edf0f7;
 }
 
 .messages-toolbar {
-  margin-bottom: 12px;
+  margin: 14px 0;
   text-align: right;
+}
+
+.contracts-table .table-head,
+.contracts-table .table-row {
+  grid-template-columns: var(--contracts-table-cols);
+}
+
+.title-cell {
+  font-weight: 700;
+  color: #1f2d3d;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .credit-section {
   display: flex;
-  gap: 40px;
+  gap: 24px;
   flex-wrap: wrap;
+  background: #f7f8fb;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #edf0f7;
 }
 
 .credit-score-card {
@@ -586,5 +764,12 @@ function formatDate(date) {
   color: #606266;
   padding-left: 20px;
   line-height: 2;
+}
+
+@media (max-width: 900px) {
+  .user-center-page {
+    --profile-avatar-form-cols: 1fr;
+    --user-center-stat-min: 150px;
+  }
 }
 </style>
