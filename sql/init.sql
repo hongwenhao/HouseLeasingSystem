@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `avatar` VARCHAR(500),
   `credit_score` INT DEFAULT 100,
   `is_real_name_auth` TINYINT DEFAULT 0 COMMENT '是否实名认证',
-  `status` ENUM('ACTIVE','BANNED') DEFAULT 'ACTIVE',
+  `status` ENUM('ACTIVE','DISABLED') DEFAULT 'ACTIVE',
+  `gender` TINYINT DEFAULT 0,
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -166,7 +167,7 @@ CREATE TABLE IF NOT EXISTS `contracts` (
 -- ============================================================
 -- 站内消息表（messages）
 -- 存储系统通知、订单状态变更、合同提醒等消息
--- is_read 标识是否已读，related_id 关联具体业务记录 ID
+-- related_id 关联具体业务记录 ID
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `messages` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -174,7 +175,6 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `title` VARCHAR(200) NOT NULL,
   `content` TEXT,
   `type` ENUM('SYSTEM','ORDER','CONTRACT','APPOINTMENT','REVIEW') DEFAULT 'SYSTEM',
-  `is_read` TINYINT DEFAULT 0,
   `related_id` BIGINT COMMENT '关联业务ID',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_user_id` (`user_id`),
