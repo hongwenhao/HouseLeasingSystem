@@ -26,6 +26,7 @@
             <div class="stat-number success">{{ unreadMessages }}</div>
             <div class="stat-desc">消息中心未读</div>
           </div>
+          <!-- 信用分快速概览，详情见“信用评分”标签页 -->
           <div class="stat-card">
             <div class="stat-title">信用评分</div>
             <div class="stat-number" :class="creditStatClass">{{ creditScore }}</div>
@@ -495,9 +496,9 @@ function formatDate(date) {
   background: #eef1f6;
   --user-center-text-muted: #9aa3b1;
   --user-center-stat-min: 180px;
-  /* profile grid: avatar | forms (~50% wider on form side) */
+  /* profile grid: avatar | forms (1 : 1.5 ratio, form side wider) */
   --profile-section-grid-columns: 1fr 1.5fr;
-  /* table columns (title | appointment | created | status | actions) */
+  /* table columns: orders(title | appointment | created | status | actions) / contracts(number | lease | rent | status | actions) */
   --user-center-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;
 }
 
