@@ -15,14 +15,14 @@
 
         <div class="stats-row">
           <div class="stat-card">
-            <div class="stat-title">已预约</div>
+            <div class="stat-title">总预约</div>
             <div class="stat-number primary">{{ myOrders.length }}</div>
-            <div class="stat-desc">当前预约记录</div>
+            <div class="stat-desc">全部预约记录</div>
           </div>
           <div class="stat-card">
-            <div class="stat-title">合同</div>
+            <div class="stat-title">合同总数</div>
             <div class="stat-number warning">{{ myContracts.length }}</div>
-            <div class="stat-desc">生效/历史合同</div>
+            <div class="stat-desc">所有合同记录</div>
           </div>
           <div class="stat-card">
             <div class="stat-title">未读消息</div>
@@ -31,7 +31,7 @@
           </div>
           <div class="stat-card">
             <div class="stat-title">信用评分</div>
-            <div class="stat-number danger">{{ creditScore }}</div>
+            <div class="stat-number" :class="creditStatClass">{{ creditScore }}</div>
             <div class="stat-desc">保持良好信用</div>
           </div>
         </div>
@@ -274,6 +274,13 @@ const pwdFormRef = ref(null)
 const userInfo = computed(() => userStore.userInfo)
 const creditScore = computed(() => userInfo.value.creditScore || 100)
 const unreadMessages = computed(() => messages.value.filter(m => !m.isRead).length)
+const creditStatClass = computed(() => {
+  const score = creditScore.value
+  if (score >= 90) return 'success'
+  if (score >= 70) return 'primary'
+  if (score >= 60) return 'warning'
+  return 'danger'
+})
 
 /** 将角色枚举值映射为中文标签 */
 const roleLabel = computed(() => {
@@ -758,5 +765,11 @@ function formatDate(date) {
   color: #606266;
   padding-left: 20px;
   line-height: 2;
+}
+
+@media (max-width: 900px) {
+  .profile-section {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
