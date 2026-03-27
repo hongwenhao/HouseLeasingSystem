@@ -102,7 +102,7 @@ public class MessageController {
     private User resolveUser(String username) {
         User user = userMapper.selectByUsername(username);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         return user;
     }

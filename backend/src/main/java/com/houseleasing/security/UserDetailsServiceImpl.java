@@ -36,7 +36,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userMapper.selectByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("User not found: " + username);
+            throw new UsernameNotFoundException("用户不存在: " + username);
         }
         // 将系统角色（如 TENANT/LANDLORD/ADMIN）转换为 Spring Security 的 ROLE_前缀格式
         return new org.springframework.security.core.userdetails.User(

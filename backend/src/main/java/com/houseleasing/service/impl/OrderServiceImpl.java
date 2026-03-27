@@ -51,7 +51,7 @@ public class OrderServiceImpl implements OrderService {
     public Order createIntent(Long tenantId, Long houseId, String remark) {
         House house = houseMapper.selectById(houseId);
         if (house == null) {
-            throw new BusinessException(404, "House not found");
+            throw new BusinessException(404, "房源不存在");
         }
         Order order = new Order();
         order.setHouseId(houseId);
@@ -83,7 +83,7 @@ public class OrderServiceImpl implements OrderService {
     public Order createAppointment(OrderCreateRequest request, Long tenantId) {
         House house = houseMapper.selectById(request.getHouseId());
         if (house == null) {
-            throw new BusinessException(404, "House not found");
+            throw new BusinessException(404, "房源不存在");
         }
         Order order = new Order();
         order.setHouseId(request.getHouseId());
@@ -119,11 +119,11 @@ public class OrderServiceImpl implements OrderService {
     public void approveOrder(Long orderId, boolean approved, Long landlordId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
-            throw new BusinessException(404, "Order not found");
+            throw new BusinessException(404, "订单不存在");
         }
         // 验证操作人是否为该订单的房东
         if (!order.getLandlordId().equals(landlordId)) {
-            throw new BusinessException(403, "Not authorized");
+            throw new BusinessException(403, "没有操作权限");
         }
         order.setStatus(approved ? "APPROVED" : "REJECTED");
         order.setUpdateTime(LocalDateTime.now());
@@ -144,11 +144,11 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrder(Long orderId, Long userId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
-            throw new BusinessException(404, "Order not found");
+            throw new BusinessException(404, "订单不存在");
         }
         // 验证操作人是租客或房东
         if (!order.getTenantId().equals(userId) && !order.getLandlordId().equals(userId)) {
-            throw new BusinessException(403, "Not authorized");
+            throw new BusinessException(403, "没有操作权限");
         }
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
@@ -165,7 +165,7 @@ public class OrderServiceImpl implements OrderService {
     public Order getOrderById(Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null) {
-            throw new BusinessException(404, "Order not found");
+            throw new BusinessException(404, "订单不存在");
         }
         return order;
     }
@@ -216,7 +216,7 @@ public class OrderServiceImpl implements OrderService {
     public void completeOrder(Long orderId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
-            throw new BusinessException(404, "Order not found");
+            throw new BusinessException(404, "订单不存在");
         }
         order.setStatus("COMPLETED");
         order.setUpdateTime(LocalDateTime.now());
