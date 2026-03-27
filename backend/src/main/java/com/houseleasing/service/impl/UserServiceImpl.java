@@ -51,7 +51,7 @@ public class UserServiceImpl implements UserService {
     public User register(RegisterRequest request) {
         // 检查用户名是否已存在
         if (userMapper.selectByUsername(request.getUsername()) != null) {
-            throw new BusinessException("Username already exists");
+            throw new BusinessException("用户名已存在");
         }
         User user = new User();
         user.setUsername(request.getUsername());
@@ -109,7 +109,7 @@ public class UserServiceImpl implements UserService {
     public User getUserById(Long id) {
         User user = userMapper.selectById(id);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         user.setPassword(null);
         return user;
@@ -127,7 +127,7 @@ public class UserServiceImpl implements UserService {
     public User updateProfile(Long userId, UserUpdateRequest request) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         // 仅更新非空字段（支持部分更新）
         if (StringUtils.hasText(request.getPhone())) user.setPhone(request.getPhone());
@@ -152,7 +152,7 @@ public class UserServiceImpl implements UserService {
     public void realNameAuth(Long userId, String realName, String idCard) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         user.setRealName(realName);
         user.setIdCard(idCard);
@@ -172,7 +172,7 @@ public class UserServiceImpl implements UserService {
     public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         // 验证旧密码是否正确
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
@@ -215,7 +215,7 @@ public class UserServiceImpl implements UserService {
     public void updateCreditScore(Long userId, int delta) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         // 计算新评分并限制在合法范围 [0, 200]
         int newScore = Math.min(200, Math.max(0, user.getCreditScore() + delta));
@@ -259,7 +259,7 @@ public class UserServiceImpl implements UserService {
     public void banUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         user.setStatus("BANNED");
         user.setUpdateTime(LocalDateTime.now());
@@ -276,7 +276,7 @@ public class UserServiceImpl implements UserService {
     public void unbanUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         user.setStatus("ACTIVE");
         user.setUpdateTime(LocalDateTime.now());

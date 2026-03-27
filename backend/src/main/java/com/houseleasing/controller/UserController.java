@@ -116,7 +116,7 @@ public class UserController {
     private User resolveUser(String username) {
         User user = userMapper.selectByUsername(username);
         if (user == null) {
-            throw new BusinessException(404, "User not found");
+            throw new BusinessException(404, "用户不存在");
         }
         user.setPassword(null); // 清空密码字段，防止密码泄露
         return user;

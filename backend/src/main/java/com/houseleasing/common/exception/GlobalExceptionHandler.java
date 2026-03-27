@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleBusinessException(BusinessException e) {
-        log.warn("Business exception: {}", e.getMessage());
+        log.warn("业务异常: {}", e.getMessage());
         return Result.error(e.getCode(), e.getMessage());
     }
 
@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
-        log.warn("Validation exception: {}", message);
+        log.warn("参数校验异常: {}", message);
         return Result.error(400, message);
     }
 
@@ -64,8 +64,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleAuthenticationException(AuthenticationException e) {
-        log.warn("Authentication exception: {}", e.getMessage());
-        return Result.error(401, "Authentication failed: " + e.getMessage());
+        log.warn("认证异常: {}", e.getMessage());
+        return Result.error(401, "认证失败，请重新登录或重新获取令牌");
     }
 
     /**
@@ -77,8 +77,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Void> handleAccessDeniedException(AccessDeniedException e) {
-        log.warn("Access denied: {}", e.getMessage());
-        return Result.error(403, "Access denied");
+        log.warn("权限不足: {}", e.getMessage());
+        return Result.error(403, "无权访问");
     }
 
     /**
@@ -90,7 +90,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e) {
-        log.error("Unexpected exception", e);
-        return Result.error(500, "Internal server error: " + e.getMessage());
+        log.error("未预期的系统异常", e);
+        return Result.error(500, "服务器内部错误，请稍后重试");
     }
 }
