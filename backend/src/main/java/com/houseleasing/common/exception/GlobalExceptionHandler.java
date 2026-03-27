@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleAuthenticationException(AuthenticationException e) {
         log.warn("认证异常: {}", e.getMessage());
-        return Result.error(401, "认证失败，请重新登录或重新获取令牌");
+        return Result.error(401, "认证失败，请重新登录");
     }
 
     /**

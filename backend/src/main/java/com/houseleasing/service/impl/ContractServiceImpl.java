@@ -364,7 +364,7 @@ public class ContractServiceImpl implements ContractService {
             document.close();
             return baos.toByteArray();
         } catch (Exception e) {
-            log.error("PDF 生成失败: {}", e.getMessage(), e);
+            log.error("PDF 生成失败：{}", e.getMessage(), e);
             throw new BusinessException("PDF 生成失败：" + e.getMessage());
         }
     }
