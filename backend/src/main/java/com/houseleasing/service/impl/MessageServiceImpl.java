@@ -78,7 +78,7 @@ public class MessageServiceImpl implements MessageService {
         Message message = messageMapper.selectById(messageId);
         // 消息不存在或不属于该用户时抛出异常
         if (message == null || !message.getUserId().equals(userId)) {
-            throw new BusinessException(404, "Message not found");
+            throw new BusinessException(404, "消息不存在或无权访问");
         }
         message.setIsRead(true);
         messageMapper.updateById(message);

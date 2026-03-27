@@ -64,7 +64,7 @@ public class ContractServiceImpl implements ContractService {
     public Contract generateContract(ContractGenerateRequest request, Long userId) {
         Order order = orderMapper.selectById(request.getOrderId());
         if (order == null) {
-            throw new BusinessException(404, "Order not found");
+            throw new BusinessException(404, "订单不存在");
         }
         // 查询合同相关的房源、租客和房东信息
         House house = houseMapper.selectById(order.getHouseId());
@@ -236,25 +236,25 @@ public class ContractServiceImpl implements ContractService {
     public Contract signContract(Long contractId, Long userId, String role) {
         Contract contract = contractMapper.selectById(contractId);
         if (contract == null) {
-            throw new BusinessException(404, "Contract not found");
+            throw new BusinessException(404, "合同不存在");
         }
         if ("CANCELLED".equals(contract.getStatus())) {
-            throw new BusinessException("Contract is already cancelled");
+            throw new BusinessException("合同已被取消");
         }
 
         // 根据角色设置对应的签署状态
         if ("TENANT".equals(role)) {
             if (!contract.getTenantId().equals(userId)) {
-                throw new BusinessException(403, "Not authorized to sign as tenant");
+                throw new BusinessException(403, "无权以租客身份签署合同");
             }
             contract.setTenantSigned(true);
         } else if ("LANDLORD".equals(role)) {
             if (!contract.getLandlordId().equals(userId)) {
-                throw new BusinessException(403, "Not authorized to sign as landlord");
+                throw new BusinessException(403, "无权以房东身份签署合同");
             }
             contract.setLandlordSigned(true);
         } else {
-            throw new BusinessException("Invalid role: " + role);
+            throw new BusinessException("角色无效: " + role);
         }
 
         // 检查双方是否均已签署，若是则更新状态为已签署并发送通知
@@ -282,7 +282,7 @@ public class ContractServiceImpl implements ContractService {
     public Contract getContractById(Long id) {
         Contract contract = contractMapper.selectById(id);
         if (contract == null) {
-            throw new BusinessException(404, "Contract not found");
+            throw new BusinessException(404, "合同不存在");
         }
         return contract;
     }
@@ -324,7 +324,7 @@ public class ContractServiceImpl implements ContractService {
     public byte[] exportPdf(Long contractId) {
         Contract contract = contractMapper.selectById(contractId);
         if (contract == null) {
-            throw new BusinessException(404, "Contract not found");
+            throw new BusinessException(404, "合同不存在");
         }
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -364,8 +364,8 @@ public class ContractServiceImpl implements ContractService {
             document.close();
             return baos.toByteArray();
         } catch (Exception e) {
-            log.error("PDF generation failed: {}", e.getMessage(), e);
-            throw new BusinessException("Failed to generate PDF: " + e.getMessage());
+            log.error("PDF 生成失败：{}", e.getMessage(), e);
+            throw new BusinessException("PDF 生成失败：" + e.getMessage());
         }
     }
 
@@ -380,15 +380,15 @@ public class ContractServiceImpl implements ContractService {
     public void cancelContract(Long contractId, Long userId) {
         Contract contract = contractMapper.selectById(contractId);
         if (contract == null) {
-            throw new BusinessException(404, "Contract not found");
+            throw new BusinessException(404, "合同不存在");
         }
         // 验证操作人是否为合同当事方
         if (!contract.getTenantId().equals(userId) && !contract.getLandlordId().equals(userId)) {
-            throw new BusinessException(403, "Not authorized");
+            throw new BusinessException(403, "没有操作权限");
         }
         // 已签署的合同不可取消
         if ("SIGNED".equals(contract.getStatus())) {
-            throw new BusinessException("Cannot cancel a signed contract");
+            throw new BusinessException("已签署的合同不可取消");
         }
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());

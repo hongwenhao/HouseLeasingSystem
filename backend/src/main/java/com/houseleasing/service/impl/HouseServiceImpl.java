@@ -74,11 +74,11 @@ public class HouseServiceImpl implements HouseService {
     public House updateHouse(Long id, House house, Long ownerId) {
         House existing = houseMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(404, "House not found");
+            throw new BusinessException(404, "房源不存在");
         }
         // 验证操作人是否是该房源的所有者
         if (!existing.getOwnerId().equals(ownerId)) {
-            throw new BusinessException(403, "Not authorized to update this house");
+            throw new BusinessException(403, "没有权限修改该房源");
         }
         house.setId(id);
         house.setOwnerId(ownerId);
@@ -97,7 +97,7 @@ public class HouseServiceImpl implements HouseService {
     public House getHouseById(Long id) {
         House house = houseMapper.selectById(id);
         if (house == null) {
-            throw new BusinessException(404, "House not found");
+            throw new BusinessException(404, "房源不存在");
         }
         // 尝试增加浏览量，失败时只打印警告不影响正常查询
         try {
@@ -160,7 +160,7 @@ public class HouseServiceImpl implements HouseService {
     public void approveHouse(Long id, boolean approved, String reason) {
         House house = houseMapper.selectById(id);
         if (house == null) {
-            throw new BusinessException(404, "House not found");
+            throw new BusinessException(404, "房源不存在");
         }
         house.setStatus(approved ? "ONLINE" : "REJECTED");
         house.setUpdateTime(LocalDateTime.now());
