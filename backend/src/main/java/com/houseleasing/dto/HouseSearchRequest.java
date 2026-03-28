@@ -30,10 +30,10 @@ public class HouseSearchRequest {
     private Integer rooms;
     /** 装修情况筛选（如：精装、简装、毛坯） */
     private String decoration;
-    /** 当前页码，默认第 1 页 */
-    private Integer page = 1;
-    /** 每页显示条数，默认 10 条（使用包装类型方便检测是否显式传入） */
-    private Integer size = 10;
+    /** 当前页码 */
+    private Integer page;
+    /** 每页显示条数（使用包装类型方便检测是否显式传入） */
+    private Integer size;
     /** 别名：与 size 等价的分页大小参数，方便前端使用 pageSize 命名 */
     private Integer pageSize;
     /** 排序字段（如：price、viewCount、createTime） */
