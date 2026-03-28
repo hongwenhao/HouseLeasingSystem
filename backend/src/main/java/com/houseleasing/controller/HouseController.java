@@ -58,7 +58,7 @@ public class HouseController {
         try {
             request.normalizePagination();
         } catch (IllegalArgumentException e) {
-            throw new BusinessException(400, "Invalid pagination parameters provided");
+            throw new BusinessException(400, e.getMessage());
         }
         return Result.success(houseService.searchHouses(request));
     }

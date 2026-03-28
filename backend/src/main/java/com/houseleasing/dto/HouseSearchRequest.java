@@ -45,16 +45,10 @@ public class HouseSearchRequest {
      */
     public void normalizePagination() {
         if (pageSize != null && size != null && !pageSize.equals(size)) {
-            throw new IllegalArgumentException("Cannot specify different values for pageSize and size parameters");
+            throw new IllegalArgumentException(String.format(
+                    "Invalid pagination parameters: pageSize=%s, size=%s", pageSize, size));
         }
-        if (size == null && pageSize != null) {
-            size = pageSize;
-        }
-        if (size == null) {
-            size = 10;
-        }
-        if (page == null) {
-            page = 1;
-        }
+        size = size != null ? size : (pageSize != null ? pageSize : 10);
+        page = page != null ? page : 1;
     }
 }
