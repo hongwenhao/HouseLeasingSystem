@@ -57,4 +57,14 @@ public class HouseSearchRequest {
          }
          this.pageSize = pageSize;
      }
+
+     /** 供控制器检测 size 是否显式传入 */
+     public boolean isSizeProvided() {
+         return sizeProvided;
+     }
+
+     /** 供控制器检测 pageSize 是否显式传入 */
+     public boolean isPageSizeProvided() {
+         return pageSizeProvided;
+     }
 }
