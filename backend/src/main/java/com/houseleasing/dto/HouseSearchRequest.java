@@ -34,38 +34,27 @@ public class HouseSearchRequest {
     private Integer page = 1;
     /** 每页显示条数，默认 10 条（使用包装类型方便检测是否显式传入） */
     private Integer size = 10;
-     /** 别名：与 size 等价的分页大小参数，方便前端使用 pageSize 命名 */
-     private Integer pageSize;
-     /** 标记 size 是否在请求中被显式传入，用于冲突检测 */
-     private boolean sizeProvided;
-     /** 标记 pageSize 是否在请求中被显式传入，用于冲突检测 */
-     private boolean pageSizeProvided;
-     /** 排序字段（如：price、viewCount、createTime） */
-     private String sortBy;
+    /** 别名：与 size 等价的分页大小参数，方便前端使用 pageSize 命名 */
+    private Integer pageSize;
+    /** 排序字段（如：price、viewCount、createTime） */
+    private String sortBy;
 
-     /** 自定义 setter：记录 size 是否被显式传入 */
-    // Request DTO is scoped to a single thread; concurrent mutation is not supported
-    public void setSize(Integer size) {
-        this.sizeProvided = size != null;
-        this.size = size != null ? size : 10;
-     }
-
-     /** 自定义 setter：pageSize 为 size 的别名，并记录是否显式传入 */
-    public void setPageSize(Integer pageSize) {
-        this.pageSizeProvided = pageSize != null;
-        this.pageSize = pageSize;
-        if (pageSize != null && !this.sizeProvided) {
-            this.size = pageSize;
+    /**
+     * 规范化分页参数，解决 pageSize 与 size 的别名冲突并补全默认值
+     * @throws IllegalArgumentException 当 pageSize 与 size 同时提供且值不同
+     */
+    public void normalizePagination() {
+        if (pageSize != null && size != null && !pageSize.equals(size)) {
+            throw new IllegalArgumentException("Cannot specify different values for pageSize and size parameters");
+        }
+        if (size == null && pageSize != null) {
+            size = pageSize;
+        }
+        if (size == null) {
+            size = 10;
+        }
+        if (page == null) {
+            page = 1;
         }
     }
-
-     /** 供控制器检测 size 是否显式传入 */
-     public boolean isSizeProvided() {
-         return sizeProvided;
-     }
-
-     /** 供控制器检测 pageSize 是否显式传入 */
-     public boolean isPageSizeProvided() {
-         return pageSizeProvided;
-     }
 }

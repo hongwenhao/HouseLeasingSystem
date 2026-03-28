@@ -55,10 +55,10 @@ public class HouseController {
     @Operation(summary = "Get all houses (public)")
     @GetMapping
     public Result<PageResult<House>> listHouses(HouseSearchRequest request) {
-        // Detect conflicting pagination parameters when both size and pageSize are provided explicitly
-        if (request.isPageSizeProvided() && request.isSizeProvided()
-                && !request.getPageSize().equals(request.getSize())) {
-            throw new BusinessException(400, "Cannot specify different values for pageSize and size parameters");
+        try {
+            request.normalizePagination();
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(400, e.getMessage());
         }
         return Result.success(houseService.searchHouses(request));
     }
