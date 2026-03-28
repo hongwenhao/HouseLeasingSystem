@@ -40,11 +40,11 @@
             clearable
           />
         </el-form-item>
-        <!-- 邮箱（可选） -->
+        <!-- 邮箱 -->
         <el-form-item label="邮箱" prop="email">
           <el-input
             v-model="form.email"
-            placeholder="请输入邮箱（可选）"
+            placeholder="请输入邮箱"
             prefix-icon="Message"
             size="large"
             clearable
@@ -165,6 +165,7 @@ const rules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
   password: [
