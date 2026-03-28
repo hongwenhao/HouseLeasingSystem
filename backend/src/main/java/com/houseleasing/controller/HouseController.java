@@ -58,6 +58,9 @@ public class HouseController {
              HouseSearchRequest request,
              @RequestParam(value = "pageSize", required = false) Integer pageSize) {
          // 兼容前端使用 pageSize 传递分页大小的参数命名
+         if (pageSize != null && request.getSize() > 0 && !pageSize.equals(request.getSize())) {
+             throw new BusinessException(400, "pageSize 与 size 只能选择一个分页大小参数");
+         }
          if (pageSize != null) {
              request.setSize(pageSize);
          }
