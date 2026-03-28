@@ -53,9 +53,9 @@ public class HouseSearchRequest {
      public void setPageSize(Integer pageSize) {
          this.pageSizeProvided = pageSize != null;
          this.pageSize = pageSize;
-         if (pageSize != null) {
-             this.size = pageSize;
-         }
+        if (pageSize != null && !this.sizeProvided) {
+            this.size = pageSize;
+        }
      }
 
      /** 供控制器检测 size 是否显式传入 */
