@@ -33,8 +33,8 @@ export const deleteHouse = (id) => request.delete(`/houses/${id}`)
 /** 获取当前登录房东发布的房源列表 */
 export const getMyHouses = (params) => request.get('/houses/my', { params })
 
-/** 获取首页精选推荐房源（按热度/浏览量排序） */
-export const getRecommended = () => request.get('/houses/recommended')
+/** 获取首页精选推荐房源（使用公开热门房源接口） */
+export const getRecommended = () => request.get('/houses/hot')
 
 /** 按关键词搜索房源（匹配标题、描述、地址） */
 export const searchHouses = (params) => request.get('/houses/search', { params })
