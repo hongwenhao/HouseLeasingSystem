@@ -44,11 +44,10 @@ public class HouseSearchRequest {
      private String sortBy;
 
      /** 自定义 setter：记录 size 是否被显式传入 */
+    // Request DTO is scoped to a single thread; concurrent mutation is not supported
     public void setSize(Integer size) {
         this.sizeProvided = size != null;
-        if (size != null) {
-            this.size = size;
-        }
+        this.size = size != null ? size : 10;
      }
 
      /** 自定义 setter：pageSize 为 size 的别名，并记录是否显式传入 */

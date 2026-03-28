@@ -57,7 +57,6 @@ public class HouseController {
     public Result<PageResult<House>> listHouses(HouseSearchRequest request) {
         // Detect conflicting pagination parameters when both size and pageSize are provided explicitly
         if (request.isPageSizeProvided() && request.isSizeProvided()
-                && request.getPageSize() != null
                 && !request.getPageSize().equals(request.getSize())) {
             throw new BusinessException(400, "Cannot specify different values for pageSize and size parameters");
         }
