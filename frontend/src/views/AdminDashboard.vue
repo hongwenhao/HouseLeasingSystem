@@ -167,7 +167,8 @@ async function loadUsers() {
   usersLoading.value = true
   try {
     const res = await getUserList({ page: 1, pageSize: 100 })
-    users.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    users.value = Array.isArray(res) ? res : (res?.records || [])
     filteredUsers.value = [...users.value]  // 初始不过滤
   } catch (e) { /* ignore */ }
   finally { usersLoading.value = false }

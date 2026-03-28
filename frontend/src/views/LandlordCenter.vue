@@ -184,11 +184,10 @@ const currentRejectOrder = ref(null)   // 当前正在被拒绝的订单
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 
 onMounted(() => {
-  // 页面挂载时并发加载所有数据
-  loadHouses()
+  // 房源和合同数据加载完成后再计算统计信息（computeStats 依赖这两项数据）
+  Promise.all([loadHouses(), loadContracts()]).then(() => computeStats())
+  // 预约订单独立加载（统计信息不依赖订单数据，两者互不阻塞）
   loadOrders()
-  loadContracts()
-  computeStats()
 })
 
 /** 加载房东自己发布的房源列表 */
@@ -196,7 +195,8 @@ async function loadHouses() {
   housesLoading.value = true
   try {
     const res = await getMyHouses({ page: 1, pageSize: 50 })
-    myHouses.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    myHouses.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { housesLoading.value = false }
 }
@@ -206,7 +206,8 @@ async function loadOrders() {
   ordersLoading.value = true
   try {
     const res = await getLandlordOrders({ page: 1, pageSize: 50 })
-    landlordOrders.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    landlordOrders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { ordersLoading.value = false }
 }
@@ -216,7 +217,8 @@ async function loadContracts() {
   contractsLoading.value = true
   try {
     const res = await getMyContracts({ page: 1, pageSize: 50 })
-    contracts.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    contracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { contractsLoading.value = false }
 }
