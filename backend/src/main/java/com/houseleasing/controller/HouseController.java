@@ -54,18 +54,21 @@ public class HouseController {
      */
      @Operation(summary = "Get all houses (public)")
      @GetMapping
-     public Result<PageResult<House>> listHouses(
-             HouseSearchRequest request,
-             @RequestParam(value = "pageSize", required = false) Integer pageSize) {
-         // 兼容前端使用 pageSize 传递分页大小的参数命名
-         if (pageSize != null && request.getSize() > 0 && !pageSize.equals(request.getSize())) {
-             throw new BusinessException(400, "pageSize 与 size 只能选择一个分页大小参数");
-         }
-         if (pageSize != null) {
-             request.setSize(pageSize);
-         }
-         return Result.success(houseService.searchHouses(request));
-     }
+    public Result<PageResult<House>> listHouses(
+            HouseSearchRequest request,
+            @RequestParam(value = "pageSize", required = false) Integer pageSize,
+            @RequestParam(value = "size", required = false) Integer size) {
+        // 兼容前端使用 pageSize 传递分页大小的参数命名，确保不会同时使用两个不同的值
+        if (pageSize != null && size != null && !pageSize.equals(size)) {
+            throw new BusinessException(400, "Cannot specify both pageSize and size parameters");
+        }
+        if (size != null) {
+            request.setSize(size);
+        } else if (pageSize != null) {
+            request.setSize(pageSize);
+        }
+        return Result.success(houseService.searchHouses(request));
+    }
 
     /**
      * 根据房源 ID 查询房源详情（公开接口，同时增加浏览量）
