@@ -52,16 +52,17 @@ public class HouseController {
      * @param size 每页大小，默认 10 条
      * @return 分页房源列表
      */
-    @Operation(summary = "Get all houses (public)")
-    @GetMapping
-    public Result<PageResult<House>> listHouses(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        HouseSearchRequest req = new HouseSearchRequest();
-        req.setPage(page);
-        req.setSize(size);
-        return Result.success(houseService.searchHouses(req));
-    }
+     @Operation(summary = "Get all houses (public)")
+     @GetMapping
+     public Result<PageResult<House>> listHouses(
+             HouseSearchRequest request,
+             @RequestParam(value = "pageSize", required = false) Integer pageSize) {
+         // 兼容前端使用 pageSize 传递分页大小的参数命名
+         if (pageSize != null) {
+             request.setSize(pageSize);
+         }
+         return Result.success(houseService.searchHouses(request));
+     }
 
     /**
      * 根据房源 ID 查询房源详情（公开接口，同时增加浏览量）
