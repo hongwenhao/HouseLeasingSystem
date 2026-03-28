@@ -8,6 +8,7 @@ import com.houseleasing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -34,7 +35,7 @@ public class AuthController {
      */
     @Operation(summary = "Register new user")
     @PostMapping("/register")
-    public Result<Object> register(@RequestBody RegisterRequest request) {
+    public Result<Object> register(@Valid @RequestBody RegisterRequest request) {
         return Result.success(userService.register(request));
     }
 

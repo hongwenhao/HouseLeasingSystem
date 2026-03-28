@@ -1,5 +1,7 @@
 package com.houseleasing.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -15,6 +17,8 @@ public class RegisterRequest {
     /** 手机号码 */
     private String phone;
     /** 电子邮箱 */
+    @NotBlank(message = "邮箱不能为空")
+    @Email(message = "邮箱格式不正确")
     private String email;
     /** 注册密码（明文，后端加密存储） */
     private String password;
