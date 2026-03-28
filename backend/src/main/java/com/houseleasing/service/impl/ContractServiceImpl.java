@@ -10,6 +10,7 @@ import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.Order;
 import com.houseleasing.entity.User;
+import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
@@ -44,6 +45,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ContractServiceImpl implements ContractService {
 
+    private final WorkflowService workflowService;
     private final ContractMapper contractMapper;
     private final OrderMapper orderMapper;
     private final HouseMapper houseMapper;
@@ -113,6 +115,11 @@ public class ContractServiceImpl implements ContractService {
         contract.setCreateTime(LocalDateTime.now());
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.insert(contract);
+        // 启动合同签署流程并回写流程实例 ID
+        String processInstanceId = workflowService.startContractSigningProcess(
+                contract.getId(), contract.getTenantId(), contract.getLandlordId());
+        contract.setWorkflowInstanceId(processInstanceId);
+        contractMapper.updateById(contract);
         return contract;
     }
 
@@ -269,6 +276,9 @@ public class ContractServiceImpl implements ContractService {
         }
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
+        if (contract.getWorkflowInstanceId() != null) {
+            workflowService.completeContractTask(contract.getWorkflowInstanceId(), userId, role, true);
+        }
         return contract;
     }
 

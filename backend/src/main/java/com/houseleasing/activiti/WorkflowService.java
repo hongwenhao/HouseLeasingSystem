@@ -1,76 +1,157 @@
 package com.houseleasing.activiti;
 
+import com.houseleasing.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.activiti.engine.HistoryService;
+import org.activiti.engine.RuntimeService;
+import org.activiti.engine.TaskService;
+import org.activiti.engine.history.HistoricProcessInstance;
+import org.activiti.engine.runtime.ProcessInstance;
+import org.activiti.engine.task.Task;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 工作流服务（存根实现）
+ * 工作流服务
  *
- * @author HouseLeasingSystem开发团队
- * @description 提供工作流操作的接口定义和存根实现，模拟房源审核和合同签署的流程管理。
- *              完整的 Activiti 工作流集成可通过添加 activiti-spring-boot-starter 依赖来启用。
+ * 使用 Activiti 引擎管理房源审核和合同签署的 BPMN 流程，
+ * 封装流程启动、任务完成、状态查询等操作。
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class WorkflowService {
 
-    /**
-     * 启动房源审核工作流
-     * 生成并返回伪造的流程实例 ID，实际项目中应调用 Activiti 引擎启动流程
-     *
-     * @param houseId 需要审核的房源 ID
-     * @param ownerId 提交审核的房东用户 ID
-     * @return 流程实例 ID 字符串
-     */
-    public String startHouseApprovalProcess(Long houseId, Long ownerId) {
-        log.info("Starting house approval process for house {} by owner {}", houseId, ownerId);
-        // 返回伪造的流程实例 ID（格式：house-approval-{houseId}-{时间戳}）
-        return "house-approval-" + houseId + "-" + System.currentTimeMillis();
-    }
+    private final RuntimeService runtimeService;
+    private final TaskService taskService;
+    private final HistoryService historyService;
 
     /**
-     * 处理房源审核任务（批准或拒绝）
-     *
-     * @param taskId   工作流任务 ID
-     * @param approved true 表示批准，false 表示拒绝
-     * @param comment  审核意见备注
-     */
-    public void approveHouseProcess(String taskId, boolean approved, String comment) {
-        log.info("Approving house process task {}: approved={}, comment={}", taskId, approved, comment);
-    }
-
-    /**
-     * 查询指定房源的待处理审核任务列表
+     * 启动房源审核流程
      *
      * @param houseId 房源 ID
-     * @return 待处理的任务 ID 列表（存根实现返回空列表）
+     * @param ownerId 房东用户 ID
+     * @return 流程实例 ID
      */
-    public List<String> getHouseApprovalTask(Long houseId) {
-        log.info("Getting house approval tasks for house {}", houseId);
-        return List.of();
+    public String startHouseApprovalProcess(Long houseId, Long ownerId) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("houseId", houseId);
+        variables.put("ownerId", ownerId);
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey(
+                "houseApprovalProcess",
+                "HOUSE-" + houseId,
+                variables);
+        log.info("Started houseApprovalProcess instance {} for house {}", instance.getProcessInstanceId(), houseId);
+        return instance.getProcessInstanceId();
     }
 
     /**
-     * 启动合同签署工作流
-     * 生成并返回伪造的流程实例 ID
+     * 管理员审核房源并完成当前任务
      *
-     * @param contractId 需要签署的合同 ID
-     * @return 流程实例 ID 字符串
+     * @param processInstanceId 流程实例 ID
+     * @param approved          是否通过
+     * @param comment           审核意见
      */
-    public String startContractSigningProcess(Long contractId) {
-        log.info("Starting contract signing process for contract {}", contractId);
-        return "contract-signing-" + contractId + "-" + System.currentTimeMillis();
+    public void approveHouseProcess(String processInstanceId, boolean approved, String comment) {
+        Task task = taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .taskCandidateGroup("admin")
+                .singleResult();
+        if (task == null) {
+            throw new BusinessException(404, "未找到房源审核任务");
+        }
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("approved", approved);
+        vars.put("comment", StringUtils.hasText(comment) ? comment : "");
+        taskService.complete(task.getId(), vars);
+        log.info("Completed house approval task {} with result {}", task.getId(), approved);
+    }
+
+    /**
+     * 查询某房源的待处理审核任务
+     *
+     * @param houseId 房源 ID
+     * @return 待处理任务 ID 列表
+     */
+    public List<String> getHouseApprovalTask(Long houseId) {
+        List<Task> tasks = taskService.createTaskQuery()
+                .processDefinitionKey("houseApprovalProcess")
+                .processVariableValueEquals("houseId", houseId)
+                .active()
+                .list();
+        return tasks.stream().map(Task::getId).toList();
+    }
+
+    /**
+     * 启动合同签署流程
+     *
+     * @param contractId 合同 ID
+     * @param tenantId   租客 ID
+     * @param landlordId 房东 ID
+     * @return 流程实例 ID
+     */
+    public String startContractSigningProcess(Long contractId, Long tenantId, Long landlordId) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("contractId", contractId);
+        variables.put("tenantId", tenantId);
+        variables.put("landlordId", landlordId);
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey(
+                "contractSigningProcess",
+                "CONTRACT-" + contractId,
+                variables);
+        log.info("Started contractSigningProcess instance {} for contract {}", instance.getProcessInstanceId(), contractId);
+        return instance.getProcessInstanceId();
     }
 
     /**
      * 完成合同签署任务
      *
-     * @param taskId   工作流任务 ID
-     * @param approved true 表示同意签署，false 表示拒绝签署
+     * @param processInstanceId 流程实例 ID
+     * @param userId            当前签署人 ID
+     * @param role              签署角色 TENANT / LANDLORD
+     * @param approved          是否同意签署
      */
-    public void completeContractTask(String taskId, boolean approved) {
-        log.info("Completing contract task {}: approved={}", taskId, approved);
+    public void completeContractTask(String processInstanceId, Long userId, String role, boolean approved) {
+        Task task = taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .taskAssignee(String.valueOf(userId))
+                .singleResult();
+        if (task == null) {
+            throw new BusinessException(404, "未找到合同签署任务");
+        }
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("approved", approved);
+        if ("TENANT".equals(role)) {
+            vars.put("tenantSigned", approved);
+        } else if ("LANDLORD".equals(role)) {
+            vars.put("landlordSigned", approved);
+        }
+        taskService.complete(task.getId(), vars);
+        log.info("User {} completed contract task {} with role {}", userId, task.getId(), role);
+    }
+
+    /**
+     * 判断流程是否已经结束
+     *
+     * @param processInstanceId 流程实例 ID
+     * @return true 表示已结束
+     */
+    public boolean isProcessFinished(String processInstanceId) {
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .singleResult();
+        if (runtime != null) {
+            return false;
+        }
+        HistoricProcessInstance history = historyService.createHistoricProcessInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .finished()
+                .singleResult();
+        return history != null;
     }
 }
