@@ -51,23 +51,14 @@ public class HouseServiceImpl implements HouseService {
      */
     @Override
     @Transactional
-    @CacheEvict(value = "hotHouses", allEntries = true) // 发布新房源后清除热门房源缓存
+    @CacheEvict(value = "hotHouses", allEntries = true) // 发布并立即上线房源时清除热门房源缓存
     public House addHouse(House house, Long ownerId) {
         house.setOwnerId(ownerId);
-        house.setStatus("PENDING"); // 新房源默认状态为待审核
+        house.setStatus("ONLINE"); // 新房源默认状态为已上线
         house.setViewCount(0);
         house.setCreateTime(LocalDateTime.now());
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.insert(house);
-        // 启动房源审核流程并写回流程实例 ID，流程启动失败将导致事务回滚
-        try {
-            String processInstanceId = workflowService.startHouseApprovalProcess(house.getId(), ownerId);
-            house.setWorkflowInstanceId(processInstanceId);
-            houseMapper.updateById(house);
-        } catch (Exception ex) {
-            log.error("Failed to start house approval workflow for house {}", house.getId(), ex);
-            throw new BusinessException("房源审核流程启动失败，流程服务不可用");
-        }
         return house;
     }
 

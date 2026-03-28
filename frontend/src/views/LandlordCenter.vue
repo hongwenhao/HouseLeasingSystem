@@ -292,13 +292,13 @@ async function submitReject() {
 
 /** 房源状态枚举转中文 */
 function houseStatusLabel(status) {
-  const map = { PENDING: '审核中', APPROVED: '已上架', REJECTED: '审核拒绝', OFFLINE: '已下架' }
+  const map = { PENDING: '审核中', ONLINE: '已上架', APPROVED: '已上架', REJECTED: '审核拒绝', OFFLINE: '已下架' }
   return map[status] || status
 }
 
 /** 房源状态对应 Tag 类型 */
 function houseStatusType(status) {
-  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', OFFLINE: 'info' }
+  const map = { PENDING: 'warning', ONLINE: 'success', APPROVED: 'success', REJECTED: 'danger', OFFLINE: 'info' }
   return map[status] || 'info'
 }
 
