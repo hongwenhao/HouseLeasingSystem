@@ -52,10 +52,10 @@ public class HouseSearchRequest {
      /** 自定义 setter：pageSize 为 size 的别名，并记录是否显式传入 */
      public void setPageSize(Integer pageSize) {
          this.pageSizeProvided = pageSize != null;
+         this.pageSize = pageSize;
          if (pageSize != null) {
              this.size = pageSize;
          }
-         this.pageSize = pageSize;
      }
 
      /** 供控制器检测 size 是否显式传入 */
