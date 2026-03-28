@@ -54,13 +54,13 @@ public class HouseController {
      */
     @Operation(summary = "Get all houses (public)")
     @GetMapping
-    public Result<PageResult<House>> listHouses(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        HouseSearchRequest req = new HouseSearchRequest();
-        req.setPage(page);
-        req.setSize(size);
-        return Result.success(houseService.searchHouses(req));
+    public Result<PageResult<House>> listHouses(HouseSearchRequest request) {
+        try {
+            request.normalizePagination();
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(400, "Conflicting pagination parameters provided");
+        }
+        return Result.success(houseService.searchHouses(request));
     }
 
     /**
