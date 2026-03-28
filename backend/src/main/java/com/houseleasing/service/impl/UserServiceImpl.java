@@ -53,6 +53,12 @@ public class UserServiceImpl implements UserService {
         if (userMapper.selectByUsername(request.getUsername()) != null) {
             throw new BusinessException("用户名已存在");
         }
+        if (!StringUtils.hasText(request.getEmail())) {
+            throw new BusinessException("邮箱不能为空");
+        }
+        if (userMapper.selectByEmail(request.getEmail()) != null) {
+            throw new BusinessException("邮箱已被注册");
+        }
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPhone(request.getPhone());

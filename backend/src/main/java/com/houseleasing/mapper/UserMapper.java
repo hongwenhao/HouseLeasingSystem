@@ -32,4 +32,13 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Select("SELECT * FROM users WHERE phone = #{phone}")
     User selectByPhone(String phone);
+
+    /**
+     * 根据邮箱查询用户
+     *
+     * @param email 邮箱
+     * @return 匹配的用户对象，不存在时返回 null
+     */
+    @Select("SELECT * FROM users WHERE email = #{email}")
+    User selectByEmail(String email);
 }
