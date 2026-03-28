@@ -11,28 +11,28 @@
               <el-card class="stat-card">
                 <div class="stat-icon blue"><el-icon><User /></el-icon></div>
                 <div class="stat-info">
-                  <div class="stat-num">{{ stats.totalUsers || 0 }}</div>
+                  <div class="stat-num">{{ stats.userCount || 0 }}</div>
                   <div class="stat-label">总用户数</div>
                 </div>
               </el-card>
               <el-card class="stat-card">
                 <div class="stat-icon green"><el-icon><House /></el-icon></div>
                 <div class="stat-info">
-                  <div class="stat-num">{{ stats.totalHouses || 0 }}</div>
+                  <div class="stat-num">{{ stats.houseCount || 0 }}</div>
                   <div class="stat-label">总房源数</div>
                 </div>
               </el-card>
               <el-card class="stat-card">
                 <div class="stat-icon orange"><el-icon><Clock /></el-icon></div>
                 <div class="stat-info">
-                  <div class="stat-num">{{ stats.pendingAudit || 0 }}</div>
-                  <div class="stat-label">待审核</div>
+                  <div class="stat-num">{{ stats.pendingContracts || 0 }}</div>
+                  <div class="stat-label">待审核合同</div>
                 </div>
               </el-card>
               <el-card class="stat-card">
                 <div class="stat-icon purple"><el-icon><Document /></el-icon></div>
                 <div class="stat-info">
-                  <div class="stat-num">{{ stats.totalContracts || 0 }}</div>
+                  <div class="stat-num">{{ stats.contractCount || 0 }}</div>
                   <div class="stat-label">成交合同数</div>
                 </div>
               </el-card>
@@ -108,80 +108,35 @@
             </el-table>
           </el-tab-pane>
 
-          <!-- House Audit Tab -->
-          <el-tab-pane label="房源审核" name="audit">
-            <el-table
-              :data="pendingHouses"
-              v-loading="housesLoading"
-              stripe
-              border
-              class="data-table"
-            >
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-              <el-table-column prop="landlordName" label="房东" width="120" />
-              <el-table-column prop="city" label="城市" width="100" />
-              <el-table-column prop="price" label="价格(元/月)" width="120" />
-              <el-table-column prop="ownerType" label="房东类型" width="120">
-                <template #default="{ row }">
-                  <el-tag size="small">{{ ownerTypeLabel(row.ownerType) }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="180" fixed="right">
-                <template #default="{ row }">
-                  <el-button size="small" type="success" @click="approveHouse(row)">通过</el-button>
-                  <el-button size="small" type="danger" @click="openAuditReject(row)">拒绝</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+          <!-- Contract Audit Tab Placeholder -->
+          <el-tab-pane label="合同审核" name="audit">
+            <div class="empty-audit">
+              <el-empty description="合同审核请在合同流程中处理" />
+            </div>
           </el-tab-pane>
         </el-tabs>
       </div>
     </div>
-
-    <!-- Audit Reject Dialog -->
-    <el-dialog v-model="auditDialogVisible" title="拒绝房源" width="400px">
-      <el-form>
-        <el-form-item label="拒绝原因">
-          <el-input
-            v-model="auditReason"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入拒绝原因"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="auditDialogVisible = false">取消</el-button>
-        <el-button type="danger" :loading="auditing" @click="submitAuditReject">确认拒绝</el-button>
-      </template>
-    </el-dialog>
 
     <Footer />
   </div>
 </template>
 
 <script setup>
-// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供数据概览、用户管理、房源审核三大功能
+// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供数据概览、用户管理功能
 import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
-import { getStats, getUserList, getPendingHouses, auditHouseAdmin, getAreaStats, getPriceTrends, getCreditDistribution, banUser, unbanUser } from '../api/admin.js'
+import { getStats, getUserList, getAreaStats, getPriceTrends, getCreditDistribution, banUser, unbanUser } from '../api/admin.js'
 
 const activeTab = ref('overview')        // 当前激活 tab
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
-const pendingHouses = ref([])            // 待审核房源列表
 const usersLoading = ref(false)          // 用户列表加载状态
-const housesLoading = ref(false)         // 待审核房源加载状态
 const userSearch = ref('')               // 用户搜索关键词
-const auditDialogVisible = ref(false)    // 审核拒绝对话框显隐
-const auditReason = ref('')              // 审核拒绝原因
-const auditing = ref(false)              // 审核提交按钮 loading 状态
-const currentAuditHouse = ref(null)      // 当前被审核的房源
 
 // ECharts 图表 DOM 引用
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
@@ -189,10 +144,9 @@ const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
 
 onMounted(async () => {
-  // 并发加载统计数据、用户列表、待审核房源
+  // 并发加载统计数据、用户列表
   loadStats()
   loadUsers()
-  loadPendingHouses()
   // 等待 DOM 渲染完成后再初始化 ECharts 图表（避免容器尺寸为 0）
   await nextTick()
   setTimeout(() => {
@@ -217,16 +171,6 @@ async function loadUsers() {
     filteredUsers.value = [...users.value]  // 初始不过滤
   } catch (e) { /* ignore */ }
   finally { usersLoading.value = false }
-}
-
-/** 加载状态为 PENDING 的待审核房源列表 */
-async function loadPendingHouses() {
-  housesLoading.value = true
-  try {
-    const res = await getPendingHouses({ page: 1, pageSize: 100 })
-    pendingHouses.value = Array.isArray(res) ? res : (res?.list || [])
-  } catch (e) { /* ignore */ }
-  finally { housesLoading.value = false }
 }
 
 /**
@@ -363,45 +307,6 @@ async function handleUnbanUser(user) {
   }
 }
 
-/**
- * 审核通过房源
- * 成功后从待审核列表中移除该房源
- */
-async function approveHouse(house) {
-  try {
-    await auditHouseAdmin(house.id, { status: 'APPROVED' })
-    ElMessage.success('已通过审核')
-    pendingHouses.value = pendingHouses.value.filter(h => h.id !== house.id)
-  } catch (e) {
-    ElMessage.error(e.message || '操作失败')
-  }
-}
-
-/**
- * 打开审核拒绝对话框
- * @param {Object} house - 待拒绝的房源对象
- */
-function openAuditReject(house) {
-  currentAuditHouse.value = house
-  auditReason.value = ''
-  auditDialogVisible.value = true
-}
-
-/** 提交房源审核拒绝（附带拒绝原因） */
-async function submitAuditReject() {
-  auditing.value = true
-  try {
-    await auditHouseAdmin(currentAuditHouse.value.id, { status: 'REJECTED', reason: auditReason.value })
-    ElMessage.success('已拒绝该房源')
-    pendingHouses.value = pendingHouses.value.filter(h => h.id !== currentAuditHouse.value.id)
-    auditDialogVisible.value = false
-  } catch (e) {
-    ElMessage.error(e.message || '操作失败')
-  } finally {
-    auditing.value = false
-  }
-}
-
 /** 用户角色枚举转中文标签 */
 function roleLabel(role) {
   const map = { TENANT: '租客', LANDLORD: '房东', ADMIN: '管理员' }
@@ -412,12 +317,6 @@ function roleLabel(role) {
 function roleTagType(role) {
   const map = { TENANT: '', LANDLORD: 'success', ADMIN: 'danger' }
   return map[role] || 'info'
-}
-
-/** 房东类型枚举转中文标签 */
-function ownerTypeLabel(type) {
-  const map = { OWNER: '一手房东', SUBLEASE: '二手房东', AGENT: '持牌中介' }
-  return map[type] || type
 }
 </script>
 
@@ -542,6 +441,10 @@ function ownerTypeLabel(type) {
 
 .data-table {
   width: 100%;
+}
+
+.empty-audit {
+  padding: 40px 0;
 }
 
 @media (max-width: 768px) {

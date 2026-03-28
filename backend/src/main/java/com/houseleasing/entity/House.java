@@ -39,8 +39,8 @@ public class House {
     private String houseType;
     /** 出租方类型（如：个人、中介） */
     private String ownerType;
-    /** 审核状态：PENDING（待审核）、ONLINE（已上线）、REJECTED（已拒绝） */
-    private String status = "PENDING";
+    /** 状态：ONLINE（已上线）、REJECTED（已拒绝）、OFFLINE（已下架），兼容历史的 PENDING/APPROVED */
+    private String status = "ONLINE";
     /** 水费单价 */
     private BigDecimal waterFee;
     /** 电费单价 */

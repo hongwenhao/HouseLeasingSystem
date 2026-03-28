@@ -201,7 +201,12 @@ public class AdminController {
         stats.put("userCount", userMapper.selectCount(null));     // 用户总数
         stats.put("houseCount", houseMapper.selectCount(null));   // 房源总数
         stats.put("orderCount", orderMapper.selectCount(null));   // 订单总数
+        // 合同统计：总数及待签署/审核数量
         stats.put("contractCount", contractMapper.selectCount(null)); // 合同总数
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> pendingWrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        pendingWrapper.eq(Contract::getStatus, "PENDING_SIGN");
+        stats.put("pendingContracts", contractMapper.selectCount(pendingWrapper)); // 待审核合同数
         return Result.success(stats);
     }
 }
