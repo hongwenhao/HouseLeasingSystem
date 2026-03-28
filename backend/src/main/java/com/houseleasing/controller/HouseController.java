@@ -58,10 +58,11 @@ public class HouseController {
             HouseSearchRequest request,
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             @RequestParam(value = "size", required = false) Integer size) {
-        // 兼容前端使用 pageSize 传递分页大小的参数命名，确保不会同时使用两个不同的值
+        // Handle both pageSize and size parameters for compatibility, ensuring they do not conflict
         if (pageSize != null && size != null && !pageSize.equals(size)) {
-            throw new BusinessException(400, "Cannot specify both pageSize and size parameters");
+            throw new BusinessException(400, "Cannot specify different values for pageSize and size parameters");
         }
+        // Prefer the standard 'size' parameter when provided, otherwise fall back to the alias 'pageSize'
         if (size != null) {
             request.setSize(size);
         } else if (pageSize != null) {
