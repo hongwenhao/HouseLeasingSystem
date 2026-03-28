@@ -39,6 +39,16 @@ public class HouseSearchRequest {
     /** 排序字段（如：price、viewCount、createTime） */
     private String sortBy;
 
+    /** 返回非空的页码值，若未提供则返回默认值 1 */
+    public int getPage() {
+        return page != null ? page : 1;
+    }
+
+    /** 返回非空的分页大小，若未提供则返回默认值 10 */
+    public int getSize() {
+        return size != null ? size : 10;
+    }
+
     /**
      * 规范化分页参数，解决 pageSize 与 size 的别名冲突并补全默认值
      * @throws IllegalArgumentException 当 pageSize 与 size 同时提供且值不同
