@@ -13,7 +13,7 @@ import org.springframework.test.context.TestPropertySource;
  */
 @SpringBootTest
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",      // 使用 H2 内存数据库模拟 MySQL
+        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=LEGACY",      // 使用 H2 内存数据库（兼容旧版语法）
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",

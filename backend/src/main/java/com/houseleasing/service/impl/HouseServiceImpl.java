@@ -2,6 +2,7 @@ package com.houseleasing.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.HouseSearchRequest;
@@ -35,6 +36,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HouseServiceImpl implements HouseService {
 
+    private final WorkflowService workflowService;
     private final HouseMapper houseMapper;
     private final UserBehaviorMapper userBehaviorMapper;
     private final UserMapper userMapper;
@@ -57,6 +59,15 @@ public class HouseServiceImpl implements HouseService {
         house.setCreateTime(LocalDateTime.now());
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.insert(house);
+        // 启动房源审核流程并写回流程实例 ID，流程启动失败将导致事务回滚
+        try {
+            String processInstanceId = workflowService.startHouseApprovalProcess(house.getId(), ownerId);
+            house.setWorkflowInstanceId(processInstanceId);
+            houseMapper.updateById(house);
+        } catch (Exception ex) {
+            log.error("Failed to start house approval workflow for house {}", house.getId(), ex);
+            throw new BusinessException("房源审核流程启动失败，流程服务不可用");
+        }
         return house;
     }
 
@@ -165,6 +176,9 @@ public class HouseServiceImpl implements HouseService {
         house.setStatus(approved ? "ONLINE" : "REJECTED");
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
+        if (house.getWorkflowInstanceId() != null) {
+            workflowService.approveHouseProcess(house.getWorkflowInstanceId(), approved, reason);
+        }
         log.info("House {} {}: {}", id, approved ? "approved" : "rejected", reason);
     }
 
