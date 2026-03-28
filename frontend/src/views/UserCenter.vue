@@ -344,7 +344,8 @@ async function loadOrders() {
   ordersLoading.value = true
   try {
     const res = await getMyOrders({ page: 1, pageSize: 20 })
-    myOrders.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    myOrders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { ordersLoading.value = false }
 }
@@ -354,7 +355,8 @@ async function loadContracts() {
   contractsLoading.value = true
   try {
     const res = await getMyContracts({ page: 1, pageSize: 20 })
-    myContracts.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    myContracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { contractsLoading.value = false }
 }
@@ -363,7 +365,8 @@ async function loadContracts() {
 async function loadMessages() {
   try {
     const res = await getMessages({ page: 1, pageSize: 50 })
-    messages.value = Array.isArray(res) ? res : (res?.list || [])
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    messages.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
 }
 

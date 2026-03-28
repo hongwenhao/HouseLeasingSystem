@@ -41,9 +41,9 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
 
     /**
-     * 用户注册：验证用户名唯一性，加密密码后保存用户信息
+     * 用户注册：验证用户名、手机号、邮箱的唯一性，加密密码后保存用户信息
      *
-     * @param request 注册请求参数
+     * @param request 注册请求参数（手机号和邮箱均为必填项，且不可重复）
      * @return 注册成功的用户对象（密码字段已清空）
      */
     @Override
@@ -52,6 +52,10 @@ public class UserServiceImpl implements UserService {
         // 检查用户名是否已存在
         if (userMapper.selectByUsername(request.getUsername()) != null) {
             throw new BusinessException("用户名已存在");
+        }
+        // 检查手机号唯一性（手机号为必填字段，由 DTO 层 @NotBlank 保证非空）
+        if (userMapper.selectByPhone(request.getPhone()) != null) {
+            throw new BusinessException("手机号已被注册");
         }
         if (!StringUtils.hasText(request.getEmail())) {
             throw new BusinessException("邮箱不能为空");
