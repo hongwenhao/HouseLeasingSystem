@@ -30,10 +30,31 @@ public class HouseSearchRequest {
     private Integer rooms;
     /** 装修情况筛选（如：精装、简装、毛坯） */
     private String decoration;
-    /** 当前页码，默认第 1 页 */
-    private int page = 1;
-    /** 每页显示条数，默认 10 条 */
-    private int size = 10;
-    /** 排序字段（如：price、viewCount、createTime） */
-    private String sortBy;
+     /** 当前页码，默认第 1 页 */
+     private int page = 1;
+     /** 每页显示条数，默认 10 条 */
+     private int size = 10;
+     /** 别名：与 size 等价的分页大小参数，方便前端使用 pageSize 命名 */
+     private Integer pageSize;
+     /** 标记 size 是否在请求中被显式传入，用于冲突检测 */
+     private boolean sizeProvided;
+     /** 标记 pageSize 是否在请求中被显式传入，用于冲突检测 */
+     private boolean pageSizeProvided;
+     /** 排序字段（如：price、viewCount、createTime） */
+     private String sortBy;
+
+     /** 自定义 setter：记录 size 是否被显式传入 */
+     public void setSize(int size) {
+         this.sizeProvided = true;
+         this.size = size;
+     }
+
+     /** 自定义 setter：pageSize 为 size 的别名，并记录是否显式传入 */
+     public void setPageSize(Integer pageSize) {
+         this.pageSizeProvided = pageSize != null;
+         if (pageSize != null) {
+             this.size = pageSize;
+         }
+         this.pageSize = pageSize;
+     }
 }
