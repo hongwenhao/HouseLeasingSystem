@@ -38,7 +38,7 @@
             <template #header>房源信息</template>
             <div class="house-summary" v-if="order.house">
               <img
-                :src="(order.house.images && order.house.images[0]) || placeholder"
+                :src="order.house.coverImage || placeholder"
                 class="house-thumb"
                 :alt="order.house.title"
               />
@@ -56,7 +56,7 @@
             <template #header>预约信息</template>
             <el-descriptions :column="1" border>
               <el-descriptions-item label="预约看房时间">
-                {{ formatDateTime(order.appointmentDate) }}
+                {{ formatDateTime(order.appointmentTime) }}
               </el-descriptions-item>
               <el-descriptions-item label="租客" v-if="order.tenant">
                 {{ order.tenant.username || order.tenantId }}
@@ -64,11 +64,11 @@
               <el-descriptions-item label="房东" v-if="order.landlord">
                 {{ order.landlord.username || order.landlordId }}
               </el-descriptions-item>
-              <el-descriptions-item label="留言" v-if="order.message">
-                {{ order.message }}
+              <el-descriptions-item label="留言" v-if="order.remark">
+                {{ order.remark }}
               </el-descriptions-item>
               <el-descriptions-item label="创建时间">
-                {{ formatDateTime(order.createdAt) }}
+                {{ formatDateTime(order.createTime) }}
               </el-descriptions-item>
               <el-descriptions-item label="拒绝原因" v-if="order.rejectReason">
                 {{ order.rejectReason }}
@@ -93,7 +93,7 @@
                   取消预约
                 </el-button>
               </template>
-              <template v-if="role === 'LANDLORD' && order.status === 'CONFIRMED'">
+              <template v-if="role === 'LANDLORD' && order.status === 'APPROVED'">
                 <el-button type="primary" size="large" @click="handleCreateContract">
                   <el-icon><Document /></el-icon> 生成合同
                 </el-button>
@@ -152,13 +152,13 @@ const role = localStorage.getItem('role') || ''  // 当前用户角色（从 loc
 
 /** 订单状态对应的中文标签 */
 const statusLabel = computed(() => {
-  const map = { PENDING: '待确认', CONFIRMED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待确认', APPROVED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[order.value?.status] || order.value?.status || '-'
 })
 
 /** 订单状态对应的 Element Plus Tag 类型（颜色） */
 const statusType = computed(() => {
-  const map = { PENDING: 'warning', CONFIRMED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[order.value?.status] || 'info'
 })
 
@@ -169,7 +169,7 @@ const statusType = computed(() => {
  */
 const showActions = computed(() => {
   if (!order.value) return false
-  if (role === 'LANDLORD' && (order.value.status === 'PENDING' || order.value.status === 'CONFIRMED')) return true
+  if (role === 'LANDLORD' && (order.value.status === 'PENDING' || order.value.status === 'APPROVED')) return true
   if (role === 'TENANT' && order.value.status === 'PENDING') return true
   return false
 })
@@ -181,16 +181,16 @@ const showActions = computed(() => {
 const timelineEvents = computed(() => {
   if (!order.value) return []
   const events = [
-    { label: '提交预约申请', time: formatDateTime(order.value.createdAt), type: 'primary' }
+    { label: '提交预约申请', time: formatDateTime(order.value.createTime), type: 'primary' }
   ]
-  if (order.value.status === 'CONFIRMED') {
-    events.push({ label: '房东确认预约', time: formatDateTime(order.value.updatedAt), type: 'success' })
+  if (order.value.status === 'APPROVED') {
+    events.push({ label: '房东确认预约', time: formatDateTime(order.value.updateTime), type: 'success' })
   } else if (order.value.status === 'REJECTED') {
-    events.push({ label: '房东拒绝预约', time: formatDateTime(order.value.updatedAt), type: 'danger' })
+    events.push({ label: '房东拒绝预约', time: formatDateTime(order.value.updateTime), type: 'danger' })
   } else if (order.value.status === 'CANCELLED') {
-    events.push({ label: '预约已取消', time: formatDateTime(order.value.updatedAt), type: 'info' })
+    events.push({ label: '预约已取消', time: formatDateTime(order.value.updateTime), type: 'info' })
   } else if (order.value.status === 'COMPLETED') {
-    events.push({ label: '预约完成', time: formatDateTime(order.value.updatedAt), type: 'success' })
+    events.push({ label: '预约完成', time: formatDateTime(order.value.updateTime), type: 'success' })
   }
   return events
 })
@@ -213,7 +213,7 @@ async function handleConfirm() {
   try {
     await confirmOrder(route.params.id)
     ElMessage.success('已确认预约')
-    order.value.status = 'CONFIRMED'  // 本地更新状态，无需重新请求
+    order.value.status = 'APPROVED'  // 本地更新状态，无需重新请求
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
   } finally {
