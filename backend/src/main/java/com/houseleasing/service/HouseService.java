@@ -87,6 +87,14 @@ public interface HouseService {
     void collectHouse(Long userId, Long houseId);
 
     /**
+     * 取消收藏指定房源（若未收藏则忽略）
+     *
+     * @param userId 取消收藏的用户 ID
+     * @param houseId 要取消收藏的房源 ID
+     */
+    void cancelCollectHouse(Long userId, Long houseId);
+
+    /**
      * 获取热门房源列表（按浏览量降序，最多 10 条，使用缓存）
      *
      * @return 热门房源列表
