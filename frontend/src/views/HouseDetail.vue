@@ -114,7 +114,7 @@
               @click.stop="handleCollect"
             >
               <el-icon><Star /></el-icon>
-              {{ collected ? '已收藏' : '收藏' }}
+              {{ collected ? '取消收藏' : '收藏' }}
             </el-button>
             <el-button
               v-else
@@ -189,7 +189,7 @@ import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import OwnerTypeBadge from '../components/OwnerTypeBadge.vue'
 import FeeTable from '../components/FeeTable.vue'
-import { collectHouse, getHouseDetail, getMyCollections } from '../api/house.js'
+import { collectHouse, getHouseDetail, getMyCollections, uncollectHouse } from '../api/house.js'
 import { createOrder } from '../api/order.js'
 import { useUserStore } from '../stores/user.js'
 
@@ -268,7 +268,7 @@ function disablePastDates(date) {
 async function checkCollected() {
   if (!userStore.isLoggedIn || !isTenant.value) return
   try {
-    const res = await getMyCollections({ page: 1, pageSize: 100 })
+    const res = await getMyCollections({ page: 1, size: 100 })
     const list = Array.isArray(res) ? res : (res?.records || res?.list || [])
     collected.value = list.some((item) => String(item.id) === String(route.params.id))
   } catch (e) { /* ignore */ }
@@ -315,12 +315,20 @@ async function handleCollect() {
     return
   }
   collecting.value = true
+  const isUncollecting = collected.value
   try {
-    await collectHouse(route.params.id)
-    collected.value = true
-    ElMessage.success('已收藏该房源')
+    if (isUncollecting) {
+      await uncollectHouse(route.params.id)
+      collected.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await collectHouse(route.params.id)
+      collected.value = true
+      ElMessage.success('已收藏该房源')
+    }
   } catch (e) {
-    ElMessage.error(e.message || '收藏失败')
+    const msg = isUncollecting ? '取消收藏失败' : '收藏失败'
+    ElMessage.error(e.message || msg)
   } finally {
     collecting.value = false
   }

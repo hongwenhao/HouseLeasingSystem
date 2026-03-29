@@ -397,7 +397,7 @@ async function loadCollections() {
       myCollections.value = []
       return
     }
-    const res = await getMyCollections({ page: 1, pageSize: 30 })
+    const res = await getMyCollections({ page: 1, size: 30 })
     myCollections.value = Array.isArray(res)
       ? res
       : (res?.records || res?.list || [])
