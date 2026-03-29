@@ -4,103 +4,109 @@
     <div class="page-content" v-if="contract">
       <div class="page-inner">
         <div class="page-header">
-          <el-button @click="$router.back()" text>
+          <el-button @click="$router.back()" text class="back-btn">
             <el-icon><ArrowLeft /></el-icon> 返回
           </el-button>
           <h2 class="page-title">合同详情</h2>
-          <el-tag :type="statusType" size="large" effect="dark">{{ statusLabel }}</el-tag>
+          <div class="header-actions">
+            <el-button size="default" @click="handleDownloadPdf">
+              <el-icon><Download /></el-icon> 下载PDF
+            </el-button>
+            <el-tag :type="statusType" size="large" effect="light">{{ statusLabel }}</el-tag>
+          </div>
         </div>
 
-        <!-- Risk Warning -->
-        <RiskWarning :risks="risks" />
-
-        <!-- Contract Terms -->
+        <!-- Contract Content -->
         <el-card class="contract-card">
-          <template #header>
-            <div class="card-header">
-              <span>合同信息</span>
-              <span class="contract-no">合同编号：{{ contract.contractNo || contract.id }}</span>
-            </div>
-          </template>
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="签订日期">{{ formatDate(contract.signTime || contract.createTime) }}</el-descriptions-item>
-            <el-descriptions-item label="租期开始">{{ formatDate(contract.startDate) }}</el-descriptions-item>
-            <el-descriptions-item label="租期结束">{{ formatDate(contract.endDate) }}</el-descriptions-item>
-            <el-descriptions-item label="月租金">¥{{ contract.monthlyRent ?? contract.rent }}</el-descriptions-item>
-            <el-descriptions-item label="押金">¥{{ contract.deposit }}</el-descriptions-item>
-            <el-descriptions-item label="合同状态">
-              <el-tag :type="statusType" size="small">{{ statusLabel }}</el-tag>
-            </el-descriptions-item>
-          </el-descriptions>
-        </el-card>
-
-        <!-- Parties Info -->
-        <el-card class="contract-card">
-          <template #header>双方信息</template>
+          <template #header><div class="card-main-title">房屋租赁合同</div></template>
           <div class="parties-grid">
             <div class="party-card landlord">
-              <h4>出租方（房东）</h4>
-              <div class="party-info" v-if="contract.landlord">
-                <el-avatar :size="48" :icon="UserFilled" :src="contract.landlord.avatarUrl" />
-                <div>
-                  <p class="party-name">{{ contract.landlord.username }}</p>
-                  <p class="party-phone">{{ contract.landlord.phone }}</p>
-                </div>
+              <h4>🏠 出租方（房东）</h4>
+              <div class="party-row">
+                <span>姓名</span>
+                <strong>{{ contract.landlord?.username || `用户${contract.landlordId}` }}</strong>
               </div>
-              <p v-else class="no-info">房东ID：{{ contract.landlordId }}</p>
+              <div class="party-row">
+                <span>手机号</span>
+                <strong>{{ contract.landlord?.phone || '-' }}</strong>
+              </div>
+              <div class="party-row">
+                <span>信用分</span>
+                <strong>{{ contract.landlord?.creditScore ?? '-' }}</strong>
+              </div>
             </div>
-            <div class="party-divider">VS</div>
             <div class="party-card tenant">
-              <h4>承租方（租客）</h4>
-              <div class="party-info" v-if="contract.tenant">
-                <el-avatar :size="48" :icon="UserFilled" :src="contract.tenant.avatarUrl" />
-                <div>
-                  <p class="party-name">{{ contract.tenant.username }}</p>
-                  <p class="party-phone">{{ contract.tenant.phone }}</p>
-                </div>
+              <h4>🧍 承租方（租客）</h4>
+              <div class="party-row">
+                <span>姓名</span>
+                <strong>{{ contract.tenant?.username || `用户${contract.tenantId}` }}</strong>
               </div>
-              <p v-else class="no-info">租客ID：{{ contract.tenantId }}</p>
+              <div class="party-row">
+                <span>手机号</span>
+                <strong>{{ contract.tenant?.phone || '-' }}</strong>
+              </div>
+              <div class="party-row">
+                <span>信用分</span>
+                <strong>{{ contract.tenant?.creditScore ?? '-' }}</strong>
+              </div>
             </div>
           </div>
-        </el-card>
 
-        <!-- Contract Clauses -->
-        <el-card class="contract-card" v-if="contract.content || contract.clauses || contract.terms">
-          <template #header>合同条款</template>
-          <div class="clauses-content">
-            <pre class="clauses-text">{{ contract.content || contract.clauses || contract.terms }}</pre>
+          <div class="section-block">
+            <h3>租赁房屋信息</h3>
+            <el-descriptions :column="1" size="default">
+              <el-descriptions-item label="合同编号">{{ contract.contractNo || contract.id }}</el-descriptions-item>
+              <el-descriptions-item label="签订日期">{{ formatDate(contract.signTime || contract.createTime, true) }}</el-descriptions-item>
+              <el-descriptions-item label="租赁期限">
+                {{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="月租金">
+                <span class="rent-highlight">¥{{ contract.monthlyRent ?? contract.rent }}/月</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="押金">¥{{ contract.deposit }}</el-descriptions-item>
+            </el-descriptions>
           </div>
-        </el-card>
 
-        <!-- Sign Dates -->
-        <el-card class="contract-card">
-          <template #header>签署状态</template>
-          <div class="sign-status">
-            <div class="sign-item">
-              <el-icon :class="contract.landlordSigned ? 'signed' : 'unsigned'">
-                <component :is="contract.landlordSigned ? 'CircleCheckFilled' : 'CircleCloseFilled'" />
-              </el-icon>
-              <span>房东：{{ contract.landlordSigned ? `已于 ${formatDate(contract.landlordSignTime)} 签署` : '待签署' }}</span>
+          <div class="section-block" v-if="clauseList.length">
+            <h3>主要条款</h3>
+            <ul class="clause-list">
+              <li v-for="(clause, idx) in clauseList" :key="idx">{{ clause }}</li>
+            </ul>
+          </div>
+
+          <div class="signature-grid">
+            <div class="signature-card">
+              <div class="sig-title">房东签署</div>
+              <div class="sig-name">{{ contract.landlord?.username || `用户${contract.landlordId}` }}</div>
+              <div class="sig-time">{{ formatDate(contract.landlordSignTime, true) }} {{ contract.landlordSigned ? '✅ 已签署' : '⏳ 待签署' }}</div>
             </div>
-            <div class="sign-item">
-              <el-icon :class="contract.tenantSigned ? 'signed' : 'unsigned'">
-                <component :is="contract.tenantSigned ? 'CircleCheckFilled' : 'CircleCloseFilled'" />
-              </el-icon>
-              <span>租客：{{ contract.tenantSigned ? `已于 ${formatDate(contract.tenantSignTime)} 签署` : '待签署' }}</span>
+            <div class="signature-card">
+              <div class="sig-title">租客签署</div>
+              <div class="sig-name">{{ contract.tenant?.username || `用户${contract.tenantId}` }}</div>
+              <div class="sig-time">{{ formatDate(contract.tenantSignTime, true) }} {{ contract.tenantSigned ? '✅ 已签署' : '⏳ 待签署' }}</div>
             </div>
           </div>
         </el-card>
 
         <!-- Actions -->
-        <div class="action-section" v-if="showSignBtn || showTerminateBtn">
+        <div class="action-section" v-if="showSignBtn || showCancelBtn || landlordNeedWaitHint">
+          <el-alert
+            v-if="landlordNeedWaitHint"
+            type="warning"
+            show-icon
+            :closable="false"
+            class="landlord-wait-alert"
+            title="请等待租客先签署：当前未找到房东签署任务是因为租客尚未完成签署。"
+          />
           <el-button
             v-if="showSignBtn"
             type="primary"
             size="large"
             :loading="actioning"
+            :disabled="landlordNeedWaitHint"
             @click="handleSign"
           >
-            <el-icon><Edit /></el-icon> 签署合同
+            <el-icon><Edit /></el-icon> {{ landlordNeedWaitHint ? '等待租客先签署' : '签署合同' }}
           </el-button>
           <el-button
             v-if="showCancelBtn"
@@ -111,6 +117,13 @@
             取消合同
           </el-button>
         </div>
+
+        <el-card class="risk-card">
+          <template #header>
+            <div class="risk-title">🔍 合同风险分析</div>
+          </template>
+          <RiskWarning :risks="risks" />
+        </el-card>
       </div>
     </div>
     <div v-else-if="loading" class="loading-wrap">
@@ -136,11 +149,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { UserFilled } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import RiskWarning from '../components/RiskWarning.vue'
-import { getContractDetail, signContract, cancelContract, getContractRisks } from '../api/contract.js'
+import { getContractDetail, signContract, cancelContract, getContractRisks, downloadContractPdf } from '../api/contract.js'
 
 const route = useRoute()
 const loading = ref(false)                  // 页面加载状态
@@ -157,7 +169,7 @@ const statusLabel = computed(() => {
     PENDING_SIGN: '待签署',
     TENANT_SIGNED: '租客已签',
     LANDLORD_SIGNED: '房东已签',
-    FULLY_SIGNED: '双方已签',
+    FULLY_SIGNED: '生效',
     CANCELLED: '已取消'
   }
   return map[contract.value?.status] || contract.value?.status || '-'
@@ -194,6 +206,23 @@ const showCancelBtn = computed(() => {
   return ['DRAFT', 'PENDING_SIGN', 'TENANT_SIGNED', 'LANDLORD_SIGNED'].includes(contract.value?.status)
 })
 
+/** 房东需要等待租客先签署时显示醒目提示 */
+const landlordNeedWaitHint = computed(() => {
+  if (!contract.value || role !== 'LANDLORD') return false
+  if (contract.value.landlordSigned) return false
+  return !contract.value.tenantSigned && ['DRAFT', 'PENDING_SIGN'].includes(contract.value.status)
+})
+
+/** 从合同正文提取展示型条款 */
+const clauseList = computed(() => {
+  const raw = contract.value?.content || contract.value?.clauses || contract.value?.terms || ''
+  return raw
+    .split('\n')
+    .map(i => i.trim())
+    .filter(i => i && !i.includes('房屋租赁合同') && !i.includes('签字：'))
+    .slice(0, 6)
+})
+
 onMounted(async () => {
   loading.value = true
   try {
@@ -222,6 +251,10 @@ async function handleSign() {
     ElMessage.error('无法确定当前角色，请重新登录后再试')
     return
   }
+  if (landlordNeedWaitHint.value) {
+    ElMessage.warning('租客尚未签署，暂时无法生成房东签署任务，请等待租客先签署。')
+    return
+  }
   actioning.value = true
   try {
     await signContract(route.params.id, role)
@@ -230,6 +263,10 @@ async function handleSign() {
     const res = await getContractDetail(route.params.id)
     contract.value = res
   } catch (e) {
+    if (role === 'LANDLORD' && String(e.message || '').includes('未找到合同签署任务')) {
+      ElMessage.error('未找到房东签署任务：请先等待租客完成签署后再操作。')
+      return
+    }
     ElMessage.error(e.message || '签署失败')
   } finally {
     actioning.value = false
@@ -255,9 +292,31 @@ async function handleCancel() {
 }
 
 /** 格式化日期为本地化中文短日期 */
-function formatDate(date) {
+function formatDate(date, withTime = false) {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('zh-CN')
+  const val = new Date(date)
+  if (Number.isNaN(val.getTime())) return '-'
+  const dateText = val.toLocaleDateString('zh-CN')
+  const timeText = val.toLocaleTimeString('zh-CN', { hour12: false })
+  return withTime ? `${dateText} ${timeText}` : dateText
+}
+
+/** 下载合同 PDF */
+async function handleDownloadPdf() {
+  try {
+    const blob = await downloadContractPdf(route.params.id)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `contract-${route.params.id}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('PDF 下载已开始')
+  } catch (e) {
+    ElMessage.error(e.message || '下载失败')
+  }
 }
 </script>
 
@@ -275,147 +334,185 @@ function formatDate(date) {
 }
 
 .page-inner {
-  max-width: 900px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
 .page-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
+.back-btn {
+  margin-right: 6px;
+}
+
 .page-title {
-  font-size: 24px;
+  font-size: 40px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #1f2937;
   flex: 1;
 }
 
-.contract-card {
-  border-radius: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
-
-.card-header {
+.header-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 
-.contract-no {
-  font-size: 13px;
-  color: #909399;
+.contract-card {
+  border-radius: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.card-main-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
 }
 
 .parties-grid {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .party-card {
   flex: 1;
-  padding: 16px;
-  border-radius: 8px;
-  background: #f9fafb;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f9fafc;
 }
 
 .party-card.landlord {
-  border-left: 4px solid #667eea;
+  background: #f4f5fb;
 }
 
 .party-card.tenant {
-  border-left: 4px solid #67c23a;
+  background: #eef9f2;
 }
 
 .party-card h4 {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 12px;
+  font-size: 18px;
+  color: #059669;
+  margin-bottom: 14px;
 }
 
-.party-info {
+.party-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  color: #4b5563;
+  font-size: 14px;
+  padding: 4px 0;
 }
 
-.party-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 4px;
+.party-row strong {
+  color: #111827;
 }
 
-.party-phone {
-  font-size: 13px;
-  color: #909399;
+.section-block {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 18px;
+  margin: 14px 0;
 }
 
-.party-divider {
+.section-block h3 {
+  margin: 0 0 12px;
   font-size: 20px;
   font-weight: 700;
-  color: #909399;
-  flex-shrink: 0;
+  color: #1f2937;
 }
 
-.no-info {
-  color: #909399;
-  font-size: 14px;
+.rent-highlight {
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 18px;
 }
 
-.clauses-content {
-  padding: 8px 0;
-}
-
-.clauses-text {
-  font-size: 14px;
-  color: #606266;
+.clause-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #4b5563;
   line-height: 1.8;
-  white-space: pre-wrap;
-  font-family: inherit;
 }
 
-.sign-status {
-  display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
+.signature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
 }
 
-.sign-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.signature-card {
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+  text-align: center;
+  padding: 16px;
+  background: #fff;
+}
+
+.sig-title {
   font-size: 14px;
-  color: #606266;
+  color: #6b7280;
 }
 
-.sign-item .el-icon {
-  font-size: 20px;
+.sig-name {
+  margin-top: 8px;
+  font-size: 34px;
+  line-height: 1.1;
+  color: #10b981;
+  font-weight: 700;
 }
 
-.sign-item .signed {
-  color: #67c23a;
-}
-
-.sign-item .unsigned {
-  color: #f56c6c;
+.sig-time {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .action-section {
   display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-top: 8px;
-  padding: 20px 0;
+  padding: 8px 0 20px;
+}
+
+.landlord-wait-alert {
+  border: 2px solid #f59e0b;
+}
+
+.risk-card {
+  border-radius: 16px;
+}
+
+.risk-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: #111827;
 }
 
 .loading-wrap {
-  max-width: 900px;
+  max-width: 1080px;
   margin: 40px auto;
   padding: 0 20px;
   width: 100%;
+}
+
+@media (max-width: 900px) {
+  .page-title {
+    font-size: 28px;
+  }
+
+  .parties-grid,
+  .signature-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
