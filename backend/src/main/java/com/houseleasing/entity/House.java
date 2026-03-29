@@ -35,7 +35,10 @@ public class House {
     private String district;
     /** 月租金（元） */
     private BigDecimal price;
-    /** 押金金额（元） */
+    /**
+     * 押金月数（以月数计，例如 1 表示押一个月租金）。
+     * 实际押金金额需在业务层计算：depositMonths × price。
+     */
     private BigDecimal deposit;
     /** 房屋类型（如：整租、合租） */
     private String houseType;
