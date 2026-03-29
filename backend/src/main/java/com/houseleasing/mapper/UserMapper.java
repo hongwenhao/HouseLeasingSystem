@@ -34,6 +34,15 @@ public interface UserMapper extends BaseMapper<User> {
     User selectByPhone(String phone);
 
     /**
+     * 根据用户名或手机号查询用户（用于登录统一入口）
+     *
+     * @param identifier 用户名或手机号
+     * @return 匹配的用户对象，不存在时返回 null
+     */
+    @Select("SELECT * FROM users WHERE username = #{identifier} OR phone = #{identifier}")
+    User selectByUsernameOrPhone(String identifier);
+
+    /**
      * 根据邮箱查询用户
      *
      * @param email 邮箱
