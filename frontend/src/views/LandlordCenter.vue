@@ -70,7 +70,8 @@
                 </div>
                 <div class="order-meta">
                   <span>预约时间：{{ formatDateTime(order.appointmentTime) }}</span>
-                  <span v-if="order.message">留言：{{ order.message }}</span>
+                  <span>押金：¥{{ order.deposit ?? '-' }}</span>
+                  <span v-if="order.remark || order.message">留言：{{ order.remark || order.message }}</span>
                 </div>
                 <div class="order-actions" v-if="order.status === 'PENDING'">
                   <el-button size="small" type="success" @click="handleConfirmOrder(order.id)">确认预约</el-button>
@@ -81,7 +82,7 @@
                 </div>
               </div>
             </div>
-            <el-empty v-else description="暂无预约请求" />
+            <el-empty v-else description="暂无预约记录" />
           </el-tab-pane>
 
           <!-- Contracts Tab -->
@@ -194,7 +195,7 @@ onMounted(() => {
 async function loadHouses() {
   housesLoading.value = true
   try {
-    const res = await getMyHouses({ page: 1, pageSize: 50 })
+    const res = await getMyHouses({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     myHouses.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
@@ -205,7 +206,7 @@ async function loadHouses() {
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const res = await getLandlordOrders({ page: 1, pageSize: 50 })
+    const res = await getLandlordOrders({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     landlordOrders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
@@ -216,7 +217,7 @@ async function loadOrders() {
 async function loadContracts() {
   contractsLoading.value = true
   try {
-    const res = await getMyContracts({ page: 1, pageSize: 50 })
+    const res = await getMyContracts({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     contracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }

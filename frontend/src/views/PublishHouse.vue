@@ -67,18 +67,6 @@
             <el-form-item label="详细地址" prop="address">
               <el-input v-model="form.address" placeholder="请输入详细地址" />
             </el-form-item>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item label="经度">
-                  <el-input v-model.number="form.longitude" type="number" placeholder="可选" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="纬度">
-                  <el-input v-model.number="form.latitude" type="number" placeholder="可选" />
-                </el-form-item>
-              </el-col>
-            </el-row>
           </el-card>
 
           <!-- House Info -->
@@ -226,19 +214,23 @@
           <!-- Images -->
           <el-card class="form-card">
             <template #header>房源图片</template>
+            <el-upload
+              action="#"
+              :auto-upload="false"
+              :show-file-list="false"
+              accept="image/*"
+              :on-change="handleLocalImageChange"
+            >
+              <el-button type="primary" plain>本地上传图片</el-button>
+            </el-upload>
             <div
               v-for="(img, i) in form.images"
               :key="i"
-              class="image-row"
+              class="uploaded-image-row"
             >
-              <el-input v-model="form.images[i]" placeholder="输入图片URL" />
-              <el-button type="danger" circle @click="form.images.splice(i, 1)">
-                <el-icon><Delete /></el-icon>
-              </el-button>
+              <img :src="img" :alt="`房源图片${i + 1}`" class="uploaded-image-thumb" />
+              <el-button type="danger" text @click="form.images.splice(i, 1)">删除</el-button>
             </div>
-            <el-button type="dashed" @click="form.images.push('')" class="add-image-btn">
-              <el-icon><Plus /></el-icon> 添加图片URL
-            </el-button>
           </el-card>
 
           <!-- Submit -->
@@ -345,8 +337,6 @@ const form = reactive({
   city: '',
   district: '',
   address: '',
-  longitude: null,    // 可选：经度（用于地图定位）
-  latitude: null,     // 可选：纬度
   area: 50,           // 面积（平米），默认50
   rooms: 2,           // 室（整数）
   halls: 1,           // 厅（整数）
@@ -398,8 +388,6 @@ onMounted(async () => {
       form.city = res.city || ''
       form.district = res.district || ''
       form.address = res.address || ''
-      form.longitude = res.longitude
-      form.latitude = res.latitude
       form.area = res.area || 50
       form.rooms = res.rooms || 2
       form.halls = res.halls || 1
@@ -455,8 +443,6 @@ async function handleSubmit() {
       city: form.city,
       district: form.district,
       address: form.address,
-      longitude: form.longitude,
-      latitude: form.latitude,
       area: form.area,
       rooms: form.rooms,
       halls: form.halls,
@@ -498,6 +484,29 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+/**
+ * 本地上传图片并转为 base64 数据 URL，直接放入表单图片列表
+ * 说明：后端当前接收的是图片字符串数组（JSON），本地上传后使用 data URL 可直接复用现有字段结构
+ */
+function handleLocalImageChange(uploadFile) {
+  const rawFile = uploadFile?.raw
+  if (!rawFile) return
+  if (!rawFile.type?.startsWith('image/')) {
+    ElMessage.warning('仅支持上传图片文件')
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (typeof reader.result === 'string') {
+      form.images.push(reader.result)
+    }
+  }
+  reader.onerror = () => {
+    ElMessage.error('图片读取失败，请重试')
+  }
+  reader.readAsDataURL(rawFile)
 }
 </script>
 
@@ -606,15 +615,19 @@ async function handleSubmit() {
   gap: 12px;
 }
 
-.image-row {
+.uploaded-image-row {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
 }
 
-.add-image-btn {
-  width: 100%;
+.uploaded-image-thumb {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ebeef5;
 }
 
 .form-footer {

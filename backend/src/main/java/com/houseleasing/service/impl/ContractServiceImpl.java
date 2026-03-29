@@ -68,6 +68,17 @@ public class ContractServiceImpl implements ContractService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new BusinessException(400, "请填写完整的租赁起止日期");
+        }
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new BusinessException(400, "租赁结束日期不能早于起始日期");
+        }
+        // 生成合同时以房东确认的租赁期限为准，同时回写订单，保证后续详情与合同正文一致
+        order.setStartDate(request.getStartDate());
+        order.setEndDate(request.getEndDate());
+        order.setUpdateTime(LocalDateTime.now());
+        orderMapper.updateById(order);
         // 查询合同相关的房源、租客和房东信息
         House house = houseMapper.selectById(order.getHouseId());
         User tenant = userMapper.selectById(order.getTenantId());
