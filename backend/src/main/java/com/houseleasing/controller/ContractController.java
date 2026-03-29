@@ -133,7 +133,7 @@ public class ContractController {
     public Result<List<ContractRiskService.RiskItem>> riskCheck(@PathVariable Long id) {
         Contract contract = contractService.getContractById(id);
         List<ContractRiskService.RiskItem> risks = contractRiskService.analyzeRisk(
-                contract.getContent(), null, null);
+                contract.getContent(), contract.getMonthlyRent(), contract.getDeposit());
         return Result.success(risks);
     }
 

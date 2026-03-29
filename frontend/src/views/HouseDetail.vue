@@ -396,6 +396,10 @@ async function handleCollect() {
  * 调用创建订单接口，成功后跳转到订单详情页
  */
 async function submitAppointment() {
+  if (!userStore.userInfo?.isRealNameAuth) {
+    ElMessage.warning('请先在个人中心完成实名认证后再预约看房')
+    return
+  }
   const valid = await appointFormRef.value.validate().catch(() => false)
   if (!valid) return
   submitting.value = true

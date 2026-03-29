@@ -18,4 +18,6 @@ public class UserUpdateRequest {
     private String avatar;
     /** 新的用户名（可选） */
     private String username;
+    /** 性别：0-未知，1-男，2-女（可选） */
+    private Integer gender;
 }

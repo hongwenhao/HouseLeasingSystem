@@ -145,6 +145,7 @@ public class UserServiceImpl implements UserService {
         if (StringUtils.hasText(request.getEmail())) user.setEmail(request.getEmail());
         if (StringUtils.hasText(request.getAvatar())) user.setAvatar(request.getAvatar());
         if (StringUtils.hasText(request.getUsername())) user.setUsername(request.getUsername());
+        if (request.getGender() != null) user.setGender(request.getGender());
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
         user.setPassword(null);
@@ -164,6 +165,9 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
+        }
+        if (!StringUtils.hasText(realName) || !StringUtils.hasText(idCard)) {
+            throw new BusinessException(400, "真实姓名和身份证号不能为空");
         }
         user.setRealName(realName);
         user.setIdCard(idCard);

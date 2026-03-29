@@ -72,6 +72,15 @@ public class ContractServiceImpl implements ContractService {
         House house = houseMapper.selectById(order.getHouseId());
         User tenant = userMapper.selectById(order.getTenantId());
         User landlord = userMapper.selectById(order.getLandlordId());
+        if (tenant == null || landlord == null) {
+            throw new BusinessException(404, "合同关联用户不存在");
+        }
+        if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth()) || !Boolean.TRUE.equals(landlord.getIsRealNameAuth())) {
+            throw new BusinessException(403, "双方需完成实名认证后才能生成合同");
+        }
+        if (!StringUtils.hasText(tenant.getRealName()) || !StringUtils.hasText(landlord.getRealName())) {
+            throw new BusinessException(400, "实名认证信息不完整，无法生成合同");
+        }
 
         // 自动生成合同正文
         String contractText = buildContractText(order, house, tenant, landlord, request.getAdditionalClauses());
@@ -134,11 +143,9 @@ public class ContractServiceImpl implements ContractService {
      * @return 格式化后的合同正文字符串
      */
     private String buildContractText(Order order, House house, User tenant, User landlord, String additionalClauses) {
-        // 优先使用真实姓名，其次使用用户名，最后使用默认称谓
-        String tenantName = tenant != null && StringUtils.hasText(tenant.getRealName())
-                ? tenant.getRealName() : (tenant != null ? tenant.getUsername() : "租客");
-        String landlordName = landlord != null && StringUtils.hasText(landlord.getRealName())
-                ? landlord.getRealName() : (landlord != null ? landlord.getUsername() : "房东");
+        // 合同生成前已校验双方实名认证完整，这里直接使用实名
+        String tenantName = tenant.getRealName();
+        String landlordName = landlord.getRealName();
         String houseName = house != null ? house.getTitle() : "租赁房屋";
         String houseAddress = house != null ? house.getAddress() : "";
         BigDecimal monthlyRent = order.getMonthlyRent() != null ? order.getMonthlyRent() : BigDecimal.ZERO;
@@ -297,6 +304,25 @@ public class ContractServiceImpl implements ContractService {
         Contract contract = contractMapper.selectById(id);
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");
+        }
+        if (contract.getTenantId() != null) {
+            User tenant = userMapper.selectById(contract.getTenantId());
+            if (tenant != null) {
+                tenant.setPassword(null);
+                tenant.setIdCard(null);
+                contract.setTenant(tenant);
+            }
+        }
+        if (contract.getLandlordId() != null) {
+            User landlord = userMapper.selectById(contract.getLandlordId());
+            if (landlord != null) {
+                landlord.setPassword(null);
+                landlord.setIdCard(null);
+                contract.setLandlord(landlord);
+            }
+        }
+        if (contract.getHouseId() != null) {
+            contract.setHouse(houseMapper.selectById(contract.getHouseId()));
         }
         return contract;
     }

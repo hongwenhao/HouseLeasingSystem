@@ -9,6 +9,7 @@
  *   - GET  /users/me    获取当前登录用户的详细信息
  *   - PUT  /users/me    更新用户资料（用户名、手机、邮箱、头像等）
  *   - PUT  /users/password 修改登录密码（需提供旧密码验证）
+ *   - POST /users/real-name-auth 提交实名认证信息（真实姓名+身份证号）
  */
 
 import request from './index'
@@ -33,3 +34,6 @@ export const changePassword = (data) => request.put('/users/password', data)
 
 /** 重置密码（忘记密码），data 包含 { username, phone, newPassword } */
 export const resetPassword = (data) => request.post('/auth/reset-password', data)
+
+/** 实名认证，data 包含 { realName, idCard } */
+export const realNameAuth = (data) => request.post('/users/real-name-auth', data)

@@ -59,6 +59,7 @@ class AuthControllerRegisterTests {
                     avatar VARCHAR(500),
                     credit_score INT,
                     is_real_name_auth BOOLEAN,
+                    gender INT,
                     status VARCHAR(20),
                     create_time TIMESTAMP,
                     update_time TIMESTAMP
