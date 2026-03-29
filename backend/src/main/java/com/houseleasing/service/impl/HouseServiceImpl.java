@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 房源服务实现类
@@ -189,6 +191,34 @@ public class HouseServiceImpl implements HouseService {
         wrapper.orderByDesc(House::getCreateTime);
         Page<House> result = houseMapper.selectPage(pageObj, wrapper);
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
+    }
+
+    /**
+     * 查询用户收藏的房源列表，按收藏时间倒序返回
+     *
+     * @param userId 用户 ID
+     * @param page   当前页码
+     * @param size   每页大小
+     * @return 收藏房源分页结果
+     */
+    @Override
+    public PageResult<House> listCollectedHouses(Long userId, int page, int size) {
+        Page<UserBehavior> pageObj = new Page<>(page, size);
+        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserBehavior::getUserId, userId)
+                .eq(UserBehavior::getBehaviorType, "COLLECT")
+                .orderByDesc(UserBehavior::getCreateTime);
+        Page<UserBehavior> behaviorPage = userBehaviorMapper.selectPage(pageObj, wrapper);
+        List<Long> houseIds = behaviorPage.getRecords().stream()
+                .map(UserBehavior::getHouseId)
+                .toList();
+        List<House> houses = houseIds.isEmpty() ? List.of() : houseMapper.selectBatchIds(houseIds);
+        Map<Long, House> houseMap = houses.stream().collect(Collectors.toMap(House::getId, h -> h, (a, b) -> a));
+        List<House> ordered = houseIds.stream()
+                .map(houseMap::get)
+                .filter(h -> h != null && "ONLINE".equals(h.getStatus()))
+                .toList();
+        return PageResult.of(behaviorPage.getTotal(), ordered, (int) behaviorPage.getCurrent(), (int) behaviorPage.getSize());
     }
 
     /**

@@ -16,11 +16,38 @@
       </el-col>
       <!-- 城市筛选 -->
       <el-col :xs="12" :sm="6" :md="3">
-        <el-input v-model="localFilters.city" placeholder="城市" clearable />
+        <el-select
+          v-model="localFilters.city"
+          placeholder="城市"
+          clearable
+          filterable
+          style="width:100%"
+        >
+          <el-option
+            v-for="item in cityOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-col>
-      <!-- 区域筛选 -->
+      <!-- 区域筛选（随城市联动） -->
       <el-col :xs="12" :sm="6" :md="3">
-        <el-input v-model="localFilters.district" placeholder="区域" clearable />
+        <el-select
+          v-model="localFilters.district"
+          placeholder="区域"
+          clearable
+          filterable
+          :disabled="!localFilters.city"
+          style="width:100%"
+        >
+          <el-option
+            v-for="item in districtOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-col>
       <!-- 最低租金输入 -->
       <el-col :xs="12" :sm="6" :md="3">
@@ -81,7 +108,8 @@
 
 <script setup>
 // 说明：搜索栏组件，管理本地筛选状态并通过事件与父组件通信
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
+import { regionData } from 'element-china-area-data'
 
 const props = defineProps({
   modelValue: {
@@ -106,9 +134,31 @@ const localFilters = reactive({
   ...props.modelValue  // 支持父组件预设初始筛选值（如从 URL query 参数初始化）
 })
 
+const EXCLUDED_REGIONS = ['香港特别行政区', '澳门特别行政区', '台湾省']
+const cityOptions = regionData
+  .filter((p) => !EXCLUDED_REGIONS.includes(p.label))
+  .flatMap((province) => (province.children || []).map((city) => ({
+    label: city.label,
+    value: city.label,
+    districts: (city.children || []).map((d) => ({
+      label: d.label,
+      value: d.label
+    }))
+  })))
+
+const districtOptions = computed(() => {
+  const currentCity = cityOptions.find((item) => item.value === localFilters.city)
+  return currentCity?.districts || []
+})
+
 // 监听本地筛选状态变化，实时同步到父组件（实现 v-model 双向绑定）
 watch(localFilters, (val) => {
   emit('update:modelValue', { ...val })
+})
+
+// 城市变化时，自动清空下级区域选择
+watch(() => localFilters.city, () => {
+  localFilters.district = ''
 })
 
 /** 点击搜索按钮：同步筛选值到父组件并触发 search 事件 */
@@ -131,4 +181,3 @@ function handleSearch() {
   row-gap: 12px;
 }
 </style>
-

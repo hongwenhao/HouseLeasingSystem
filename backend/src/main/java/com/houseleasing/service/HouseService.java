@@ -69,6 +69,16 @@ public interface HouseService {
     PageResult<House> listOwnerHouses(Long ownerId, int page, int size);
 
     /**
+     * 查询当前用户收藏的房源列表（分页）
+     *
+     * @param userId 用户 ID
+     * @param page   当前页码
+     * @param size   每页大小
+     * @return 收藏房源的分页列表
+     */
+    PageResult<House> listCollectedHouses(Long userId, int page, int size);
+
+    /**
      * 收藏指定房源（若已收藏则忽略）
      *
      * @param userId  收藏操作的用户 ID
