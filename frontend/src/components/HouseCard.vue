@@ -6,7 +6,7 @@
     <!-- 房源封面图区域 -->
     <div class="card-image">
       <img
-        :src="house.images && house.images.length > 0 ? house.images[0] : placeholder"
+        :src="displayImage"
         :alt="house.title"
         class="house-img"
       />
@@ -55,6 +55,10 @@ const router = useRouter()
 // 图片加载失败时显示的占位图 URL
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
+const displayImage = computed(() => {
+  const images = normalizeHouseImages(props.house.images)
+  return images.length > 0 ? images[0] : placeholder
+})
 
 /**
  * 将装修枚举值映射为中文标签
@@ -91,6 +95,29 @@ const displayDistrict = computed(() => {
 /** 跳转到该房源的详情页 */
 function goDetail() {
   router.push(`/houses/${props.house.id}`)
+}
+
+/**
+ * 统一图片字段格式，兼容数组/JSON 字符串/单 URL 字符串三种情况
+ */
+function normalizeHouseImages(images) {
+  if (Array.isArray(images)) {
+    return images.filter(img => typeof img === 'string' && img.trim())
+  }
+  if (typeof images === 'string') {
+    const trimmed = images.trim()
+    if (!trimmed) return []
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return Array.isArray(parsed) ? parsed.filter(img => typeof img === 'string' && img.trim()) : []
+      } catch {
+        return []
+      }
+    }
+    return [trimmed]
+  }
+  return []
 }
 </script>
 

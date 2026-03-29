@@ -22,7 +22,7 @@
                 class="house-item"
               >
                 <img
-                  :src="(house.images && house.images[0]) || placeholder"
+                  :src="getHouseCover(house)"
                   class="house-thumb"
                   :alt="house.title"
                 />
@@ -197,7 +197,8 @@ async function loadHouses() {
   try {
     const res = await getMyHouses({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
-    myHouses.value = Array.isArray(res) ? res : (res?.records || [])
+    myHouses.value = (Array.isArray(res) ? res : (res?.records || []))
+      .map(house => ({ ...house, images: normalizeHouseImages(house.images) }))
   } catch (e) { /* ignore */ }
   finally { housesLoading.value = false }
 }
@@ -276,6 +277,38 @@ function openRejectDialog(order) {
   currentRejectOrder.value = order
   rejectReason.value = ''
   rejectDialogVisible.value = true
+}
+
+/**
+ * 获取房源列表卡片封面图：优先取 images 第1张，没有则占位图
+ * 该函数兼容 images 是数组、JSON 字符串、单 URL 字符串等历史数据格式。
+ */
+function getHouseCover(house) {
+  const images = normalizeHouseImages(house?.images)
+  return images.length > 0 ? images[0] : placeholder
+}
+
+/**
+ * 统一图片字段格式，兼容数组/JSON 字符串/单 URL 字符串三种情况
+ */
+function normalizeHouseImages(images) {
+  if (Array.isArray(images)) {
+    return images.filter(img => typeof img === 'string' && img.trim())
+  }
+  if (typeof images === 'string') {
+    const trimmed = images.trim()
+    if (!trimmed) return []
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return Array.isArray(parsed) ? parsed.filter(img => typeof img === 'string' && img.trim()) : []
+      } catch {
+        return []
+      }
+    }
+    return [trimmed]
+  }
+  return []
 }
 
 /** 提交拒绝预约（附带拒绝原因） */
