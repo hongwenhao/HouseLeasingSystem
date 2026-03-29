@@ -103,12 +103,12 @@
             <el-icon><Edit /></el-icon> 签署合同
           </el-button>
           <el-button
-            v-if="showTerminateBtn"
+            v-if="showCancelBtn"
             type="danger"
             size="large"
-            @click="terminateDialogVisible = true"
+            @click="cancelDialogVisible = true"
           >
-            终止合同
+            取消合同
           </el-button>
         </div>
       </div>
@@ -118,21 +118,12 @@
     </div>
     <el-empty v-else description="合同不存在" />
 
-    <!-- Terminate Dialog -->
-    <el-dialog v-model="terminateDialogVisible" title="终止合同" width="400px">
-      <el-form>
-        <el-form-item label="终止原因">
-          <el-input
-            v-model="terminateReason"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入终止合同的原因"
-          />
-        </el-form-item>
-      </el-form>
+    <!-- Cancel Dialog -->
+    <el-dialog v-model="cancelDialogVisible" title="取消合同" width="400px">
+      <p>确认取消该合同吗？草稿或待签署阶段可取消，取消后合同状态将变为“已取消”。</p>
       <template #footer>
-        <el-button @click="terminateDialogVisible = false">取消</el-button>
-        <el-button type="danger" :loading="actioning" @click="handleTerminate">确认终止</el-button>
+        <el-button @click="cancelDialogVisible = false">返回</el-button>
+        <el-button type="danger" :loading="actioning" @click="handleCancel">确认取消</el-button>
       </template>
     </el-dialog>
 
@@ -141,7 +132,7 @@
 </template>
 
 <script setup>
-// 说明：合同详情页逻辑，展示合同完整信息、AI 风险检测结果，并支持签署和终止合同操作
+// 说明：合同详情页逻辑，展示合同完整信息、AI 风险检测结果，并支持签署和取消合同操作
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -149,15 +140,14 @@ import { UserFilled } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import RiskWarning from '../components/RiskWarning.vue'
-import { getContractDetail, signContract, terminateContract, getContractRisks } from '../api/contract.js'
+import { getContractDetail, signContract, cancelContract, getContractRisks } from '../api/contract.js'
 
 const route = useRoute()
 const loading = ref(false)                  // 页面加载状态
 const actioning = ref(false)               // 签署/终止按钮 loading 状态
 const contract = ref(null)                 // 合同详情数据
 const risks = ref([])                      // AI 检测到的合同风险列表
-const terminateDialogVisible = ref(false)  // 终止合同对话框显隐
-const terminateReason = ref('')            // 终止原因
+const cancelDialogVisible = ref(false)  // 取消合同对话框显隐
 const role = localStorage.getItem('role') || ''  // 当前用户角色
 
 /** 合同状态对应的中文标签 */
@@ -195,8 +185,8 @@ const showSignBtn = computed(() => {
   return false
 })
 
-/** 计算是否显示"终止合同"按钮（仅生效中的合同可终止） */
-const showTerminateBtn = computed(() => {
+/** 计算是否显示"取消合同"按钮（草稿或待签署可取消） */
+const showCancelBtn = computed(() => {
   return contract.value?.status === 'DRAFT' || contract.value?.status === 'PENDING_SIGN'
 })
 
@@ -243,16 +233,16 @@ async function handleSign() {
 }
 
 /**
- * 终止合同（附带终止原因）
- * 终止成功后本地更新合同状态，避免重新请求
+ * 取消合同
+ * 取消成功后本地更新合同状态，避免重新请求
  */
-async function handleTerminate() {
+async function handleCancel() {
   actioning.value = true
   try {
-    await terminateContract(route.params.id)
-    ElMessage.success('合同已终止')
+    await cancelContract(route.params.id)
+    ElMessage.success('合同已取消')
     contract.value.status = 'CANCELLED'  // 本地更新状态
-    terminateDialogVisible.value = false
+    cancelDialogVisible.value = false
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
   } finally {

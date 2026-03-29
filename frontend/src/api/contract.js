@@ -31,7 +31,7 @@ export const getMyContracts = (params = {}) => {
 export const signContract = (id, role) => request.post(`/contracts/${id}/sign`, { role })
 
 /** 终止合同，data 包含 { reason: '终止原因' } */
-export const terminateContract = (id) => request.put(`/contracts/${id}/cancel`)
+export const cancelContract = (id) => request.put(`/contracts/${id}/cancel`)
 
 /** 获取合同风险检测结果，返回风险条款列表（含风险等级 HIGH/MEDIUM/LOW） */
 export const getContractRisks = (id) => request.post(`/contracts/${id}/risk-check`)
