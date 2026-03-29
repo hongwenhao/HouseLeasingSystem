@@ -169,7 +169,9 @@ public class HouseServiceImpl implements HouseService {
     }
 
     /**
-     * 查询房源详情，同时尝试增加浏览量（失败不影响主流程）
+     * 查询房源详情，同时尝试增加浏览量（失败不影响主流程）。
+     * 图片列表优先从 house_images 明细表读取并重建 images JSON 字段，
+     * 确保 house_images 表中的排序信息得到实际使用。
      *
      * @param id 房源 ID
      * @return 房源详情对象
@@ -185,6 +187,21 @@ public class HouseServiceImpl implements HouseService {
             houseMapper.incrementViewCount(id);
         } catch (Exception e) {
             log.warn("Failed to increment view count: {}", e.getMessage());
+        }
+        // 从 house_images 明细表读取图片列表（按 sort 升序），重建 images JSON 字段。
+        // house_images 通过 syncHouseImages 在写入时保持与 houses.images 同步，
+        // 因此两者正常情况下始终一致；当 house_images 无数据时（如历史旧数据），
+        // 保留 houses.images 原值作为兜底。
+        try {
+            List<HouseImage> houseImages = houseImageMapper.selectByHouseId(id);
+            if (!houseImages.isEmpty()) {
+                List<String> urls = houseImages.stream()
+                        .map(HouseImage::getImageUrl)
+                        .toList();
+                house.setImages(objectMapper.writeValueAsString(urls));
+            }
+        } catch (Exception e) {
+            log.warn("Failed to populate images from house_images for house {}: {}", id, e.getMessage());
         }
         // 关联填充房东信息（隐去密码等敏感字段）
         if (house.getOwnerId() != null) {
@@ -202,6 +219,21 @@ public class HouseServiceImpl implements HouseService {
             }
         }
         return house;
+    }
+
+    /**
+     * 查询指定房源的图片列表（从 house_images 明细表读取，按 sort 升序）
+     *
+     * @param houseId 房源 ID
+     * @return 该房源的图片列表
+     */
+    @Override
+    public List<HouseImage> getHouseImages(Long houseId) {
+        House house = houseMapper.selectById(houseId);
+        if (house == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        return houseImageMapper.selectByHouseId(houseId);
     }
 
     /**
