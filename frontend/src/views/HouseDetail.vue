@@ -1,133 +1,175 @@
 <template>
-  <!-- 组件说明：房源详情页，展示单套房源的完整信息，包括：
-       图片轮播、标题与房东类型角标、价格和押金、关键参数（户型/面积/楼层/装修等）、
-       地址、五项费用表、房源描述、配套设施、房东信息以及预约看房按钮。
-       点击预约看房会弹出预约对话框，未登录用户会被重定向到登录页。 -->
+  <!-- 组件说明：房源详情页，展示单套房源的完整信息。
+       布局：左列（图片轮播 + 详情内容）+ 右列（粘性预约卡，含价格、关键参数和操作按钮）。
+       未登录用户点击预约/收藏会被重定向到登录页。 -->
   <div class="house-detail-page">
     <NavBar />
 
     <!-- 加载状态：骨架屏占位 -->
     <div v-if="loading" class="loading-wrap">
-      <el-skeleton :rows="10" animated />
+      <el-skeleton :rows="12" animated />
     </div>
 
     <!-- 房源详情主体 -->
     <div v-else-if="house" class="detail-content">
       <div class="detail-inner">
-        <!-- 图片轮播区域：没有图片时使用占位图 -->
-        <el-carousel height="420px" class="carousel" :autoplay="false">
-          <el-carousel-item
-            v-for="(img, i) in (house.images && house.images.length > 0 ? house.images : [placeholder])"
-            :key="i"
-          >
-            <img :src="img" :alt="`房屋图片${i+1}`" class="carousel-img" />
-          </el-carousel-item>
-        </el-carousel>
+        <!-- ========== 双栏布局：左列（轮播+详情）+ 右列（预约卡） ========== -->
+        <div class="main-layout">
 
-        <div class="info-section">
-          <!-- 标题行：房源标题 + 房东类型角标 -->
-          <div class="title-row">
-            <h1 class="house-title">{{ house.title }}</h1>
-            <OwnerTypeBadge :ownerType="house.ownerType" />
-          </div>
-
-          <!-- 价格区域 -->
-          <div class="price-section">
-            <span class="price">¥{{ house.price }}</span>
-            <span class="price-unit">元/月</span>
-            <el-tag type="info" class="deposit-tag">押金 {{ house.deposit }} 个月</el-tag>
-          </div>
-
-          <!-- 关键信息描述列表 -->
-          <el-descriptions :column="3" border class="key-info">
-            <el-descriptions-item label="城市">{{ displayCity }}</el-descriptions-item>
-            <el-descriptions-item label="区域">{{ displayDistrict }}</el-descriptions-item>
-            <el-descriptions-item label="面积">{{ house.area }}㎡</el-descriptions-item>
-            <el-descriptions-item label="户型">{{ house.rooms }}室{{ house.halls }}厅{{ house.bathrooms }}卫</el-descriptions-item>
-            <el-descriptions-item label="楼层">{{ house.floor }}/{{ house.totalFloor }}层</el-descriptions-item>
-            <el-descriptions-item label="装修">{{ decorationLabel }}</el-descriptions-item>
-            <el-descriptions-item label="地址" :span="3">{{ house.address }}</el-descriptions-item>
-            <el-descriptions-item label="可租日期" :span="3">{{ house.availableDate || '随时可住' }}</el-descriptions-item>
-          </el-descriptions>
-
-          <!-- 详细地址行（含地图定位图标） -->
-          <div class="address-row">
-            <el-icon><Location /></el-icon>
-            <span>{{ displayCity }} {{ displayDistrict }} {{ house.address }}</span>
-          </div>
-
-          <!-- 五项费用说明 -->
-          <div class="section-card">
-            <h3 class="card-title">费用说明</h3>
-            <FeeTable :fees="house.feeConfig || house.fees || {}" />
-          </div>
-
-          <!-- 房源描述 -->
-          <div class="section-card">
-            <h3 class="card-title">房源描述</h3>
-            <p class="description">{{ house.description || '暂无描述' }}</p>
-          </div>
-
-          <!-- 配套设施标签（无设施时不显示该区块） -->
-          <div class="section-card" v-if="house.amenities && house.amenities.length > 0">
-            <h3 class="card-title">配套设施</h3>
-            <div class="amenities">
-              <el-tag
-                v-for="item in house.amenities"
-                :key="item"
-                type="info"
-                class="amenity-tag"
-              >{{ item }}</el-tag>
+          <!-- ── 左列：图片轮播 + 详情内容 ── -->
+          <div class="left-col">
+            <!-- 图片轮播 -->
+            <div class="carousel-wrap">
+              <el-carousel height="380px" class="carousel" :autoplay="false" indicator-position="outside">
+                <el-carousel-item
+                  v-for="(img, i) in (house.images && house.images.length > 0 ? house.images : [placeholder])"
+                  :key="i"
+                >
+                  <img :src="img" :alt="`房屋图片${i+1}`" class="carousel-img" />
+                </el-carousel-item>
+              </el-carousel>
             </div>
-          </div>
 
-          <!-- 房东信息卡片 -->
-          <div class="section-card landlord-card">
-            <h3 class="card-title">房东信息</h3>
-            <div class="landlord-info" v-if="house.landlord">
-              <el-avatar :size="48" :icon="UserFilled" :src="house.landlord.avatarUrl" />
-              <div class="landlord-detail">
-                <span class="landlord-name">{{ house.landlord.username }}</span>
-                <el-tag size="small">信用分 {{ house.landlord.creditScore || 100 }}</el-tag>
+            <!-- 房源描述 -->
+            <div class="section-card">
+              <h3 class="card-title">
+                <el-icon class="title-icon"><Document /></el-icon>房源描述
+              </h3>
+              <p class="description">{{ house.description || '暂无描述' }}</p>
+            </div>
+
+            <!-- 五项费用说明 -->
+            <div class="section-card">
+              <h3 class="card-title">
+                <el-icon class="title-icon"><Money /></el-icon>费用说明
+              </h3>
+              <FeeTable :fees="house.feeConfig || house.fees || {}" />
+            </div>
+
+            <!-- 配套设施标签（无设施时不显示该区块） -->
+            <div class="section-card" v-if="house.amenities && house.amenities.length > 0">
+              <h3 class="card-title">
+                <el-icon class="title-icon"><Grid /></el-icon>配套设施
+              </h3>
+              <div class="amenities">
+                <el-tag
+                  v-for="item in house.amenities"
+                  :key="item"
+                  type="info"
+                  effect="plain"
+                  class="amenity-tag"
+                >{{ item }}</el-tag>
               </div>
             </div>
-            <p v-else class="no-info">暂无房东信息</p>
           </div>
 
-          <!-- 预约看房按钮 -->
-          <div class="action-section">
-            <el-button
-              type="primary"
-              size="large"
-              @click="handleBook"
-              class="book-btn"
-            >
-              <el-icon><Calendar /></el-icon>
-              预约看房
-            </el-button>
-            <el-button
-              v-if="isTenant"
-              size="large"
-              :type="collected ? 'success' : 'warning'"
-              :plain="!collected"
-              :loading="collecting"
-              @click.stop="handleCollect"
-            >
-              <el-icon><Star /></el-icon>
-              {{ collected ? '取消收藏' : '收藏' }}
-            </el-button>
-            <el-button
-              v-else
-              size="large"
-              disabled
-              plain
-              aria-label="仅租客可以收藏房源"
-              title="仅租客可以收藏房源"
-            >
-              <el-icon><Star /></el-icon>
-              仅租客可收藏
-            </el-button>
+          <!-- ── 右列：粘性信息卡 ── -->
+          <div class="right-col">
+            <div class="booking-card">
+              <!-- 房东类型角标 -->
+              <div class="badge-row">
+                <OwnerTypeBadge :ownerType="house.ownerType" />
+                <el-tag v-if="house.status === 'ONLINE'" type="success" size="small" effect="plain">在线</el-tag>
+              </div>
+
+              <!-- 房源标题 -->
+              <h1 class="house-title">{{ house.title }}</h1>
+
+              <!-- 价格横幅（渐变背景） -->
+              <div class="price-banner">
+                <div class="price-main">
+                  <span class="price-symbol">¥</span>
+                  <span class="price-value">{{ house.price }}</span>
+                  <span class="price-unit">元/月</span>
+                </div>
+                <div class="price-sub">
+                  押金 <strong>{{ house.deposit }}</strong> 个月
+                </div>
+              </div>
+
+              <!-- 关键参数标签 -->
+              <div class="specs-row">
+                <el-tag size="small" type="info" effect="plain">
+                  {{ displayCity }}{{ displayDistrict ? ' · ' + displayDistrict : '' }}
+                </el-tag>
+                <el-tag size="small" type="info" effect="plain">
+                  {{ house.rooms }}室{{ house.halls }}厅{{ house.bathrooms }}卫
+                </el-tag>
+                <el-tag size="small" type="info" effect="plain">{{ house.area }}㎡</el-tag>
+                <el-tag size="small" type="info" effect="plain">
+                  {{ house.floor }}/{{ house.totalFloor }}层
+                </el-tag>
+                <el-tag size="small" type="info" effect="plain">{{ decorationLabel }}</el-tag>
+              </div>
+
+              <el-divider class="card-divider" />
+
+              <!-- 可租日期 -->
+              <div class="available-row">
+                <el-icon class="available-icon"><Calendar /></el-icon>
+                <span class="available-label">可入住：</span>
+                <span class="available-value">{{ house.availableDate || '随时可住' }}</span>
+              </div>
+
+              <!-- 地址 -->
+              <div class="address-row">
+                <el-icon class="addr-icon"><Location /></el-icon>
+                <span class="addr-text">{{ displayCity }} {{ displayDistrict }} {{ house.address }}</span>
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="action-btns">
+                <el-button
+                  type="primary"
+                  size="large"
+                  @click="handleBook"
+                  class="book-btn"
+                >
+                  <el-icon><Calendar /></el-icon>
+                  预约看房
+                </el-button>
+                <el-button
+                  v-if="isTenant"
+                  size="large"
+                  :type="collected ? 'success' : 'default'"
+                  :plain="!collected"
+                  :loading="collecting"
+                  @click.stop="handleCollect"
+                  class="collect-btn"
+                >
+                  <el-icon><Star /></el-icon>
+                  {{ collected ? '已收藏' : '收藏' }}
+                </el-button>
+                <el-button
+                  v-else
+                  size="large"
+                  disabled
+                  plain
+                  class="collect-btn"
+                  aria-label="仅租客可以收藏房源"
+                  title="仅租客可以收藏房源"
+                >
+                  <el-icon><Star /></el-icon>
+                  收藏
+                </el-button>
+              </div>
+
+              <!-- 房东信息（迷你版） -->
+              <div v-if="house.landlord">
+                <el-divider class="card-divider" />
+                <div class="landlord-row">
+                  <el-avatar :size="40" :icon="UserFilled" :src="house.landlord.avatarUrl" />
+                  <div class="landlord-info">
+                    <span class="landlord-name">{{ house.landlord.username }}</span>
+                    <el-tag size="small" type="warning" effect="plain">
+                      信用分 {{ house.landlord.creditScore || 100 }}
+                    </el-tag>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -184,7 +226,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { UserFilled, Star } from '@element-plus/icons-vue'
+import { UserFilled, Star, Document, Money, Grid } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import OwnerTypeBadge from '../components/OwnerTypeBadge.vue'
@@ -362,6 +404,7 @@ async function submitAppointment() {
 </script>
 
 <style scoped>
+/* ===== 页面容器 ===== */
 .house-detail-page {
   min-height: 100vh;
   display: flex;
@@ -370,112 +413,259 @@ async function submitAppointment() {
 }
 
 .loading-wrap {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 40px auto;
-  padding: 0 20px;
+  padding: 0 24px;
   width: 100%;
 }
 
 .detail-content {
   flex: 1;
-  padding: 32px 20px;
+  padding: 28px 24px 48px;
 }
 
 .detail-inner {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
-.carousel {
+/* ===== 双栏主布局 ===== */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+/* ── 左列：图片轮播 + 详情内容 ── */
+.left-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.carousel-wrap {
+  background: #eef2ff;
   border-radius: 16px;
   overflow: hidden;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  padding: 12px 12px 0;
+}
+
+.carousel {
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .carousel-img {
   width: 100%;
-  height: 420px;
+  height: 380px;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  display: block;
 }
 
-.info-section {
+/* ── 右列：粘性信息卡 ── */
+.right-col {
+  min-width: 0;
+}
+
+.booking-card {
+  position: sticky;
+  top: 20px;
   background: #fff;
   border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.title-row {
+/* 角标行 */
+.badge-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
+/* 标题 */
 .house-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #1a1a2e;
-  flex: 1;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  word-break: break-all;
 }
 
-.price-section {
+/* 价格横幅 */
+.price-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.price-main {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
-.price {
+.price-symbol {
+  font-size: 20px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.price-value {
   font-size: 36px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  line-height: 1;
 }
 
 .price-unit {
-  font-size: 16px;
-  color: #909399;
+  font-size: 14px;
+  opacity: 0.85;
 }
 
-.deposit-tag {
-  margin-left: 8px;
+.price-sub {
+  font-size: 13px;
+  opacity: 0.85;
 }
 
-.key-info {
-  margin-bottom: 20px;
+/* 关键参数标签 */
+.specs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
-.address-row {
+/* 分隔线 */
+.card-divider {
+  margin: 16px 0;
+}
+
+/* 可租日期 */
+.available-row {
   display: flex;
   align-items: center;
   gap: 6px;
   color: #606266;
   font-size: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
+.available-icon {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.available-label {
+  color: #909399;
+}
+
+.available-value {
+  color: #303133;
+  font-weight: 500;
+}
+
+/* 地址行 */
+.address-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #606266;
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.addr-icon {
+  color: #f56c6c;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.addr-text {
+  flex: 1;
+}
+
+/* 操作按钮 */
+.action-btns {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.book-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  transition: opacity 0.3s, transform 0.2s;
+}
+
+.book-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.collect-btn {
+  flex-shrink: 0;
+}
+
+/* 房东迷你信息 */
+.landlord-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landlord-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.landlord-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+/* ===== 各内容分区卡片 ===== */
 .section-card {
-  border-top: 1px solid #ebeef5;
-  padding: 20px 0;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
 .card-title {
   font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 12px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-icon {
+  font-size: 18px;
+  color: #667eea;
 }
 
 .description {
   font-size: 14px;
   color: #606266;
-  line-height: 1.8;
+  line-height: 1.9;
   white-space: pre-wrap;
 }
 
@@ -489,48 +679,18 @@ async function submitAppointment() {
   margin: 0;
 }
 
-.landlord-card .landlord-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* ===== 响应式适配 ===== */
+@media (max-width: 768px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
 
-.landlord-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+  .booking-card {
+    position: static;
+  }
 
-.landlord-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.no-info {
-  color: #909399;
-  font-size: 14px;
-}
-
-.action-section {
-  padding-top: 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.book-btn {
-  width: 200px;
-  font-size: 16px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.book-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  .carousel-img {
+    height: 240px;
+  }
 }
 </style>
