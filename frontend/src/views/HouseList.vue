@@ -111,12 +111,18 @@ async function fetchData() {
     })
     updateQuery(params)  // 同步 URL
     const res = await getHouses(params)
-    if (res && res.list !== undefined) {
+    if (res && res.records !== undefined) {
+      houses.value = res.records
+      total.value = res.total ?? res.records.length
+    } else if (res && res.list !== undefined) {
       houses.value = res.list
       total.value = res.total
     } else if (Array.isArray(res)) {
       houses.value = res
       total.value = res.length
+    } else {
+      houses.value = []
+      total.value = 0
     }
   } catch (e) {
     ElMessage.error('加载房源列表失败')

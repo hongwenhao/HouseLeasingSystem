@@ -105,6 +105,16 @@
               <el-icon><Calendar /></el-icon>
               预约看房
             </el-button>
+            <el-button
+              size="large"
+              :type="collected ? 'success' : 'warning'"
+              :plain="!collected"
+              :loading="collecting"
+              @click.stop="handleCollect"
+            >
+              <el-icon><Star /></el-icon>
+              {{ collected ? '已收藏' : '收藏' }}
+            </el-button>
           </div>
         </div>
       </div>
@@ -162,20 +172,24 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { UserFilled } from '@element-plus/icons-vue'
+import { UserFilled, Star } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import OwnerTypeBadge from '../components/OwnerTypeBadge.vue'
 import FeeTable from '../components/FeeTable.vue'
-import { getHouseDetail } from '../api/house.js'
+import { collectHouse, getHouseDetail, getMyCollections } from '../api/house.js'
 import { createOrder } from '../api/order.js'
+import { useUserStore } from '../stores/user.js'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const house = ref(null)             // 当前房源详情数据
 const appointmentVisible = ref(false) // 控制预约对话框显隐
 const submitting = ref(false)        // 提交预约按钮 loading 状态
+const collecting = ref(false)        // 收藏按钮 loading 状态
+const collected = ref(false)         // 是否已收藏
 const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 
@@ -208,12 +222,23 @@ function disablePastDates(date) {
   return date < today
 }
 
+/** 查询当前房源是否已被当前用户收藏 */
+async function checkCollected() {
+  if (!userStore.isLoggedIn) return
+  try {
+    const res = await getMyCollections({ page: 1, pageSize: 100 })
+    const list = Array.isArray(res) ? res : (res?.records || res?.list || [])
+    collected.value = list.some((item) => String(item.id) === String(route.params.id))
+  } catch (e) { /* ignore */ }
+}
+
 onMounted(async () => {
   loading.value = true
   try {
     // 从路由参数中获取房源 ID 并加载详情
     const res = await getHouseDetail(route.params.id)
     house.value = res
+    await checkCollected()
   } catch (e) {
     ElMessage.error('加载房源详情失败')
   } finally {
@@ -233,6 +258,25 @@ function handleBook() {
     return
   }
   appointmentVisible.value = true
+}
+
+/** 收藏房源 */
+async function handleCollect() {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  collecting.value = true
+  try {
+    await collectHouse(route.params.id)
+    collected.value = true
+    ElMessage.success('已收藏该房源')
+  } catch (e) {
+    ElMessage.error(e.message || '收藏失败')
+  } finally {
+    collecting.value = false
+  }
 }
 
 /**
@@ -415,6 +459,9 @@ async function submitAppointment() {
 
 .action-section {
   padding-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .book-btn {

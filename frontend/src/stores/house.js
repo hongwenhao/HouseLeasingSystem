@@ -46,7 +46,10 @@ export const useHouseStore = defineStore('house', {
         ...params        // 允许外部覆盖特定参数
       }
       const res = await getHouses(query)
-      if (res && res.list !== undefined) {
+      if (res && res.records !== undefined) {
+        this.houses = res.records
+        this.total = res.total ?? res.records.length
+      } else if (res && res.list !== undefined) {
         // 后端返回分页包装格式
         this.houses = res.list
         this.total = res.total
@@ -74,7 +77,10 @@ export const useHouseStore = defineStore('house', {
      */
     async searchHouses(keyword) {
       const res = await searchHousesApi({ keyword })
-      if (res && res.list !== undefined) {
+      if (res && res.records !== undefined) {
+        this.houses = res.records
+        this.total = res.total ?? res.records.length
+      } else if (res && res.list !== undefined) {
         this.houses = res.list
         this.total = res.total
       } else if (Array.isArray(res)) {

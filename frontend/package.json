@@ -14,7 +14,8 @@
     "vue-router": "^4.2.0",
     "pinia": "^2.1.0",
     "axios": "^1.6.0",
-    "echarts": "^5.4.0"
+    "echarts": "^5.4.0",
+    "element-china-area-data": "^5.0.2"
   },
   "devDependencies": {
     "vite": "^5.0.0",

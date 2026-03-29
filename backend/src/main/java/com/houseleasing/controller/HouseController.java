@@ -140,6 +140,25 @@ public class HouseController {
     }
 
     /**
+     * 查询当前用户收藏的房源列表（需要认证）
+     *
+     * @param userDetails 当前登录用户信息
+     * @param page        当前页码
+     * @param size        每页大小
+     * @return 收藏房源的分页列表
+     */
+    @Operation(summary = "List user's collected houses")
+    @GetMapping("/my/collections")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public Result<PageResult<House>> listCollectedHouses(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        User user = resolveUser(userDetails.getUsername());
+        return Result.success(houseService.listCollectedHouses(user.getId(), page, size));
+    }
+
+    /**
      * 收藏指定房源（需要认证）
      *
      * @param id          要收藏的房源 ID
