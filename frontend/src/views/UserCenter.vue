@@ -123,7 +123,7 @@
                   class="table-row"
                 >
                   <span class="title-cell">{{ order.houseTitle || `房源#${order.houseId}` }}</span>
-                  <span>{{ formatDate(order.appointmentDate) }}</span>
+                  <span>{{ formatDateTime(order.appointmentTime) }}</span>
                   <span>{{ formatDate(order.createdAt) }}</span>
                   <span>
                     <el-tag :type="orderStatusType(order.status)" size="small">
@@ -487,13 +487,13 @@ async function markAllMessagesRead() {
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
-  const map = { PENDING: '待确认', CONFIRMED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待房东确认', APPROVED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[status] || status
 }
 
 /** 订单状态对应的 Element Plus Tag 类型 */
 function orderStatusType(status) {
-  const map = { PENDING: 'warning', CONFIRMED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
 }
 
@@ -532,6 +532,11 @@ function creditLabel(score) {
 function formatDate(date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('zh-CN')
+}
+
+function formatDateTime(date) {
+  if (!date) return '-'
+  return new Date(date).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 
