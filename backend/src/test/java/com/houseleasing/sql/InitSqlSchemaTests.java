@@ -15,17 +15,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class InitSqlSchemaTests {
 
     @Test
-    void contractsStatusEnumShouldContainSignedAndExcludeLegacyValues() throws IOException {
+    void contractsStatusEnumShouldMatchCurrentContractFlow() throws IOException {
         Path initSqlPath = resolveInitSqlPath();
         String initSql = Files.readString(initSqlPath);
 
         assertTrue(
-                initSql.contains("`status` ENUM('DRAFT','PENDING_SIGN','SIGNED','CANCELLED')"),
-                "contracts.status 枚举应包含 SIGNED 并与后端状态一致"
+                initSql.contains("`status` ENUM('DRAFT','PENDING_SIGN','TENANT_SIGNED','LANDLORD_SIGNED','FULLY_SIGNED','CANCELLED')"),
+                "contracts.status 枚举应与合同签署流程状态一致"
         );
-        assertFalse(initSql.contains("TENANT_SIGNED"), "contracts.status 不应再包含 TENANT_SIGNED");
-        assertFalse(initSql.contains("LANDLORD_SIGNED"), "contracts.status 不应再包含 LANDLORD_SIGNED");
-        assertFalse(initSql.contains("FULLY_SIGNED"), "contracts.status 不应再包含 FULLY_SIGNED");
+        assertFalse(
+                initSql.contains("`status` ENUM('DRAFT','PENDING_SIGN','SIGNED','CANCELLED')"),
+                "contracts.status 不应再包含旧的四态枚举定义"
+        );
     }
 
     private Path resolveInitSqlPath() {

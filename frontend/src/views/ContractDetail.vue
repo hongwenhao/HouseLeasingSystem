@@ -155,7 +155,9 @@ const statusLabel = computed(() => {
   const map = {
     DRAFT: '草稿',
     PENDING_SIGN: '待签署',
-    SIGNED: '已签署',
+    TENANT_SIGNED: '租客已签',
+    LANDLORD_SIGNED: '房东已签',
+    FULLY_SIGNED: '双方已签',
     CANCELLED: '已取消'
   }
   return map[contract.value?.status] || contract.value?.status || '-'
@@ -166,7 +168,9 @@ const statusType = computed(() => {
   const map = {
     DRAFT: 'info',
     PENDING_SIGN: 'warning',
-    SIGNED: 'success',
+    TENANT_SIGNED: 'warning',
+    LANDLORD_SIGNED: 'warning',
+    FULLY_SIGNED: 'success',
     CANCELLED: 'danger'
   }
   return map[contract.value?.status] || 'info'
@@ -179,15 +183,15 @@ const statusType = computed(() => {
 const showSignBtn = computed(() => {
   if (!contract.value) return false
   const status = contract.value.status
-  if (status !== 'DRAFT' && status !== 'PENDING_SIGN') return false
+  if (!['DRAFT', 'PENDING_SIGN', 'TENANT_SIGNED', 'LANDLORD_SIGNED'].includes(status)) return false
   if (role === 'LANDLORD' && !contract.value.landlordSigned) return true
   if (role === 'TENANT' && !contract.value.tenantSigned) return true
   return false
 })
 
-/** 计算是否显示"取消合同"按钮（草稿或待签署可取消） */
+/** 计算是否显示"取消合同"按钮（双方完成签署前可取消） */
 const showCancelBtn = computed(() => {
-  return contract.value?.status === 'DRAFT' || contract.value?.status === 'PENDING_SIGN'
+  return ['DRAFT', 'PENDING_SIGN', 'TENANT_SIGNED', 'LANDLORD_SIGNED'].includes(contract.value?.status)
 })
 
 onMounted(async () => {

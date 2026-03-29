@@ -499,13 +499,13 @@ function orderStatusType(status) {
 
 /** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
-  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', SIGNED: '已签署', CANCELLED: '已取消' }
+  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', TENANT_SIGNED: '租客已签', LANDLORD_SIGNED: '房东已签', FULLY_SIGNED: '双方已签', CANCELLED: '已取消' }
   return map[status] || status
 }
 
 /** 合同状态对应的 Element Plus Tag 类型 */
 function contractStatusType(status) {
-  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', SIGNED: 'success', CANCELLED: 'danger' }
+  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', TENANT_SIGNED: 'warning', LANDLORD_SIGNED: 'warning', FULLY_SIGNED: 'success', CANCELLED: 'danger' }
   return map[status] || 'info'
 }
 
