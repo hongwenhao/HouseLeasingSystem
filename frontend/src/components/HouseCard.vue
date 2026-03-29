@@ -43,6 +43,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerTypeBadge from './OwnerTypeBadge.vue'
+import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const props = defineProps({
   house: {
@@ -97,28 +98,6 @@ function goDetail() {
   router.push(`/houses/${props.house.id}`)
 }
 
-/**
- * 统一图片字段格式，兼容数组/JSON 字符串/单 URL 字符串三种情况
- */
-function normalizeHouseImages(images) {
-  if (Array.isArray(images)) {
-    return images.filter(img => typeof img === 'string' && img.trim())
-  }
-  if (typeof images === 'string') {
-    const trimmed = images.trim()
-    if (!trimmed) return []
-    if (trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed)
-        return Array.isArray(parsed) ? parsed.filter(img => typeof img === 'string' && img.trim()) : []
-      } catch {
-        return []
-      }
-    }
-    return [trimmed]
-  }
-  return []
-}
 </script>
 
 <style scoped>

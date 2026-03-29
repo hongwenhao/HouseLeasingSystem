@@ -169,6 +169,7 @@ import Footer from '../components/Footer.vue'
 import { getMyHouses, deleteHouse } from '../api/house.js'
 import { getLandlordOrders, confirmOrder, rejectOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
+import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const activeTab = ref('houses')        // 当前激活 tab
 const housesLoading = ref(false)       // 我的房源加载状态
@@ -286,29 +287,6 @@ function openRejectDialog(order) {
 function getHouseCover(house) {
   const images = normalizeHouseImages(house?.images)
   return images.length > 0 ? images[0] : placeholder
-}
-
-/**
- * 统一图片字段格式，兼容数组/JSON 字符串/单 URL 字符串三种情况
- */
-function normalizeHouseImages(images) {
-  if (Array.isArray(images)) {
-    return images.filter(img => typeof img === 'string' && img.trim())
-  }
-  if (typeof images === 'string') {
-    const trimmed = images.trim()
-    if (!trimmed) return []
-    if (trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed)
-        return Array.isArray(parsed) ? parsed.filter(img => typeof img === 'string' && img.trim()) : []
-      } catch {
-        return []
-      }
-    }
-    return [trimmed]
-  }
-  return []
 }
 
 /** 提交拒绝预约（附带拒绝原因） */

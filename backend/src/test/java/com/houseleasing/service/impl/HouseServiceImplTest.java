@@ -113,4 +113,3 @@ class HouseServiceImplTest {
         assertEquals(0, inserted.getSort());
     }
 }
-

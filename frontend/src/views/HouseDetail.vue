@@ -234,6 +234,7 @@ import FeeTable from '../components/FeeTable.vue'
 import { collectHouse, getHouseDetail, getMyCollections, uncollectHouse } from '../api/house.js'
 import { createOrder } from '../api/order.js'
 import { useUserStore } from '../stores/user.js'
+import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -428,31 +429,6 @@ async function submitAppointment() {
   }
 }
 
-/**
- * 统一归一化房源图片字段，兼容后端可能返回的多种格式：
- * 1) 数组：['/api/uploads/a.jpg', ...]
- * 2) JSON 字符串："['/api/uploads/a.jpg', ...]"（标准 JSON）
- * 3) 单个 URL 字符串：'/api/uploads/a.jpg'
- */
-function normalizeHouseImages(images) {
-  if (Array.isArray(images)) {
-    return images.filter(img => typeof img === 'string' && img.trim())
-  }
-  if (typeof images === 'string') {
-    const trimmed = images.trim()
-    if (!trimmed) return []
-    if (trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed)
-        return Array.isArray(parsed) ? parsed.filter(img => typeof img === 'string' && img.trim()) : []
-      } catch {
-        return []
-      }
-    }
-    return [trimmed]
-  }
-  return []
-}
 </script>
 
 <style scoped>
