@@ -144,6 +144,27 @@
               <el-empty v-else description="暂无预约记录" />
             </el-tab-pane>
 
+            <!-- Favorites Tab -->
+            <el-tab-pane name="favorites">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><Star /></el-icon>
+                  <span>我的收藏</span>
+                </div>
+              </template>
+              <div v-if="collectionsLoading">
+                <el-skeleton :rows="4" animated />
+              </div>
+              <div v-else-if="myCollections.length > 0" class="favorites-grid">
+                <HouseCard
+                  v-for="house in myCollections"
+                  :key="house.id"
+                  :house="house"
+                />
+              </div>
+              <el-empty v-else description="暂无收藏房源" />
+            </el-tab-pane>
+
             <!-- Contracts Tab -->
             <el-tab-pane name="contracts">
               <template #label>
@@ -245,15 +266,17 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'     // 用于密码修改后跳转到登录页
 import { ElMessage } from 'element-plus'
-import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled } from '@element-plus/icons-vue'
+import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled, Star } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import MessageList from '../components/MessageList.vue'
+import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi } from '../api/auth.js'
 import { getMyOrders, cancelOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
+import { getMyCollections } from '../api/house.js'
 
 const router = useRouter()                 // 获取路由实例以便在密码修改后跳转
 const userStore = useUserStore()
@@ -262,8 +285,10 @@ const savingProfile = ref(false)      // 保存资料按钮 loading 状态
 const changingPwd = ref(false)        // 修改密码按钮 loading 状态
 const ordersLoading = ref(false)      // 订单列表加载状态
 const contractsLoading = ref(false)   // 合同列表加载状态
+const collectionsLoading = ref(false) // 收藏列表加载状态
 const myOrders = ref([])              // 当前用户的预约订单列表
 const myContracts = ref([])           // 当前用户的合同列表
+const myCollections = ref([])         // 收藏的房源列表
 const messages = ref([])              // 消息通知列表
 const profileFormRef = ref(null)
 const pwdFormRef = ref(null)
@@ -337,6 +362,7 @@ onMounted(async () => {
   loadOrders()
   loadContracts()
   loadMessages()
+  loadCollections()
 })
 
 /** 加载当前用户的预约订单列表（最多20条） */
@@ -359,6 +385,18 @@ async function loadContracts() {
     myContracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { contractsLoading.value = false }
+}
+
+/** 加载当前用户收藏的房源列表（最多30条） */
+async function loadCollections() {
+  collectionsLoading.value = true
+  try {
+    const res = await getMyCollections({ page: 1, pageSize: 30 })
+    myCollections.value = Array.isArray(res)
+      ? res
+      : (res?.records || res?.list || [])
+  } catch (e) { /* ignore */ }
+  finally { collectionsLoading.value = false }
 }
 
 /** 加载当前用户的消息通知列表（最多50条） */
@@ -611,6 +649,13 @@ function formatDate(date) {
 .center-tabs :deep(.el-tabs__active-bar) {
   height: 3px;
   background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 16px 0;
 }
 
 .tab-label {
