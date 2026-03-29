@@ -27,6 +27,8 @@ public class House {
     private String address;
     /** 房源面积（平方米） */
     private BigDecimal area;
+    /** 所在省份 */
+    private String province;
     /** 所在城市 */
     private String city;
     /** 所在区域 */
