@@ -7,7 +7,7 @@ import com.houseleasing.entity.Message;
  * 消息服务接口
  *
  * @author HouseLeasingSystem开发团队
- * @description 定义站内消息相关的业务操作，包括发送消息、查询、标记已读等
+ * @description 定义站内消息相关的业务操作，包括发送消息和查询
  */
 public interface MessageService {
 
@@ -30,27 +30,4 @@ public interface MessageService {
      * @return 该用户的分页消息列表
      */
     PageResult<Message> listMessages(Long userId, int page, int size);
-
-    /**
-     * 将指定消息标记为已读
-     *
-     * @param messageId 消息 ID
-     * @param userId    操作人用户 ID（需与消息接收人一致）
-     */
-    void markAsRead(Long messageId, Long userId);
-
-    /**
-     * 将指定用户的所有未读消息标记为已读
-     *
-     * @param userId 用户 ID
-     */
-    void markAllAsRead(Long userId);
-
-    /**
-     * 统计指定用户的未读消息数量
-     *
-     * @param userId 用户 ID
-     * @return 未读消息总数
-     */
-    long countUnread(Long userId);
 }
