@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
 -- ============================================================
 -- 合同表（contracts）
 -- 存储房屋租赁合同信息，支持电子签署（双方分别签名）
--- status 流转：DRAFT → PENDING_SIGN → TENANT_SIGNED/LANDLORD_SIGNED → FULLY_SIGNED
+-- status 流转：DRAFT → PENDING_SIGN → SIGNED（双方已签）/CANCELLED
 -- risk_level 由 AI 智能检测合同条款风险后写入
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `contracts` (
@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS `contracts` (
   `tenant_id` BIGINT NOT NULL,
   `landlord_id` BIGINT NOT NULL,
   `content` LONGTEXT COMMENT '合同内容',
-  `status` ENUM('DRAFT','PENDING_SIGN','TENANT_SIGNED','LANDLORD_SIGNED','FULLY_SIGNED','CANCELLED') DEFAULT 'DRAFT',
+  `status` ENUM('DRAFT','PENDING_SIGN','SIGNED','CANCELLED') DEFAULT 'DRAFT',
   `risk_level` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'LOW',
   `risk_items` JSON COMMENT '风险条款JSON',
   `tenant_signed` TINYINT DEFAULT 0,
