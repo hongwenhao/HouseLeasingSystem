@@ -65,10 +65,10 @@
         </el-card>
 
         <!-- Contract Clauses -->
-        <el-card class="contract-card" v-if="contract.clauses || contract.terms || contract.content">
+        <el-card class="contract-card" v-if="contract.content || contract.clauses || contract.terms">
           <template #header>合同条款</template>
           <div class="clauses-content">
-            <pre class="clauses-text">{{ contract.clauses || contract.terms || contract.content }}</pre>
+            <pre class="clauses-text">{{ contract.content || contract.clauses || contract.terms }}</pre>
           </div>
         </el-card>
 
