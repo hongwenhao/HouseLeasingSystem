@@ -191,7 +191,7 @@
                 >
                   <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
                   <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                  <span>¥{{ contract.rent }}</span>
+                  <span>¥{{ contract.monthlyRent ?? contract.rent }}</span>
                   <span>
                     <el-tag :type="contractStatusType(contract.status)" size="small">
                       {{ contractStatusLabel(contract.status) }}
@@ -499,13 +499,13 @@ function orderStatusType(status) {
 
 /** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
-  const map = { PENDING: '待签署', ACTIVE: '生效中', TERMINATED: '已终止', EXPIRED: '已到期' }
+  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', SIGNED: '已签署', CANCELLED: '已取消' }
   return map[status] || status
 }
 
 /** 合同状态对应的 Element Plus Tag 类型 */
 function contractStatusType(status) {
-  const map = { PENDING: 'warning', ACTIVE: 'success', TERMINATED: 'danger', EXPIRED: 'info' }
+  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', SIGNED: 'success', CANCELLED: 'danger' }
   return map[status] || 'info'
 }
 

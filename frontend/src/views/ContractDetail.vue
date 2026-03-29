@@ -23,10 +23,10 @@
             </div>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="签订日期">{{ formatDate(contract.signDate || contract.createdAt) }}</el-descriptions-item>
+            <el-descriptions-item label="签订日期">{{ formatDate(contract.signTime || contract.createTime) }}</el-descriptions-item>
             <el-descriptions-item label="租期开始">{{ formatDate(contract.startDate) }}</el-descriptions-item>
             <el-descriptions-item label="租期结束">{{ formatDate(contract.endDate) }}</el-descriptions-item>
-            <el-descriptions-item label="月租金">¥{{ contract.rent }}</el-descriptions-item>
+            <el-descriptions-item label="月租金">¥{{ contract.monthlyRent ?? contract.rent }}</el-descriptions-item>
             <el-descriptions-item label="押金">¥{{ contract.deposit }}</el-descriptions-item>
             <el-descriptions-item label="合同状态">
               <el-tag :type="statusType" size="small">{{ statusLabel }}</el-tag>
@@ -65,10 +65,10 @@
         </el-card>
 
         <!-- Contract Clauses -->
-        <el-card class="contract-card" v-if="contract.clauses || contract.terms">
+        <el-card class="contract-card" v-if="contract.clauses || contract.terms || contract.content">
           <template #header>合同条款</template>
           <div class="clauses-content">
-            <pre class="clauses-text">{{ contract.clauses || contract.terms }}</pre>
+            <pre class="clauses-text">{{ contract.clauses || contract.terms || contract.content }}</pre>
           </div>
         </el-card>
 
@@ -80,13 +80,13 @@
               <el-icon :class="contract.landlordSigned ? 'signed' : 'unsigned'">
                 <component :is="contract.landlordSigned ? 'CircleCheckFilled' : 'CircleCloseFilled'" />
               </el-icon>
-              <span>房东：{{ contract.landlordSigned ? `已于 ${formatDate(contract.landlordSignDate)} 签署` : '待签署' }}</span>
+              <span>房东：{{ contract.landlordSigned ? `已于 ${formatDate(contract.landlordSignTime)} 签署` : '待签署' }}</span>
             </div>
             <div class="sign-item">
               <el-icon :class="contract.tenantSigned ? 'signed' : 'unsigned'">
                 <component :is="contract.tenantSigned ? 'CircleCheckFilled' : 'CircleCloseFilled'" />
               </el-icon>
-              <span>租客：{{ contract.tenantSigned ? `已于 ${formatDate(contract.tenantSignDate)} 签署` : '待签署' }}</span>
+              <span>租客：{{ contract.tenantSigned ? `已于 ${formatDate(contract.tenantSignTime)} 签署` : '待签署' }}</span>
             </div>
           </div>
         </el-card>
@@ -162,13 +162,23 @@ const role = localStorage.getItem('role') || ''  // 当前用户角色
 
 /** 合同状态对应的中文标签 */
 const statusLabel = computed(() => {
-  const map = { PENDING: '待签署', ACTIVE: '生效中', TERMINATED: '已终止', EXPIRED: '已到期' }
+  const map = {
+    DRAFT: '草稿',
+    PENDING_SIGN: '待签署',
+    SIGNED: '已签署',
+    CANCELLED: '已取消'
+  }
   return map[contract.value?.status] || contract.value?.status || '-'
 })
 
 /** 合同状态对应的 Element Plus Tag 类型 */
 const statusType = computed(() => {
-  const map = { PENDING: 'warning', ACTIVE: 'success', TERMINATED: 'danger', EXPIRED: 'info' }
+  const map = {
+    DRAFT: 'info',
+    PENDING_SIGN: 'warning',
+    SIGNED: 'success',
+    CANCELLED: 'danger'
+  }
   return map[contract.value?.status] || 'info'
 })
 
@@ -177,7 +187,9 @@ const statusType = computed(() => {
  * 条件：合同处于待签署状态，且当前用户尚未签署
  */
 const showSignBtn = computed(() => {
-  if (!contract.value || contract.value.status !== 'PENDING') return false
+  if (!contract.value) return false
+  const status = contract.value.status
+  if (status !== 'DRAFT' && status !== 'PENDING_SIGN') return false
   if (role === 'LANDLORD' && !contract.value.landlordSigned) return true
   if (role === 'TENANT' && !contract.value.tenantSigned) return true
   return false
@@ -185,7 +197,7 @@ const showSignBtn = computed(() => {
 
 /** 计算是否显示"终止合同"按钮（仅生效中的合同可终止） */
 const showTerminateBtn = computed(() => {
-  return contract.value?.status === 'ACTIVE'
+  return contract.value?.status === 'DRAFT' || contract.value?.status === 'PENDING_SIGN'
 })
 
 onMounted(async () => {
@@ -212,9 +224,13 @@ onMounted(async () => {
  * 签署成功后重新加载合同数据（更新签署状态和合同状态）
  */
 async function handleSign() {
+  if (!role) {
+    ElMessage.error('无法确定当前角色，请重新登录后再试')
+    return
+  }
   actioning.value = true
   try {
-    await signContract(route.params.id)
+    await signContract(route.params.id, role)
     ElMessage.success('合同签署成功')
     // 重新拉取合同数据以更新双方签署状态
     const res = await getContractDetail(route.params.id)
@@ -233,9 +249,9 @@ async function handleSign() {
 async function handleTerminate() {
   actioning.value = true
   try {
-    await terminateContract(route.params.id, { reason: terminateReason.value })
+    await terminateContract(route.params.id)
     ElMessage.success('合同已终止')
-    contract.value.status = 'TERMINATED'  // 本地更新状态
+    contract.value.status = 'CANCELLED'  // 本地更新状态
     terminateDialogVisible.value = false
   } catch (e) {
     ElMessage.error(e.message || '操作失败')

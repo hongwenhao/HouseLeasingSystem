@@ -104,7 +104,7 @@
                 <div class="contract-meta">
                   <span>租客：{{ contract.tenantName || contract.tenantId }}</span>
                   <span>租期：{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                  <span>月租：¥{{ contract.rent }}</span>
+                  <span>月租：¥{{ contract.monthlyRent ?? contract.rent }}</span>
                 </div>
                 <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
               </div>
@@ -233,8 +233,8 @@ async function loadContracts() {
 function computeStats() {
   stats.value = {
     totalHouses: myHouses.value.length,
-    activeRentals: contracts.value.filter(c => c.status === 'ACTIVE').length,
-    totalIncome: contracts.value.filter(c => c.status === 'ACTIVE').reduce((sum, c) => sum + (c.rent || 0), 0),
+    activeRentals: contracts.value.filter(c => c.status === 'SIGNED').length,
+    totalIncome: contracts.value.filter(c => c.status === 'SIGNED').reduce((sum, c) => sum + (c.monthlyRent || c.rent || 0), 0),
     avgPrice: myHouses.value.length > 0
       ? Math.round(myHouses.value.reduce((sum, h) => sum + (h.price || 0), 0) / myHouses.value.length)
       : 0
@@ -318,13 +318,13 @@ function orderStatusType(status) {
 
 /** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
-  const map = { PENDING: '待签署', ACTIVE: '生效中', TERMINATED: '已终止', EXPIRED: '已到期' }
+  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', SIGNED: '已签署', CANCELLED: '已取消' }
   return map[status] || status
 }
 
 /** 合同状态对应 Tag 类型 */
 function contractStatusType(status) {
-  const map = { PENDING: 'warning', ACTIVE: 'success', TERMINATED: 'danger', EXPIRED: 'info' }
+  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', SIGNED: 'success', CANCELLED: 'danger' }
   return map[status] || 'info'
 }
 
