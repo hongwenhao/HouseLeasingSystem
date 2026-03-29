@@ -145,7 +145,7 @@
             </el-tab-pane>
 
             <!-- Favorites Tab -->
-            <el-tab-pane name="favorites">
+            <el-tab-pane v-if="isTenant" name="favorites">
               <template #label>
                 <div class="tab-label">
                   <el-icon><Star /></el-icon>
@@ -310,6 +310,7 @@ const roleLabel = computed(() => {
   const map = { TENANT: '租客', LANDLORD: '房东', ADMIN: '管理员' }
   return map[userInfo.value.role] || userInfo.value.role || '用户'
 })
+const isTenant = computed(() => userInfo.value.role === 'TENANT')
 
 // 资料编辑表单（初始值从 store 取）
 const profileForm = reactive({
@@ -391,6 +392,11 @@ async function loadContracts() {
 async function loadCollections() {
   collectionsLoading.value = true
   try {
+    if (!isTenant.value) {
+      // 非租客角色不展示收藏，直接清空数据避免无效请求
+      myCollections.value = []
+      return
+    }
     const res = await getMyCollections({ page: 1, pageSize: 30 })
     myCollections.value = Array.isArray(res)
       ? res

@@ -129,7 +129,9 @@
                   <el-select v-model="form.decoration" style="width:100%">
                     <el-option label="精装" value="FINE" />
                     <el-option label="简装" value="SIMPLE" />
+                    <el-option label="中等装修" value="MEDIUM" />
                     <el-option label="毛坯" value="ROUGH" />
+                    <el-option label="豪装" value="LUXURY" />
                   </el-select>
                 </el-form-item>
               </el-col>
