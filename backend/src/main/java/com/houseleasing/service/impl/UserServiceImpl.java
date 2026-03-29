@@ -88,9 +88,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public Map<String, Object> login(LoginRequest request) {
-        User user = userMapper.selectByUsername(request.getUsername());
+        // 支持「用户名」或「手机号」作为统一登录入口，减少前端区分字段的负担
+        User user = userMapper.selectByUsernameOrPhone(request.getUsername());
         if (user == null) {
-            throw new BusinessException(401, "用户不存在，请确定用户名是否正确");
+            throw new BusinessException(401, "用户不存在，请确定用户名或手机号是否正确");
         }
         // 验证密码是否匹配
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
