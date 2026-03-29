@@ -143,11 +143,9 @@ public class ContractServiceImpl implements ContractService {
      * @return 格式化后的合同正文字符串
      */
     private String buildContractText(Order order, House house, User tenant, User landlord, String additionalClauses) {
-        // 合同主体姓名必须使用实名信息
-        String tenantName = tenant != null && StringUtils.hasText(tenant.getRealName())
-                ? tenant.getRealName() : "租客";
-        String landlordName = landlord != null && StringUtils.hasText(landlord.getRealName())
-                ? landlord.getRealName() : "房东";
+        // 合同生成前已校验双方实名认证完整，这里直接使用实名
+        String tenantName = tenant.getRealName();
+        String landlordName = landlord.getRealName();
         String houseName = house != null ? house.getTitle() : "租赁房屋";
         String houseAddress = house != null ? house.getAddress() : "";
         BigDecimal monthlyRent = order.getMonthlyRent() != null ? order.getMonthlyRent() : BigDecimal.ZERO;

@@ -246,6 +246,7 @@ onMounted(async () => {
           : contract.value.riskItems
         risks.value = Array.isArray(parsed) ? parsed : []
       } catch (e) {
+        console.warn('合同风险数据解析失败：', e)
         risks.value = []
       }
     }
