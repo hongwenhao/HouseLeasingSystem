@@ -51,6 +51,9 @@ export const uncollectHouse = (id) => request.delete(`/houses/${id}/collect`)
 /** 获取当前用户收藏的房源列表 */
 export const getMyCollections = (params = {}) => request.get('/houses/my/collections', { params })
 
+/** 获取指定房源的图片列表（从 house_images 明细表读取，按排序升序） */
+export const getHouseImages = (id) => request.get(`/houses/${id}/images`)
+
 /**
  * 上传房源图片
  *
