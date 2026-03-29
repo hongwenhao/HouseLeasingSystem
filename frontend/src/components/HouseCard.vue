@@ -21,7 +21,7 @@
       <!-- 地址：城市 + 区域 + 详细地址 -->
       <p class="address">
         <el-icon><Location /></el-icon>
-        {{ house.city }} {{ house.district }} {{ house.address }}
+        {{ displayCity }} {{ displayDistrict }} {{ house.address }}
       </p>
       <!-- 房源元信息：室数 / 面积 / 装修情况 -->
       <div class="meta">
@@ -54,14 +54,38 @@ const props = defineProps({
 const router = useRouter()
 // 图片加载失败时显示的占位图 URL
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
+const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
 
 /**
  * 将装修枚举值映射为中文标签
- * FINE → 精装，SIMPLE → 简装，ROUGH → 毛坯
+ * FINE → 精装，SIMPLE → 简装，MEDIUM → 中等装修，ROUGH → 毛坯，LUXURY → 豪装
  */
 const decorationLabel = computed(() => {
-  const map = { FINE: '精装', SIMPLE: '简装', ROUGH: '毛坯' }
+  const map = {
+    FINE: '精装',
+    SIMPLE: '简装',
+    MEDIUM: '中等装修',
+    ROUGH: '毛坯',
+    LUXURY: '豪装'
+  }
   return map[props.house.decoration] || props.house.decoration || '未知'
+})
+
+/** 直辖市/县级占位值兜底展示，避免卡片上出现“市辖区”等字样 */
+const displayCity = computed(() => {
+  const city = props.house.city
+  if (!city || GROUPING_CITY_LABELS.includes(city)) {
+    return props.house.province || city || ''
+  }
+  return city
+})
+
+const displayDistrict = computed(() => {
+  const district = props.house.district
+  if (!district || GROUPING_CITY_LABELS.includes(district)) {
+    return ''
+  }
+  return district
 })
 
 /** 跳转到该房源的详情页 */
@@ -173,4 +197,3 @@ function goDetail() {
   color: #909399;
 }
 </style>
-

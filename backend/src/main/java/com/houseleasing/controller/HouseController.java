@@ -155,6 +155,7 @@ public class HouseController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         User user = resolveUser(userDetails.getUsername());
+        ensureTenantUser(user);
         return Result.success(houseService.listCollectedHouses(user.getId(), page, size));
     }
 
@@ -171,6 +172,7 @@ public class HouseController {
     public Result<Void> collectHouse(@PathVariable Long id,
                                       @AuthenticationPrincipal UserDetails userDetails) {
         User user = resolveUser(userDetails.getUsername());
+        ensureTenantUser(user);
         houseService.collectHouse(user.getId(), id);
         return Result.success();
     }
@@ -187,5 +189,17 @@ public class HouseController {
             throw new BusinessException(404, "用户不存在");
         }
         return user;
+    }
+
+    /**
+     * 仅允许租客使用收藏相关接口，房东/管理员直接拒绝
+     *
+     * @param user 当前认证用户
+     */
+    private void ensureTenantUser(User user) {
+        if (!"TENANT".equalsIgnoreCase(user.getRole())) {
+            // 返回 403 业务码，提示只有租客可以收藏房源
+            throw new BusinessException(403, "仅租客可以收藏房源");
+        }
     }
 }

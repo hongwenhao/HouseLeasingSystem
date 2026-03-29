@@ -130,7 +130,9 @@
         <el-option label="不限" value="" />
         <el-option label="精装" value="FINE" />
         <el-option label="简装" value="SIMPLE" />
+        <el-option label="中等装修" value="MEDIUM" />
         <el-option label="毛坯" value="ROUGH" />
+        <el-option label="豪装" value="LUXURY" />
       </el-select>
     </div>
 
@@ -158,6 +160,14 @@ const props = defineProps({
 // 声明组件向外发送的事件：update:modelValue（v-model 更新）和 search（触发搜索）
 const emit = defineEmits(['update:modelValue', 'search'])
 
+// 过滤占位的分组名称，防止“市辖区”等分组节点被当成真实城市显示
+const sanitizeAreaValue = (val) => (val && GROUPING_NODE_LABELS.includes(val) ? '' : (val || ''))
+const initialFilters = {
+  ...props.modelValue,
+  city: sanitizeAreaValue(props.modelValue.city),
+  district: sanitizeAreaValue(props.modelValue.district)
+}
+
 // 本地筛选状态对象，初始化时合并父组件传入的值
 const localFilters = reactive({
   keyword: '',
@@ -169,7 +179,7 @@ const localFilters = reactive({
   rooms: '',
   ownerType: '',
   decoration: '',
-  ...props.modelValue  // 支持父组件预设初始筛选值（如从 URL query 参数初始化）
+  ...initialFilters  // 支持父组件预设初始筛选值（如从 URL query 参数初始化）
 })
 
 // 行政区划数据中的分组节点标签（不是真实的城市名，而是数据中的分组占位符）
@@ -239,6 +249,15 @@ watch(() => localFilters.province, () => {
 watch(() => localFilters.city, () => {
   localFilters.district = ''
 })
+
+// 如果外部值意外传入“市辖区/县”等分组节点，占位值会被清空，确保下拉列表不出现占位名称
+function clearGroupingNode(field) {
+  if (GROUPING_NODE_LABELS.includes(localFilters[field])) {
+    localFilters[field] = ''
+  }
+}
+watch(() => localFilters.city, () => clearGroupingNode('city'))
+watch(() => localFilters.district, () => clearGroupingNode('district'))
 
 /** 点击搜索按钮：同步筛选值到父组件并触发 search 事件 */
 function handleSearch() {
