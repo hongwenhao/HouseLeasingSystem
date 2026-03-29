@@ -178,6 +178,24 @@ public class HouseController {
     }
 
     /**
+     * 取消收藏指定房源（需要认证）
+     *
+     * @param id          要取消收藏的房源 ID
+     * @param userDetails 当前登录用户信息
+     * @return 操作成功的响应
+     */
+    @Operation(summary = "Cancel favorite for a house")
+    @DeleteMapping("/{id}/collect")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public Result<Void> cancelCollectHouse(@PathVariable Long id,
+                                           @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        ensureTenantUser(user);
+        houseService.cancelCollectHouse(user.getId(), id);
+        return Result.success();
+    }
+
+    /**
      * 根据用户名解析用户信息
      *
      * @param username 用户名

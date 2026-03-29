@@ -45,5 +45,8 @@ export const auditHouse = (id, data) => request.put(`/admin/houses/${id}/audit`,
 /** 收藏房源 */
 export const collectHouse = (id) => request.post(`/houses/${id}/collect`)
 
+/** 取消收藏房源 */
+export const uncollectHouse = (id) => request.delete(`/houses/${id}/collect`)
+
 /** 获取当前用户收藏的房源列表 */
-export const getMyCollections = (params) => request.get('/houses/my/collections', { params })
+export const getMyCollections = (params = {}) => request.get('/houses/my/collections', { params })

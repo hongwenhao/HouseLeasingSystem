@@ -44,6 +44,8 @@ public class HouseServiceImpl implements HouseService {
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    private static final String BEHAVIOR_COLLECT = "COLLECT";
+
     /**
      * 发布新房源，设置初始状态为待审核，清除热门房源缓存
      *
@@ -206,7 +208,7 @@ public class HouseServiceImpl implements HouseService {
         Page<UserBehavior> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
-                .eq(UserBehavior::getBehaviorType, "COLLECT")
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT)
                 .orderByDesc(UserBehavior::getCreateTime);
         Page<UserBehavior> behaviorPage = userBehaviorMapper.selectPage(pageObj, wrapper);
         List<Long> houseIds = behaviorPage.getRecords().stream()
@@ -234,17 +236,33 @@ public class HouseServiceImpl implements HouseService {
         LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
                 .eq(UserBehavior::getHouseId, houseId)
-                .eq(UserBehavior::getBehaviorType, "COLLECT");
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
         UserBehavior existing = userBehaviorMapper.selectOne(wrapper);
         if (existing == null) {
             // 未收藏过，新增收藏行为记录
             UserBehavior behavior = new UserBehavior();
             behavior.setUserId(userId);
             behavior.setHouseId(houseId);
-            behavior.setBehaviorType("COLLECT");
+            behavior.setBehaviorType(BEHAVIOR_COLLECT);
             behavior.setCreateTime(LocalDateTime.now());
             userBehaviorMapper.insert(behavior);
         }
+    }
+
+    /**
+     * 取消收藏房源，若未收藏则忽略
+     *
+     * @param userId  用户 ID
+     * @param houseId 房源 ID
+     */
+    @Override
+    @Transactional
+    public void cancelCollectHouse(Long userId, Long houseId) {
+        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserBehavior::getUserId, userId)
+                .eq(UserBehavior::getHouseId, houseId)
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
+        userBehaviorMapper.delete(wrapper);
     }
 
     /**
