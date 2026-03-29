@@ -24,11 +24,15 @@
               <h4>🏠 出租方（房东）</h4>
               <div class="party-row">
                 <span>姓名</span>
-                <strong>{{ contract.landlord?.username || `用户${contract.landlordId}` }}</strong>
+                <strong>{{ contract.landlord?.realName || '-' }}</strong>
               </div>
               <div class="party-row">
                 <span>手机号</span>
                 <strong>{{ contract.landlord?.phone || '-' }}</strong>
+              </div>
+              <div class="party-row">
+                <span>房东类型</span>
+                <strong>{{ ownerTypeLabel(contract.house?.ownerType) }}</strong>
               </div>
               <div class="party-row">
                 <span>信用分</span>
@@ -39,7 +43,7 @@
               <h4>🧍 承租方（租客）</h4>
               <div class="party-row">
                 <span>姓名</span>
-                <strong>{{ contract.tenant?.username || `用户${contract.tenantId}` }}</strong>
+                <strong>{{ contract.tenant?.realName || '-' }}</strong>
               </div>
               <div class="party-row">
                 <span>手机号</span>
@@ -77,12 +81,12 @@
           <div class="signature-grid">
             <div class="signature-card">
               <div class="sig-title">房东签署</div>
-              <div class="sig-name">{{ contract.landlord?.username || `用户${contract.landlordId}` }}</div>
+              <div class="sig-name">{{ contract.landlord?.realName || '-' }}</div>
               <div class="sig-time">{{ formatDate(contract.landlordSignTime, true) }} {{ contract.landlordSigned ? '✅ 已签署' : '⏳ 待签署' }}</div>
             </div>
             <div class="signature-card">
               <div class="sig-title">租客签署</div>
-              <div class="sig-name">{{ contract.tenant?.username || `用户${contract.tenantId}` }}</div>
+              <div class="sig-name">{{ contract.tenant?.realName || '-' }}</div>
               <div class="sig-time">{{ formatDate(contract.tenantSignTime, true) }} {{ contract.tenantSigned ? '✅ 已签署' : '⏳ 待签署' }}</div>
             </div>
           </div>
@@ -235,6 +239,17 @@ onMounted(async () => {
     if (risksRes.status === 'fulfilled') {
       risks.value = Array.isArray(risksRes.value) ? risksRes.value : []
     }
+    if (!risks.value.length && contract.value?.riskItems) {
+      try {
+        const parsed = typeof contract.value.riskItems === 'string'
+          ? JSON.parse(contract.value.riskItems)
+          : contract.value.riskItems
+        risks.value = Array.isArray(parsed) ? parsed : []
+      } catch (e) {
+        console.warn('合同风险数据解析失败：', e)
+        risks.value = []
+      }
+    }
   } catch (e) {
     ElMessage.error('加载合同详情失败')
   } finally {
@@ -299,6 +314,12 @@ function formatDate(date, withTime = false) {
   const dateText = val.toLocaleDateString('zh-CN')
   const timeText = val.toLocaleTimeString('zh-CN', { hour12: false })
   return withTime ? `${dateText} ${timeText}` : dateText
+}
+
+/** 房东类型枚举转中文 */
+function ownerTypeLabel(type) {
+  const map = { OWNER: '一手房东', SUBLEASE: '二手房东', AGENT: '中介' }
+  return map[type] || '-'
 }
 
 /** 下载合同 PDF */

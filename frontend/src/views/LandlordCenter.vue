@@ -61,8 +61,8 @@
               >
                 <div class="order-info">
                   <div>
-                    <span class="order-title">{{ order.houseTitle || `房源#${order.houseId}` }}</span>
-                    <span class="tenant-name"> — 租客：{{ order.tenantName || order.tenantId }}</span>
+                    <span class="order-title">{{ order.house?.title || order.houseTitle || `房源#${order.houseId}` }}</span>
+                    <span class="tenant-name"> — 租客：{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
                   </div>
                   <el-tag :type="orderStatusType(order.status)" size="small">
                     {{ orderStatusLabel(order.status) }}
