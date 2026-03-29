@@ -66,11 +66,43 @@
                   <el-form-item label="邮箱">
                     <el-input v-model="profileForm.email" />
                   </el-form-item>
+                  <el-form-item label="性别">
+                    <el-select v-model="profileForm.gender" placeholder="请选择性别">
+                      <el-option :value="0" label="保密" />
+                      <el-option :value="1" label="男" />
+                      <el-option :value="2" label="女" />
+                    </el-select>
+                  </el-form-item>
                   <el-form-item label="头像URL">
                     <el-input v-model="profileForm.avatarUrl" placeholder="输入头像图片链接" />
                   </el-form-item>
                   <el-form-item>
                     <el-button type="primary" :loading="savingProfile" @click="saveProfile">保存修改</el-button>
+                  </el-form-item>
+                </el-form>
+
+                <el-divider>实名认证</el-divider>
+                <el-form :model="realNameForm" label-width="100px" class="profile-form">
+                  <el-form-item label="认证状态">
+                    <el-tag :type="isRealNameAuth ? 'success' : 'warning'">
+                      {{ isRealNameAuth ? '已实名认证' : '未实名认证' }}
+                    </el-tag>
+                  </el-form-item>
+                  <el-form-item label="真实姓名">
+                    <el-input v-model="realNameForm.realName" :disabled="isRealNameAuth" placeholder="请输入真实姓名" />
+                  </el-form-item>
+                  <el-form-item label="身份证号">
+                    <el-input v-model="realNameForm.idCard" :disabled="isRealNameAuth" placeholder="请输入身份证号" />
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button
+                      type="success"
+                      :loading="submittingRealName"
+                      :disabled="isRealNameAuth"
+                      @click="submitRealNameAuth"
+                    >
+                      提交实名认证
+                    </el-button>
                   </el-form-item>
                 </el-form>
 
@@ -272,7 +304,7 @@ import Footer from '../components/Footer.vue'
 import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
-import { changePassword as changePasswordApi } from '../api/auth.js'
+import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
 import { getMyOrders, cancelOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
@@ -283,6 +315,7 @@ const userStore = useUserStore()
 const activeTab = ref('profile')      // 当前激活的 tab 标签名
 const savingProfile = ref(false)      // 保存资料按钮 loading 状态
 const changingPwd = ref(false)        // 修改密码按钮 loading 状态
+const submittingRealName = ref(false) // 实名认证按钮 loading 状态
 const ordersLoading = ref(false)      // 订单列表加载状态
 const contractsLoading = ref(false)   // 合同列表加载状态
 const collectionsLoading = ref(false) // 收藏列表加载状态
@@ -297,6 +330,7 @@ const pwdFormRef = ref(null)
 const userInfo = computed(() => userStore.userInfo)
 const creditScore = computed(() => userInfo.value.creditScore || 100)
 const unreadMessages = computed(() => messages.value.filter(m => !m.isRead).length)
+const isRealNameAuth = computed(() => !!userInfo.value.isRealNameAuth)
 const creditStatClass = computed(() => {
   const score = creditScore.value
   if (score >= 90) return 'success'
@@ -317,7 +351,14 @@ const profileForm = reactive({
   username: userInfo.value.username,
   phone: userInfo.value.phone,
   email: userInfo.value.email,
-  avatarUrl: userInfo.value.avatarUrl
+  avatarUrl: userInfo.value.avatarUrl,
+  gender: userInfo.value.gender ?? 0
+})
+
+// 实名认证表单
+const realNameForm = reactive({
+  realName: userInfo.value.realName || '',
+  idCard: userInfo.value.idCard || ''
 })
 
 // 密码修改表单
@@ -355,7 +396,12 @@ onMounted(async () => {
       username: userInfo.value.username,
       phone: userInfo.value.phone,
       email: userInfo.value.email,
-      avatarUrl: userInfo.value.avatarUrl
+      avatarUrl: userInfo.value.avatarUrl,
+      gender: userInfo.value.gender ?? 0
+    })
+    Object.assign(realNameForm, {
+      realName: userInfo.value.realName || '',
+      idCard: userInfo.value.idCard || ''
     })
   } catch (e) { /* ignore */ }
 
@@ -375,6 +421,32 @@ async function loadOrders() {
     myOrders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { ordersLoading.value = false }
+}
+
+/** 提交实名认证 */
+async function submitRealNameAuth() {
+  if (isRealNameAuth.value) return
+  if (!realNameForm.realName || !realNameForm.idCard) {
+    ElMessage.warning('请输入真实姓名和身份证号')
+    return
+  }
+  submittingRealName.value = true
+  try {
+    await realNameAuthApi({
+      realName: realNameForm.realName,
+      idCard: realNameForm.idCard
+    })
+    await userStore.fetchProfile()
+    Object.assign(realNameForm, {
+      realName: userInfo.value.realName || '',
+      idCard: userInfo.value.idCard || ''
+    })
+    ElMessage.success('实名认证提交成功')
+  } catch (e) {
+    ElMessage.error(e.message || '实名认证失败')
+  } finally {
+    submittingRealName.value = false
+  }
 }
 
 /** 加载当前用户参与的合同列表（最多20条） */

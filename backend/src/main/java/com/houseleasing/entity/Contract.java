@@ -30,6 +30,15 @@ public class Contract {
     private Long tenantId;
     /** 房东用户 ID */
     private Long landlordId;
+    /** 租客用户信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private User tenant;
+    /** 房东用户信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private User landlord;
+    /** 关联合同房源信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private House house;
     /** 合同正文内容（LONGVARCHAR 类型存储大文本） */
     @TableField(value = "content", jdbcType = org.apache.ibatis.type.JdbcType.LONGVARCHAR)
     private String content;

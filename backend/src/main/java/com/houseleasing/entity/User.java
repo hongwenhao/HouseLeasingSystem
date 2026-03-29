@@ -36,6 +36,8 @@ public class User {
     private Integer creditScore = 100;
     /** 是否已完成实名认证，对应数据库字段 is_real_name_auth */
     private Boolean isRealNameAuth = false; // maps to is_real_name_auth
+    /** 性别：0-未知，1-男，2-女 */
+    private Integer gender = 0;
     /** 账号状态：ACTIVE（正常）、BANNED（封禁） */
     private String status = "ACTIVE";
     /** 用户头像 URL */

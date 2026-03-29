@@ -56,6 +56,13 @@ public class OrderServiceImpl implements OrderService {
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
         }
+        User tenant = userMapper.selectById(tenantId);
+        if (tenant == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth())) {
+            throw new BusinessException(403, "请先完成实名认证后再预约看房");
+        }
         Order order = new Order();
         order.setHouseId(houseId);
         order.setTenantId(tenantId);
@@ -87,6 +94,13 @@ public class OrderServiceImpl implements OrderService {
         House house = houseMapper.selectById(request.getHouseId());
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
+        }
+        User tenant = userMapper.selectById(tenantId);
+        if (tenant == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth())) {
+            throw new BusinessException(403, "请先完成实名认证后再预约看房");
         }
         Order order = new Order();
         order.setHouseId(request.getHouseId());
@@ -229,6 +243,19 @@ public class OrderServiceImpl implements OrderService {
         wrapper.eq(Order::getLandlordId, landlordId);
         wrapper.orderByDesc(Order::getCreateTime);
         Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
+        result.getRecords().forEach(order -> {
+            if (order.getTenantId() != null) {
+                User tenant = userMapper.selectById(order.getTenantId());
+                if (tenant != null) {
+                    tenant.setPassword(null);
+                    tenant.setIdCard(null);
+                    order.setTenant(tenant);
+                }
+            }
+            if (order.getHouseId() != null) {
+                order.setHouse(houseMapper.selectById(order.getHouseId()));
+            }
+        });
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 
