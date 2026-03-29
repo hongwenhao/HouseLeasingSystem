@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.UUID;
 
 /**
@@ -87,16 +88,18 @@ public class FileUploadController {
         String newFilename = UUID.randomUUID().toString().replace("-", "") + ext;
 
         // 确保上传目录存在，若不存在则自动创建（含多级父目录）
-        File dir = new File(uploadDir);
+        File dir = new File(uploadDir).getAbsoluteFile();
         if (!dir.exists() && !dir.mkdirs()) {
             log.error("创建上传目录失败：{}", dir.getAbsolutePath());
             return Result.error("服务器存储目录初始化失败，请稍后重试");
         }
 
         // 将上传的文件写入磁盘
+        // 使用 Files.copy 代替 transferTo，避免 Servlet Part.write() 将相对路径
+        // 解析到 Tomcat 工作目录（而非期望的上传目录）导致 FileNotFoundException
         File dest = new File(dir, newFilename);
-        try {
-            file.transferTo(dest);
+        try (var inputStream = file.getInputStream()) {
+            Files.copy(inputStream, dest.toPath());
             log.info("图片上传成功：{}", dest.getAbsolutePath());
         } catch (IOException e) {
             log.error("图片保存失败：{}", e.getMessage(), e);
