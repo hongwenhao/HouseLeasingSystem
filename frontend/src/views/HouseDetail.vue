@@ -43,7 +43,7 @@
               <h3 class="card-title">
                 <el-icon class="title-icon"><Money /></el-icon>费用说明
               </h3>
-              <FeeTable :fees="house.feeConfig || house.fees || {}" />
+              <FeeTable :fees="feesConfig" />
             </div>
 
             <!-- 配套设施标签（无设施时不显示该区块） -->
@@ -248,6 +248,21 @@ const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
+
+/**
+ * 将 house 的扁平费用字段转换为 FeeTable 组件所需的嵌套结构
+ * House 实体：house.waterFee / house.waterFeeType → FeeTable 期望：{ waterFee: { type, amount } }
+ */
+const feesConfig = computed(() => {
+  if (!house.value) return {}
+  return {
+    waterFee: { type: house.value.waterFeeType, amount: house.value.waterFee },
+    electricFee: { type: house.value.electricFeeType, amount: house.value.electricFee },
+    gasFee: { type: house.value.gasFeeType, amount: house.value.gasFee },
+    propertyFee: { type: house.value.propertyFeeType, amount: house.value.propertyFee },
+    internetFee: { type: house.value.internetFeeType, amount: house.value.internetFee }
+  }
+})
 
 // 预约表单数据
 const appointForm = ref({
