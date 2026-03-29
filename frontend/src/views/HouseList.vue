@@ -1,6 +1,6 @@
 <template>
   <!-- 组件说明：房源列表页，左侧为搜索筛选栏，右侧为房源卡片网格。
-       支持多条件筛选（城市/区域/价格区间/户型/房东类型/装修）、
+       支持多条件筛选（省份/城市/区域/价格区间/户型/房东类型/装修）、
        排序（默认/价格升降序/最新）以及分页浏览。
        搜索条件同步到 URL query 参数，支持刷新后保留筛选状态。 -->
   <div class="house-list-page">
@@ -106,9 +106,9 @@ async function fetchData() {
       pageSize: pageSize.value,
       sortBy: sortBy.value
     }
-    // 将非空筛选条件合并到请求参数（province 为前端导航辅助字段，不发送给后端）
+    // 将非空筛选条件合并到请求参数
     Object.entries(filters).forEach(([k, v]) => {
-      if (k !== 'province' && v !== '' && v !== null && v !== undefined) params[k] = v
+      if (v !== '' && v !== null && v !== undefined) params[k] = v
     })
     updateQuery(params)  // 同步 URL
     const res = await getHouses(params)
