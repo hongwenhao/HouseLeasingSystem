@@ -84,6 +84,7 @@ const sortBy = ref('')   // 排序方式：'' / price_asc / price_desc / newest
 // 从 URL query 参数初始化筛选条件（支持刷新/分享链接保留状态）
 const filters = reactive({
   keyword: route.query.keyword || '',
+  province: route.query.province || '',
   city: route.query.city || '',
   district: route.query.district || '',
   minPrice: route.query.minPrice ? Number(route.query.minPrice) : null,
@@ -105,9 +106,9 @@ async function fetchData() {
       pageSize: pageSize.value,
       sortBy: sortBy.value
     }
-    // 将非空筛选条件合并到请求参数
+    // 将非空筛选条件合并到请求参数（province 为前端导航辅助字段，不发送给后端）
     Object.entries(filters).forEach(([k, v]) => {
-      if (v !== '' && v !== null && v !== undefined) params[k] = v
+      if (k !== 'province' && v !== '' && v !== null && v !== undefined) params[k] = v
     })
     updateQuery(params)  // 同步 URL
     const res = await getHouses(params)

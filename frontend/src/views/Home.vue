@@ -110,6 +110,7 @@ const recommendedHouses = ref([])  // 精选推荐房源列表
 // 搜索筛选条件（与 SearchBar 组件 v-model 双向绑定）
 const filters = reactive({
   keyword: '',
+  province: '',
   city: '',
   district: '',
   minPrice: null,
@@ -169,9 +170,9 @@ onMounted(async () => {
  */
 function handleSearch(searchFilters) {
   const query = {}
-  // 过滤掉空值，只保留有效的筛选条件
+  // 过滤掉空值和前端专用的 province 字段，只保留有效的筛选条件
   Object.entries(searchFilters).forEach(([k, v]) => {
-    if (v !== '' && v !== null && v !== undefined) query[k] = v
+    if (k !== 'province' && v !== '' && v !== null && v !== undefined) query[k] = v
   })
   router.push({ path: '/houses', query })
 }
