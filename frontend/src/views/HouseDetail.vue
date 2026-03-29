@@ -82,8 +82,10 @@
                   <span class="price-value">{{ house.price }}</span>
                   <span class="price-unit">元/月</span>
                 </div>
+                <!-- 押金：显示月数及对应的实际金额（押金月数 × 月租金） -->
                 <div class="price-sub">
                   押金 <strong>{{ house.deposit }}</strong> 个月
+                  <span v-if="depositAmount > 0">（¥{{ depositAmount.toFixed(2) }}）</span>
                 </div>
               </div>
 
@@ -255,6 +257,17 @@ const normalizedImages = computed(() => {
 })
 
 /**
+ * 计算实际押金金额（元）
+ * 后端 houses.deposit 存储押金月数（如 1 表示押一个月租金），
+ * 实际押金 = depositMonths × monthlyPrice，供详情页展示使用
+ */
+const depositAmount = computed(() => {
+  if (!house.value || !house.value.deposit || !house.value.price) return 0
+  // 返回数值类型，模板中用 toFixed(2) 格式化显示
+  return Number(house.value.deposit) * Number(house.value.price)
+})
+
+/**
  * 将 house 的扁平费用字段转换为 FeeTable 组件所需的嵌套结构
  * House 实体：house.waterFee / house.waterFeeType → FeeTable 期望：{ waterFee: { type, amount } }
  */
@@ -343,7 +356,11 @@ onMounted(async () => {
     const res = await getHouseDetail(route.params.id)
     house.value = {
       ...res,
-      images: normalizeHouseImages(res?.images)
+      // 将图片 JSON 字符串/数组标准化为 URL 数组
+      images: normalizeHouseImages(res?.images),
+      // 将后端逗号分隔的 tags 字符串解析为配套设施数组，供模板 v-for 渲染
+      // 例如 "洗衣机,空调,WiFi" → ['洗衣机', '空调', 'WiFi']
+      amenities: res?.tags ? res.tags.split(',').filter(tag => tag.trim() !== '') : []
     }
     await checkCollected()
   } catch (e) {
