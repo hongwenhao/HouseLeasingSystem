@@ -416,7 +416,7 @@ onMounted(async () => {
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const res = await getMyOrders({ page: 1, pageSize: 20 })
+    const res = await getMyOrders({ page: 1, size: 20 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     myOrders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
@@ -453,7 +453,7 @@ async function submitRealNameAuth() {
 async function loadContracts() {
   contractsLoading.value = true
   try {
-    const res = await getMyContracts({ page: 1, pageSize: 20 })
+    const res = await getMyContracts({ page: 1, size: 20 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     myContracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
@@ -480,7 +480,7 @@ async function loadCollections() {
 /** 加载当前用户的消息通知列表（最多50条） */
 async function loadMessages() {
   try {
-    const res = await getMessages({ page: 1, pageSize: 50 })
+    const res = await getMessages({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     messages.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }

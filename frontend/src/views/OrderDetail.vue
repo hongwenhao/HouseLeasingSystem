@@ -58,6 +58,12 @@
               <el-descriptions-item label="预约看房时间">
                 {{ formatDateTime(order.appointmentTime) }}
               </el-descriptions-item>
+              <el-descriptions-item label="租赁意向期限">
+                {{ formatDate(order.startDate) }} 至 {{ formatDate(order.endDate) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="押金金额">
+                {{ formatMoney(order.deposit) }}
+              </el-descriptions-item>
               <el-descriptions-item label="租客" v-if="order.tenant">
                 {{ order.tenant.username || order.tenantId }}
               </el-descriptions-item>
@@ -94,7 +100,7 @@
                 </el-button>
               </template>
               <template v-if="role === 'LANDLORD' && order.status === 'APPROVED'">
-                <el-button type="primary" size="large" @click="handleCreateContract">
+                <el-button type="primary" size="large" @click="openCreateContractDialog">
                   <el-icon><Document /></el-icon> 生成合同
                 </el-button>
               </template>
@@ -126,6 +132,34 @@
       </template>
     </el-dialog>
 
+    <!-- Create Contract Dialog -->
+    <el-dialog v-model="createContractDialogVisible" title="生成合同" width="460px">
+      <el-form :model="contractForm" label-width="110px">
+        <el-form-item label="租赁开始日期" required>
+          <el-date-picker
+            v-model="contractForm.startDate"
+            type="date"
+            placeholder="请选择开始日期"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="租赁结束日期" required>
+          <el-date-picker
+            v-model="contractForm.endDate"
+            type="date"
+            placeholder="请选择结束日期"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createContractDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creatingContract" @click="handleCreateContract">
+          确认生成
+        </el-button>
+      </template>
+    </el-dialog>
+
     <Footer />
   </div>
 </template>
@@ -147,6 +181,12 @@ const actioning = ref(false)         // 操作按钮 loading（确认/拒绝/取
 const order = ref(null)              // 订单详情数据
 const rejectDialogVisible = ref(false) // 拒绝对话框显隐
 const rejectReason = ref('')         // 拒绝原因
+const createContractDialogVisible = ref(false) // 生成合同对话框显隐
+const creatingContract = ref(false)            // 生成合同按钮 loading
+const contractForm = ref({
+  startDate: null, // 合同租赁开始日期（房东填写）
+  endDate: null    // 合同租赁结束日期（房东填写）
+})
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const role = localStorage.getItem('role') || ''  // 当前用户角色（从 localStorage 读取）
 
@@ -200,6 +240,9 @@ onMounted(async () => {
   try {
     const res = await getOrderDetail(route.params.id)
     order.value = res
+    // 若预约中已存在租赁起止日期，默认回填到生成合同弹窗，方便房东确认或调整
+    contractForm.value.startDate = res?.startDate ? new Date(res.startDate) : null
+    contractForm.value.endDate = res?.endDate ? new Date(res.endDate) : null
   } catch (e) {
     ElMessage.error('加载订单详情失败')
   } finally {
@@ -256,14 +299,30 @@ async function handleCancel() {
  * 成功后跳转到新创建的合同详情页
  */
 async function handleCreateContract() {
+  if (!contractForm.value.startDate || !contractForm.value.endDate) {
+    ElMessage.warning('请填写完整的租赁起止日期')
+    return
+  }
+  if (contractForm.value.endDate < contractForm.value.startDate) {
+    ElMessage.warning('租赁结束日期不能早于开始日期')
+    return
+  }
+  creatingContract.value = true
   try {
-    const res = await createContract({ orderId: route.params.id })
+    const res = await createContract({
+      orderId: route.params.id,
+      startDate: formatDateForApi(contractForm.value.startDate),
+      endDate: formatDateForApi(contractForm.value.endDate)
+    })
     ElMessage.success('合同已生成')
+    createContractDialogVisible.value = false
     if (res && res.id) {
       router.push(`/contracts/${res.id}`)
     }
   } catch (e) {
     ElMessage.error(e.message || '生成合同失败')
+  } finally {
+    creatingContract.value = false
   }
 }
 
@@ -271,6 +330,33 @@ async function handleCreateContract() {
 function formatDateTime(date) {
   if (!date) return '-'
   return new Date(date).toLocaleString('zh-CN', { hour12: false })
+}
+
+/** 格式化日期为 yyyy-MM-dd，供后端 LocalDate 字段接收 */
+function formatDateForApi(date) {
+  if (!date) return null
+  const d = new Date(date)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** 格式化日期为本地化中文短日期 */
+function formatDate(date) {
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString('zh-CN')
+}
+
+/** 格式化金额展示 */
+function formatMoney(val) {
+  if (val === null || val === undefined || val === '') return '-'
+  return `¥${val}`
+}
+
+/** 打开生成合同对话框（房东在此填写正式租期） */
+function openCreateContractDialog() {
+  createContractDialogVisible.value = true
 }
 </script>
 
