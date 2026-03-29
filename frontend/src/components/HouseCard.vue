@@ -6,7 +6,7 @@
     <!-- 房源封面图区域 -->
     <div class="card-image">
       <img
-        :src="house.images && house.images.length > 0 ? house.images[0] : placeholder"
+        :src="displayImage"
         :alt="house.title"
         class="house-img"
       />
@@ -43,6 +43,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import OwnerTypeBadge from './OwnerTypeBadge.vue'
+import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const props = defineProps({
   house: {
@@ -55,6 +56,10 @@ const router = useRouter()
 // 图片加载失败时显示的占位图 URL
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
+const displayImage = computed(() => {
+  const images = normalizeHouseImages(props.house.images)
+  return images.length > 0 ? images[0] : placeholder
+})
 
 /**
  * 将装修枚举值映射为中文标签
@@ -92,6 +97,7 @@ const displayDistrict = computed(() => {
 function goDetail() {
   router.push(`/houses/${props.house.id}`)
 }
+
 </script>
 
 <style scoped>

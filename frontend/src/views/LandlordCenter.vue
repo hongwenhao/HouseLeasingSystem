@@ -22,7 +22,7 @@
                 class="house-item"
               >
                 <img
-                  :src="(house.images && house.images[0]) || placeholder"
+                  :src="getHouseCover(house)"
                   class="house-thumb"
                   :alt="house.title"
                 />
@@ -169,6 +169,7 @@ import Footer from '../components/Footer.vue'
 import { getMyHouses, deleteHouse } from '../api/house.js'
 import { getLandlordOrders, confirmOrder, rejectOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
+import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const activeTab = ref('houses')        // 当前激活 tab
 const housesLoading = ref(false)       // 我的房源加载状态
@@ -197,7 +198,8 @@ async function loadHouses() {
   try {
     const res = await getMyHouses({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
-    myHouses.value = Array.isArray(res) ? res : (res?.records || [])
+    myHouses.value = (Array.isArray(res) ? res : (res?.records || []))
+      .map(house => ({ ...house, images: normalizeHouseImages(house.images) }))
   } catch (e) { /* ignore */ }
   finally { housesLoading.value = false }
 }
@@ -276,6 +278,15 @@ function openRejectDialog(order) {
   currentRejectOrder.value = order
   rejectReason.value = ''
   rejectDialogVisible.value = true
+}
+
+/**
+ * 获取房源列表卡片封面图：优先取 images 第1张，没有则占位图
+ * 该函数兼容 images 是数组、JSON 字符串、单 URL 字符串等历史数据格式。
+ */
+function getHouseCover(house) {
+  const images = normalizeHouseImages(house?.images)
+  return images.length > 0 ? images[0] : placeholder
 }
 
 /** 提交拒绝预约（附带拒绝原因） */
