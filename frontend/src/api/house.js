@@ -50,3 +50,21 @@ export const uncollectHouse = (id) => request.delete(`/houses/${id}/collect`)
 
 /** 获取当前用户收藏的房源列表 */
 export const getMyCollections = (params = {}) => request.get('/houses/my/collections', { params })
+
+/**
+ * 上传房源图片
+ *
+ * 将图片文件作为 multipart/form-data 发送到后端，
+ * 后端将图片保存到磁盘并返回可访问的图片 URL（如 /api/uploads/xxx.jpg）。
+ * 使用文件 URL 代替 base64 存储，避免数据库中存储大量二进制数据。
+ *
+ * @param {File} file - 原始 File 对象（来自 el-upload 的 raw 属性）
+ * @returns {Promise<string>} 图片访问 URL
+ */
+export const uploadHouseImage = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/upload/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

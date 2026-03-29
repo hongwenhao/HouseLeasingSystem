@@ -140,6 +140,15 @@ public class ContractServiceImpl implements ContractService {
                 contract.getId(), contract.getTenantId(), contract.getLandlordId());
         contract.setWorkflowInstanceId(processInstanceId);
         contractMapper.updateById(contract);
+
+        // 合同生成后将对应房源设为下架状态（OFFLINE），防止同一房源被重复预订
+        // 房源在合同取消时会自动恢复上架（见 cancelContract 方法）
+        if (house != null) {
+            house.setStatus("OFFLINE");
+            houseMapper.updateById(house);
+            log.info("合同 {} 生成，房源 {} 已自动下架", contract.getContractNo(), house.getId());
+        }
+
         return contract;
     }
 
@@ -444,6 +453,14 @@ public class ContractServiceImpl implements ContractService {
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
+
+        // 合同取消后将对应房源恢复为上架状态（ONLINE），使其可以被重新预订
+        House house = houseMapper.selectById(contract.getHouseId());
+        if (house != null) {
+            house.setStatus("ONLINE");
+            houseMapper.updateById(house);
+            log.info("合同 {} 已取消，房源 {} 已自动恢复上架", contractId, house.getId());
+        }
     }
 
     /**
