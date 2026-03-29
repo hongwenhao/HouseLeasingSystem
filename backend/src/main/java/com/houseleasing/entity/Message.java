@@ -26,8 +26,6 @@ public class Message {
     private String content;
     /** 消息类型：APPOINTMENT（预约）、CONTRACT（合同）、ORDER（订单）等 */
     private String type;
-    /** 是否已读，默认未读 */
-    private Boolean isRead = false;
     /** 关联业务对象的 ID（如订单 ID、合同 ID） */
     private Long relatedId;
     /** 创建时间，插入时自动填充 */

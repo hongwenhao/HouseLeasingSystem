@@ -21,11 +21,6 @@
             <div class="stat-number warning">{{ myContracts.length }}</div>
             <div class="stat-desc">所有合同记录</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-title">未读消息</div>
-            <div class="stat-number success">{{ unreadMessages }}</div>
-            <div class="stat-desc">消息中心未读</div>
-          </div>
           <!-- 信用分快速概览，详情见“信用评分”标签页 -->
           <div class="stat-card">
             <div class="stat-title">信用评分</div>
@@ -213,10 +208,7 @@
                   <span>消息中心</span>
                 </div>
               </template>
-              <div class="messages-toolbar">
-                <el-button size="small" @click="markAllMessagesRead">全部标记已读</el-button>
-              </div>
-              <MessageList :messages="messages" @read="handleMarkRead" />
+              <MessageList :messages="messages" />
             </el-tab-pane>
 
             <!-- Credit Tab -->
@@ -275,7 +267,7 @@ import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi } from '../api/auth.js'
 import { getMyOrders, cancelOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
-import { getMessages, markRead, markAllRead } from '../api/message.js'
+import { getMessages } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
 
 const router = useRouter()                 // 获取路由实例以便在密码修改后跳转
@@ -296,7 +288,6 @@ const pwdFormRef = ref(null)
 // 从 Pinia store 计算用户信息
 const userInfo = computed(() => userStore.userInfo)
 const creditScore = computed(() => userInfo.value.creditScore || 100)
-const unreadMessages = computed(() => messages.value.filter(m => !m.isRead).length)
 const creditStatClass = computed(() => {
   const score = creditScore.value
   if (score >= 90) return 'success'
@@ -461,29 +452,6 @@ async function cancelMyOrder(id) {
   }
 }
 
-/**
- * 将指定消息标记为已读
- * @param {number} id - 消息 ID
- */
-async function handleMarkRead(id) {
-  try {
-    await markRead(id)
-    // 本地更新消息已读状态，无需重新请求接口
-    const msg = messages.value.find(m => m.id === id)
-    if (msg) msg.isRead = true
-  } catch (e) { /* ignore */ }
-}
-
-/** 将所有消息一键标记为已读 */
-async function markAllMessagesRead() {
-  try {
-    await markAllRead()
-    messages.value.forEach(m => m.isRead = true)
-    ElMessage.success('已全部标记已读')
-  } catch (e) {
-    ElMessage.error('操作失败')
-  }
-}
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {

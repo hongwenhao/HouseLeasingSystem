@@ -1,6 +1,6 @@
 <template>
   <!-- 组件说明：顶部导航栏组件，固定定位在页面顶部，包含品牌 Logo、主导航链接、
-       用户头像下拉菜单（已登录）或登录/注册按钮（未登录），以及消息未读数角标。
+       用户头像下拉菜单（已登录）或登录/注册按钮（未登录）。
        支持移动端响应式：小屏下导航链接收起，通过汉堡按钮展开。 -->
   <nav class="navbar">
     <div class="navbar-inner">
@@ -39,12 +39,10 @@
 
       <!-- 右侧操作区域 -->
       <div class="nav-right">
-        <!-- 消息角标：已登录时显示，展示未读消息数量 -->
-        <el-badge :value="unreadCount > 0 ? unreadCount : ''" class="msg-badge" v-if="isLoggedIn">
-          <router-link to="/user-center" class="icon-btn">
-            <el-icon size="20"><Bell /></el-icon>
-          </router-link>
-        </el-badge>
+        <!-- 消息图标：已登录时显示 -->
+        <router-link v-if="isLoggedIn" to="/user-center" class="icon-btn">
+          <el-icon size="20"><Bell /></el-icon>
+        </router-link>
 
         <!-- 已登录：显示用户头像和下拉菜单 -->
         <template v-if="isLoggedIn">
@@ -86,38 +84,22 @@
 </template>
 
 <script setup>
-// 说明：顶部导航栏逻辑，负责获取登录状态、未读消息数，以及处理用户下拉菜单命令
-import { ref, computed, onMounted } from 'vue'
+// 说明：顶部导航栏逻辑，负责获取登录状态以及处理用户下拉菜单命令
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
-import { getUnreadCount } from '../api/message.js'
 import { UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 // 控制移动端汉堡菜单的展开/收起状态
 const menuOpen = ref(false)
-// 未读消息数量，用于消息角标
-const unreadCount = ref(0)
 
 // 从 Pinia store 读取登录状态和用户信息
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
 // 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
 const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
-
-onMounted(async () => {
-  // 已登录时，异步拉取未读消息数量，展示在消息角标上
-  if (isLoggedIn.value) {
-    try {
-      const res = await getUnreadCount()
-      // 兼容后端直接返回数字或 { count: n } 两种格式
-      unreadCount.value = typeof res === 'number' ? res : (res?.count ?? 0)
-    } catch (e) {
-      // 获取未读数失败时不影响页面正常使用，静默忽略
-    }
-  }
-})
 
 /**
  * 处理用户下拉菜单命令
@@ -215,10 +197,6 @@ async function handleCommand(cmd) {
   align-items: center;
   gap: 12px;
   margin-left: auto;
-}
-
-.msg-badge {
-  cursor: pointer;
 }
 
 .icon-btn {
