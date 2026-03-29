@@ -233,8 +233,8 @@ async function loadContracts() {
 function computeStats() {
   stats.value = {
     totalHouses: myHouses.value.length,
-    activeRentals: contracts.value.filter(c => c.status === 'SIGNED').length,
-    totalIncome: contracts.value.filter(c => c.status === 'SIGNED').reduce((sum, c) => sum + (c.monthlyRent || c.rent || 0), 0),
+    activeRentals: contracts.value.filter(c => c.status === 'FULLY_SIGNED').length,
+    totalIncome: contracts.value.filter(c => c.status === 'FULLY_SIGNED').reduce((sum, c) => sum + (c.monthlyRent || c.rent || 0), 0),
     avgPrice: myHouses.value.length > 0
       ? Math.round(myHouses.value.reduce((sum, h) => sum + (h.price || 0), 0) / myHouses.value.length)
       : 0
@@ -318,13 +318,13 @@ function orderStatusType(status) {
 
 /** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
-  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', SIGNED: '已签署', CANCELLED: '已取消' }
+  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', TENANT_SIGNED: '租客已签', LANDLORD_SIGNED: '房东已签', FULLY_SIGNED: '双方已签', CANCELLED: '已取消' }
   return map[status] || status
 }
 
 /** 合同状态对应 Tag 类型 */
 function contractStatusType(status) {
-  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', SIGNED: 'success', CANCELLED: 'danger' }
+  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', TENANT_SIGNED: 'warning', LANDLORD_SIGNED: 'warning', FULLY_SIGNED: 'success', CANCELLED: 'danger' }
   return map[status] || 'info'
 }
 

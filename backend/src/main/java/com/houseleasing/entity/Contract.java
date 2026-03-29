@@ -33,7 +33,11 @@ public class Contract {
     /** 合同正文内容（LONGVARCHAR 类型存储大文本） */
     @TableField(value = "content", jdbcType = org.apache.ibatis.type.JdbcType.LONGVARCHAR)
     private String content;
-    /** 合同状态：DRAFT（草稿）、PENDING_SIGN（待签署）、SIGNED（已签署）、CANCELLED（已取消） */
+    /**
+     * 合同状态：
+     * DRAFT（草稿）→ PENDING_SIGN（待签署）→ TENANT_SIGNED（租客已签）/LANDLORD_SIGNED（房东已签）
+     * → FULLY_SIGNED（双方已签）或 CANCELLED（已取消）
+     */
     private String status = "DRAFT";
     /** 风险等级：LOW（低风险）、MEDIUM（中风险）、HIGH（高风险） */
     private String riskLevel;
