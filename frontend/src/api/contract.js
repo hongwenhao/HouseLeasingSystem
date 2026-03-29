@@ -35,3 +35,6 @@ export const cancelContract = (id) => request.put(`/contracts/${id}/cancel`)
 
 /** 获取合同风险检测结果，返回风险条款列表（含风险等级 HIGH/MEDIUM/LOW） */
 export const getContractRisks = (id) => request.post(`/contracts/${id}/risk-check`)
+
+/** 下载合同 PDF */
+export const downloadContractPdf = (id) => request.get(`/contracts/${id}/pdf`, { responseType: 'blob' })
