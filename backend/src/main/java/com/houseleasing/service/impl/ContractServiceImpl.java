@@ -264,15 +264,19 @@ public class ContractServiceImpl implements ContractService {
             throw new BusinessException("角色无效: " + role);
         }
 
-        // 检查双方是否均已签署，若是则更新状态为已签署并发送通知
+        // 检查双方是否均已签署，若是则更新状态为双方已签并发送通知
         if (Boolean.TRUE.equals(contract.getTenantSigned()) && Boolean.TRUE.equals(contract.getLandlordSigned())) {
-            contract.setStatus("SIGNED");
+            contract.setStatus("FULLY_SIGNED");
             contract.setSignTime(LocalDateTime.now());
             messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成");
             messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成");
         } else {
-            // 只有一方签署时设置为待签署状态
-            contract.setStatus("PENDING_SIGN");
+            // 只有一方签署时，根据签署方设置明确状态，便于前端清晰展示流程
+            if ("TENANT".equals(role)) {
+                contract.setStatus("TENANT_SIGNED");
+            } else {
+                contract.setStatus("LANDLORD_SIGNED");
+            }
         }
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
@@ -396,8 +400,8 @@ public class ContractServiceImpl implements ContractService {
         if (!contract.getTenantId().equals(userId) && !contract.getLandlordId().equals(userId)) {
             throw new BusinessException(403, "没有操作权限");
         }
-        // 已签署的合同不可取消
-        if ("SIGNED".equals(contract.getStatus())) {
+        // 双方已签的合同不可取消
+        if ("FULLY_SIGNED".equals(contract.getStatus())) {
             throw new BusinessException("已签署的合同不可取消");
         }
         contract.setStatus("CANCELLED");
