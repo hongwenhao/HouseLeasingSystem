@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
@@ -64,6 +65,10 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(403, "请先完成实名认证后再预约看房");
         }
         Order order = new Order();
+        // 押金金额 = 押金月数 × 月租金（houses.deposit 存储的是月数，需乘以月租金得到实际金额）
+        BigDecimal depositAmount = (house.getDeposit() != null && house.getPrice() != null)
+                ? house.getDeposit().multiply(house.getPrice())
+                : BigDecimal.ZERO;
         order.setHouseId(houseId);
         order.setTenantId(tenantId);
         order.setLandlordId(house.getOwnerId());
@@ -71,7 +76,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderType("INTENT");
         order.setStatus("PENDING");
         order.setMonthlyRent(house.getPrice());
-        order.setDeposit(house.getDeposit());
+        order.setDeposit(depositAmount); // 存储实际押金金额（元），而非月数
         order.setRemark(remark);
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
@@ -103,6 +108,10 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(403, "请先完成实名认证后再预约看房");
         }
         Order order = new Order();
+        // 押金金额 = 押金月数 × 月租金（houses.deposit 存储的是月数，需乘以月租金得到实际金额）
+        BigDecimal depositAmount = (house.getDeposit() != null && house.getPrice() != null)
+                ? house.getDeposit().multiply(house.getPrice())
+                : BigDecimal.ZERO;
         order.setHouseId(request.getHouseId());
         order.setTenantId(tenantId);
         order.setLandlordId(house.getOwnerId());
@@ -113,7 +122,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStartDate(request.getStartDate());
         order.setEndDate(request.getEndDate());
         order.setMonthlyRent(house.getPrice());
-        order.setDeposit(house.getDeposit());
+        order.setDeposit(depositAmount); // 存储实际押金金额（元），而非月数
         order.setRemark(request.getRemark());
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
