@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll() // 注册和登录接口公开访问
                 .requestMatchers(HttpMethod.GET, "/api/houses", "/api/houses/search").permitAll() // 房源列表和搜索公开
                 .requestMatchers(HttpMethod.GET, "/api/houses/{id}").permitAll() // 房源详情公开
+                .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll() // 已上传的图片文件公开访问（无需登录即可查看房源图片）
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Swagger 文档公开
                 .anyRequest().authenticated() // 其他所有接口需要认证
             )

@@ -214,6 +214,7 @@
           <!-- Images -->
           <el-card class="form-card">
             <template #header>房源图片</template>
+            <!-- 图片上传：选择文件后自动调用 handleLocalImageChange 上传至服务端，表单中只保存图片 URL -->
             <el-upload
               action="#"
               :auto-upload="false"
@@ -255,7 +256,7 @@ import { ElMessage } from 'element-plus'
 import { regionData } from 'element-china-area-data'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
-import { createHouse, updateHouse, getHouseDetail } from '../api/house.js'
+import { createHouse, updateHouse, getHouseDetail, uploadHouseImage } from '../api/house.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -487,26 +488,30 @@ async function handleSubmit() {
 }
 
 /**
- * 本地上传图片并转为 base64 数据 URL，直接放入表单图片列表
- * 说明：后端当前接收的是图片字符串数组（JSON），本地上传后使用 data URL 可直接复用现有字段结构
+ * 上传图片到服务器并将返回的图片 URL 存入表单列表
+ *
+ * 说明：不再将图片转为 base64 存入数据库（体积过大），
+ * 改为通过 POST /api/upload/image 将文件上传至服务端磁盘，
+ * 后端返回可供 HTTP 访问的图片路径（/api/uploads/xxx.jpg），
+ * 表单及数据库中只存储该 URL 字符串。
+ *
+ * @param {object} uploadFile - el-upload 组件传入的文件对象（含 raw 属性）
  */
-function handleLocalImageChange(uploadFile) {
+async function handleLocalImageChange(uploadFile) {
   const rawFile = uploadFile?.raw
   if (!rawFile) return
   if (!rawFile.type?.startsWith('image/')) {
     ElMessage.warning('仅支持上传图片文件')
     return
   }
-  const reader = new FileReader()
-  reader.onload = () => {
-    if (typeof reader.result === 'string') {
-      form.images.push(reader.result)
-    }
+  try {
+    // 将文件上传到服务端，接口返回图片访问 URL
+    const imageUrl = await uploadHouseImage(rawFile)
+    form.images.push(imageUrl)
+    ElMessage.success('图片上传成功')
+  } catch (e) {
+    ElMessage.error(e?.message || '图片上传失败，请重试')
   }
-  reader.onerror = () => {
-    ElMessage.error('图片读取失败，请重试')
-  }
-  reader.readAsDataURL(rawFile)
 }
 </script>
 
