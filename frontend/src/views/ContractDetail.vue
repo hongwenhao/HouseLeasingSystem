@@ -350,7 +350,7 @@ async function handleDownloadPdf() {
 }
 
 .page-title {
-  font-size: 40px;
+  font-size: 32px;
   font-weight: 700;
   color: #1f2937;
   flex: 1;
@@ -464,7 +464,7 @@ async function handleDownloadPdf() {
 
 .sig-name {
   margin-top: 8px;
-  font-size: 34px;
+  font-size: 24px;
   line-height: 1.1;
   color: #10b981;
   font-weight: 700;
@@ -493,7 +493,7 @@ async function handleDownloadPdf() {
 }
 
 .risk-title {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
   color: #111827;
 }
