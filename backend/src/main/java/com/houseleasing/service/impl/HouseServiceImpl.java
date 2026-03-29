@@ -5,10 +5,14 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
+import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
 import com.houseleasing.entity.UserBehavior;
+import com.houseleasing.mapper.HouseImageMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserBehaviorMapper;
 import com.houseleasing.mapper.UserMapper;
@@ -40,8 +44,10 @@ public class HouseServiceImpl implements HouseService {
 
     private final WorkflowService workflowService;
     private final HouseMapper houseMapper;
+    private final HouseImageMapper houseImageMapper;
     private final UserBehaviorMapper userBehaviorMapper;
     private final UserMapper userMapper;
+    private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String BEHAVIOR_COLLECT = "COLLECT";
@@ -63,6 +69,8 @@ public class HouseServiceImpl implements HouseService {
         house.setCreateTime(LocalDateTime.now());
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.insert(house);
+        // 同步写入 house_images 明细表，确保“房源主表 JSON 字段”和“图片明细表”两处数据一致
+        syncHouseImages(house.getId(), house.getImages());
         return house;
     }
 
@@ -90,7 +98,74 @@ public class HouseServiceImpl implements HouseService {
         house.setOwnerId(ownerId);
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
-        return houseMapper.selectById(id);
+        House updatedHouse = houseMapper.selectById(id);
+        // 更新后按数据库最终值重建图片明细，兼容“本次请求未携带 images 字段”的场景
+        syncHouseImages(id, updatedHouse != null ? updatedHouse.getImages() : null);
+        return updatedHouse;
+    }
+
+    /**
+     * 将 houses.images（JSON 字符串）同步到 house_images 表。
+     *
+     * <p>为什么需要该同步：</p>
+     * <ul>
+     *   <li>当前系统历史上同时保留了两种图片存储方式：主表 JSON 字段 + 明细表 house_images。</li>
+     *   <li>前端发布房源时会写入 houses.images，但若不额外同步，house_images 会一直为空。</li>
+     *   <li>这里采用“先删后插”的幂等策略，每次发布/更新后重建当前房源的图片明细，避免脏数据。</li>
+     * </ul>
+     *
+     * @param houseId     房源 ID
+     * @param imagesJson  图片 JSON 字符串，期望格式如：["/api/uploads/a.jpg","/api/uploads/b.jpg"]
+     */
+    private void syncHouseImages(Long houseId, String imagesJson) {
+        if (houseId == null) {
+            return;
+        }
+        // 1) 先删除历史明细，避免重复与过期图片残留
+        LambdaQueryWrapper<HouseImage> deleteWrapper = new LambdaQueryWrapper<>();
+        deleteWrapper.eq(HouseImage::getHouseId, houseId);
+        houseImageMapper.delete(deleteWrapper);
+
+        // 2) 解析主表 JSON 字段，逐条写入明细表（含顺序）
+        List<String> imageUrls = parseImageUrls(imagesJson);
+        for (int i = 0; i < imageUrls.size(); i++) {
+            HouseImage houseImage = new HouseImage();
+            houseImage.setHouseId(houseId);
+            houseImage.setImageUrl(imageUrls.get(i));
+            houseImage.setSort(i);
+            houseImageMapper.insert(houseImage);
+        }
+    }
+
+    /**
+     * 解析图片列表字符串为 URL 集合。
+     *
+     * <p>兼容三类输入：</p>
+     * <ol>
+     *   <li>标准 JSON 数组字符串：["url1","url2"]</li>
+     *   <li>单个 URL 字符串：/api/uploads/a.jpg</li>
+     *   <li>空值：null / 空串（返回空集合）</li>
+     * </ol>
+     *
+     * @param images 图片字段原始值
+     * @return 清洗后的图片 URL 列表（已过滤空白项）
+     */
+    private List<String> parseImageUrls(String images) {
+        if (images == null || images.trim().isEmpty()) {
+            return List.of();
+        }
+        String trimmed = images.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                List<String> parsed = objectMapper.readValue(trimmed, new TypeReference<List<String>>() {});
+                return parsed.stream()
+                        .filter(url -> url != null && !url.trim().isEmpty())
+                        .toList();
+            } catch (Exception e) {
+                log.warn("Failed to parse house images JSON, fallback to single URL mode: {}", e.getMessage());
+            }
+        }
+        return List.of(trimmed);
     }
 
     /**

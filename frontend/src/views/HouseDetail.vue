@@ -22,7 +22,7 @@
             <div class="carousel-wrap">
               <el-carousel height="380px" class="carousel" :autoplay="false" indicator-position="outside">
                 <el-carousel-item
-                  v-for="(img, i) in (house.images && house.images.length > 0 ? house.images : [placeholder])"
+                  v-for="(img, i) in normalizedImages"
                   :key="i"
                 >
                   <img :src="img" :alt="`房屋图片${i+1}`" class="carousel-img" />
@@ -234,6 +234,7 @@ import FeeTable from '../components/FeeTable.vue'
 import { collectHouse, getHouseDetail, getMyCollections, uncollectHouse } from '../api/house.js'
 import { createOrder } from '../api/order.js'
 import { useUserStore } from '../stores/user.js'
+import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -248,6 +249,10 @@ const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
+const normalizedImages = computed(() => {
+  const images = normalizeHouseImages(house.value?.images)
+  return images.length > 0 ? images : [placeholder]
+})
 
 /**
  * 将 house 的扁平费用字段转换为 FeeTable 组件所需的嵌套结构
@@ -336,7 +341,10 @@ onMounted(async () => {
   try {
     // 从路由参数中获取房源 ID 并加载详情
     const res = await getHouseDetail(route.params.id)
-    house.value = res
+    house.value = {
+      ...res,
+      images: normalizeHouseImages(res?.images)
+    }
     await checkCollected()
   } catch (e) {
     ElMessage.error('加载房源详情失败')
@@ -420,6 +428,7 @@ async function submitAppointment() {
     submitting.value = false
   }
 }
+
 </script>
 
 <style scoped>
