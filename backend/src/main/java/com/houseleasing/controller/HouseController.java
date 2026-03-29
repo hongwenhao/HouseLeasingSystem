@@ -5,6 +5,7 @@ import com.houseleasing.common.Result;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
+import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
 import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.service.HouseService;
@@ -73,6 +74,18 @@ public class HouseController {
     @GetMapping("/{id}")
     public Result<House> getHouseById(@PathVariable Long id) {
         return Result.success(houseService.getHouseById(id));
+    }
+
+    /**
+     * 查询指定房源的图片列表（公开接口，从 house_images 明细表读取，按排序升序）
+     *
+     * @param id 房源 ID
+     * @return 该房源的图片列表
+     */
+    @Operation(summary = "Get images for a house (public)")
+    @GetMapping("/{id}/images")
+    public Result<List<HouseImage>> getHouseImages(@PathVariable Long id) {
+        return Result.success(houseService.getHouseImages(id));
     }
 
     /**

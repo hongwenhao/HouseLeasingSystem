@@ -3,6 +3,7 @@ package com.houseleasing.service;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
+import com.houseleasing.entity.HouseImage;
 
 import java.util.List;
 
@@ -107,4 +108,12 @@ public interface HouseService {
      * @param houseId 要增加浏览量的房源 ID
      */
     void incrementViewCount(Long houseId);
+
+    /**
+     * 查询指定房源的图片列表（从 house_images 明细表读取，按 sort 升序）
+     *
+     * @param houseId 房源 ID
+     * @return 该房源的图片列表
+     */
+    List<HouseImage> getHouseImages(Long houseId);
 }
