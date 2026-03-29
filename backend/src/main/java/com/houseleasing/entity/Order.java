@@ -54,4 +54,13 @@ public class Order {
     /** 更新时间，插入和更新时自动填充 */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+    /** 关联的房源信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private House house;
+    /** 租客用户信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private User tenant;
+    /** 房东用户信息（非数据库字段，通过查询关联填充） */
+    @TableField(exist = false)
+    private User landlord;
 }

@@ -7,8 +7,10 @@ import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.OrderCreateRequest;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.Order;
+import com.houseleasing.entity.User;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
+import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.MessageService;
 import com.houseleasing.service.OrderService;
@@ -35,6 +37,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderMapper orderMapper;
     private final HouseMapper houseMapper;
+    private final UserMapper userMapper;
     private final MessageProducer messageProducer;
     private final MessageService messageService;
 
@@ -156,16 +159,39 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 根据 ID 查询订单详情
+     * 根据 ID 查询订单详情，同时关联填充房源、租客和房东信息
      *
      * @param id 订单 ID
-     * @return 订单详情对象
+     * @return 订单详情对象（含关联信息）
      */
     @Override
     public Order getOrderById(Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
+        }
+        // 关联填充房源信息
+        if (order.getHouseId() != null) {
+            House house = houseMapper.selectById(order.getHouseId());
+            order.setHouse(house);
+        }
+        // 关联填充租客信息（隐去敏感字段）
+        if (order.getTenantId() != null) {
+            User tenant = userMapper.selectById(order.getTenantId());
+            if (tenant != null) {
+                tenant.setPassword(null);
+                tenant.setIdCard(null);
+                order.setTenant(tenant);
+            }
+        }
+        // 关联填充房东信息（隐去敏感字段）
+        if (order.getLandlordId() != null) {
+            User landlord = userMapper.selectById(order.getLandlordId());
+            if (landlord != null) {
+                landlord.setPassword(null);
+                landlord.setIdCard(null);
+                order.setLandlord(landlord);
+            }
         }
         return order;
     }
