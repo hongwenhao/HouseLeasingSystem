@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `houses` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `title` VARCHAR(200) NOT NULL,
   `description` TEXT,
+  `province` VARCHAR(50),
   `city` VARCHAR(50),
   `district` VARCHAR(50),
   `address` VARCHAR(300),
@@ -236,9 +237,9 @@ INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_
 ('tenant1', '13822222222', 'tenant1@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBpwTK/xOOXVta', 'TENANT', '李租客', 1, 90);
 
 -- 示例房源数据（北京/上海/广州各城市代表性房源，覆盖三种房东类型）
-INSERT INTO `houses` (title, description, city, district, address, price, deposit, area, rooms, halls, bathrooms, floor, total_floor, decoration, house_type, owner_type, status, water_fee, water_fee_type, electric_fee, electric_fee_type, gas_fee, gas_fee_type, property_fee, property_fee_type, internet_fee, internet_fee_type, owner_id) VALUES
-('阳光花园精装两室一厅', '南北通透，采光极好，近地铁2号线', '北京', '朝阳区', '北京市朝阳区阳光路100号阳光花园3栋5层501室', 5500.00, 11000.00, 75.5, 2, 1, 1, 5, 18, 'FINE', 'APARTMENT', 'OWNER', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 200.00, 'FIXED', 80.00, 'FIXED', 2),
-('国贸CBD整租一居室', '精装修，拎包入住，距国贸地铁站500米', '北京', '朝阳区', '北京市朝阳区建国路88号', 6800.00, 13600.00, 55.0, 1, 1, 1, 12, 28, 'FINE', 'APARTMENT', 'AGENT', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 350.00, 'FIXED', 100.00, 'INCLUDED', 2),
-('通州次卧出租（二房东）', '整套房次卧，可做饭，包网络', '北京', '通州区', '北京市通州区运河东大街88号', 2200.00, 2200.00, 15.0, 1, 0, 1, 3, 6, 'SIMPLE', 'ROOM', 'SUBLEASE', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 30.00, 'INCLUDED', 100.00, 'FIXED', 0.00, 'INCLUDED', 2),
-('浦东新区精品公寓', '近陆家嘴，全套家电，商务出行便利', '上海', '浦东新区', '上海市浦东新区张杨路500号', 7500.00, 15000.00, 80.0, 2, 2, 1, 8, 32, 'LUXURY', 'APARTMENT', 'OWNER', 'ONLINE', 4.00, 'METERED', 0.617, 'METERED', 60.00, 'FIXED', 500.00, 'FIXED', 120.00, 'FIXED', 2),
-('天河区大三室整租', '广州天河，近珠江新城，交通便利', '广州', '天河区', '广州市天河区天河路385号', 4500.00, 9000.00, 90.0, 3, 2, 2, 6, 15, 'MEDIUM', 'APARTMENT', 'OWNER', 'ONLINE', 2.50, 'METERED', 0.60, 'METERED', 40.00, 'FIXED', 280.00, 'FIXED', 80.00, 'FIXED', 2);
+INSERT INTO `houses` (title, description, province, city, district, address, price, deposit, area, rooms, halls, bathrooms, floor, total_floor, decoration, house_type, owner_type, status, water_fee, water_fee_type, electric_fee, electric_fee_type, gas_fee, gas_fee_type, property_fee, property_fee_type, internet_fee, internet_fee_type, owner_id) VALUES
+('阳光花园精装两室一厅', '南北通透，采光极好，近地铁2号线', '北京市', '北京', '朝阳区', '北京市朝阳区阳光路100号阳光花园3栋5层501室', 5500.00, 11000.00, 75.5, 2, 1, 1, 5, 18, 'FINE', 'APARTMENT', 'OWNER', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 200.00, 'FIXED', 80.00, 'FIXED', 2),
+('国贸CBD整租一居室', '精装修，拎包入住，距国贸地铁站500米', '北京市', '北京', '朝阳区', '北京市朝阳区建国路88号', 6800.00, 13600.00, 55.0, 1, 1, 1, 12, 28, 'FINE', 'APARTMENT', 'AGENT', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 350.00, 'FIXED', 100.00, 'INCLUDED', 2),
+('通州次卧出租（二房东）', '整套房次卧，可做饭，包网络', '北京市', '北京', '通州区', '北京市通州区运河东大街88号', 2200.00, 2200.00, 15.0, 1, 0, 1, 3, 6, 'SIMPLE', 'ROOM', 'SUBLEASE', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 30.00, 'INCLUDED', 100.00, 'FIXED', 0.00, 'INCLUDED', 2),
+('浦东新区精品公寓', '近陆家嘴，全套家电，商务出行便利', '上海市', '上海', '浦东新区', '上海市浦东新区张杨路500号', 7500.00, 15000.00, 80.0, 2, 2, 1, 8, 32, 'LUXURY', 'APARTMENT', 'OWNER', 'ONLINE', 4.00, 'METERED', 0.617, 'METERED', 60.00, 'FIXED', 500.00, 'FIXED', 120.00, 'FIXED', 2),
+('天河区大三室整租', '广州天河，近珠江新城，交通便利', '广东省', '广州', '天河区', '广州市天河区天河路385号', 4500.00, 9000.00, 90.0, 3, 2, 2, 6, 15, 'MEDIUM', 'APARTMENT', 'OWNER', 'ONLINE', 2.50, 'METERED', 0.60, 'METERED', 40.00, 'FIXED', 280.00, 'FIXED', 80.00, 'FIXED', 2);

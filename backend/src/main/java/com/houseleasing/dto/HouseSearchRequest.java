@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 public class HouseSearchRequest {
     /** 关键词搜索（匹配标题、地址等字段） */
     private String keyword;
+    /** 省份筛选 */
+    private String province;
     /** 城市筛选 */
     private String city;
     /** 区域筛选 */

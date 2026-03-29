@@ -12,6 +12,7 @@
       selectByCondition —— 多条件动态查询房源列表
       支持以下筛选条件（均为可选，不传则不过滤）：
         - keyword：关键词（模糊匹配 title / description / address）
+        - province：省份精确匹配
         - city：城市精确匹配
         - district：区域精确匹配
         - minPrice：最低月租金
@@ -35,6 +36,10 @@
                 AND (title LIKE CONCAT('%', #{req.keyword}, '%')
                 OR description LIKE CONCAT('%', #{req.keyword}, '%')
                 OR address LIKE CONCAT('%', #{req.keyword}, '%'))
+            </if>
+            <!-- 省份精确筛选 -->
+            <if test="req.province != null and req.province != ''">
+                AND province = #{req.province}
             </if>
             <!-- 城市精确筛选 -->
             <if test="req.city != null and req.city != ''">
