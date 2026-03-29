@@ -26,17 +26,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final UserMapper userMapper;
 
     /**
-     * 根据用户名从数据库加载用户认证信息
+     * 根据用户名或手机号从数据库加载用户认证信息
      *
-     * @param username 用户名
+     * @param usernameOrPhone 用户名或手机号
      * @return Spring Security UserDetails 对象（包含用户名、密码和权限）
      * @throws UsernameNotFoundException 用户不存在时抛出
      */
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userMapper.selectByUsername(username);
+    public UserDetails loadUserByUsername(String usernameOrPhone) throws UsernameNotFoundException {
+        // 为了兼容使用手机号登录的场景，这里同时支持用户名与手机号的查询
+        User user = userMapper.selectByUsernameOrPhone(usernameOrPhone);
         if (user == null) {
-            throw new UsernameNotFoundException("用户不存在: " + username);
+            throw new UsernameNotFoundException("用户不存在: " + usernameOrPhone);
         }
         // 将系统角色（如 TENANT/LANDLORD/ADMIN）转换为 Spring Security 的 ROLE_前缀格式
         return new org.springframework.security.core.userdetails.User(

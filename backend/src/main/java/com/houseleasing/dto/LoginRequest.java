@@ -10,7 +10,10 @@ import lombok.Data;
  */
 @Data
 public class LoginRequest {
-    /** 登录用户名 */
+    /**
+     * 登录账号，前端可以填写「用户名」或「手机号」
+     * 说明：字段名仍沿用 username，便于兼容现有前端代码，但后端会同时支持手机号匹配
+     */
     private String username;
     /** 登录密码（明文，传输后在后端进行验证） */
     private String password;
