@@ -40,8 +40,8 @@
 
           <!-- 关键信息描述列表 -->
           <el-descriptions :column="3" border class="key-info">
-            <el-descriptions-item label="城市">{{ house.city }}</el-descriptions-item>
-            <el-descriptions-item label="区域">{{ house.district }}</el-descriptions-item>
+            <el-descriptions-item label="城市">{{ displayCity }}</el-descriptions-item>
+            <el-descriptions-item label="区域">{{ displayDistrict }}</el-descriptions-item>
             <el-descriptions-item label="面积">{{ house.area }}㎡</el-descriptions-item>
             <el-descriptions-item label="户型">{{ house.rooms }}室{{ house.halls }}厅{{ house.bathrooms }}卫</el-descriptions-item>
             <el-descriptions-item label="楼层">{{ house.floor }}/{{ house.totalFloor }}层</el-descriptions-item>
@@ -53,7 +53,7 @@
           <!-- 详细地址行（含地图定位图标） -->
           <div class="address-row">
             <el-icon><Location /></el-icon>
-            <span>{{ house.city }} {{ house.district }} {{ house.address }}</span>
+            <span>{{ displayCity }} {{ displayDistrict }} {{ house.address }}</span>
           </div>
 
           <!-- 五项费用说明 -->
@@ -106,6 +106,7 @@
               预约看房
             </el-button>
             <el-button
+              v-if="isTenant"
               size="large"
               :type="collected ? 'success' : 'warning'"
               :plain="!collected"
@@ -114,6 +115,17 @@
             >
               <el-icon><Star /></el-icon>
               {{ collected ? '已收藏' : '收藏' }}
+            </el-button>
+            <el-button
+              v-else
+              size="large"
+              disabled
+              plain
+              aria-label="仅租客可以收藏房源"
+              title="仅租客可以收藏房源"
+            >
+              <el-icon><Star /></el-icon>
+              仅租客可收藏
             </el-button>
           </div>
         </div>
@@ -192,6 +204,8 @@ const collecting = ref(false)        // 收藏按钮 loading 状态
 const collected = ref(false)         // 是否已收藏
 const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
+const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
+const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
 
 // 预约表单数据
 const appointForm = ref({
@@ -204,11 +218,39 @@ const appointRules = {
 }
 
 /**
+ * 直辖市/省直辖县级等占位城市用省份兜底展示，避免出现“市辖区”字样
+ */
+const displayCity = computed(() => {
+  if (!house.value) return ''
+  const city = house.value.city
+  if (!city || GROUPING_CITY_LABELS.includes(city)) {
+    return house.value.province || city || '-'
+  }
+  return city
+})
+
+/** 区县同样过滤分组占位名称 */
+const displayDistrict = computed(() => {
+  if (!house.value) return ''
+  const district = house.value.district
+  if (!district || GROUPING_CITY_LABELS.includes(district)) {
+    return ''
+  }
+  return district
+})
+
+/**
  * 计算装修情况的中文标签
- * FINE → 精装，SIMPLE → 简装，ROUGH → 毛坯
+ * FINE → 精装，SIMPLE → 简装，MEDIUM → 中等装修，ROUGH → 毛坯，LUXURY → 豪装
  */
 const decorationLabel = computed(() => {
-  const map = { FINE: '精装', SIMPLE: '简装', ROUGH: '毛坯' }
+  const map = {
+    FINE: '精装',
+    SIMPLE: '简装',
+    MEDIUM: '中等装修',
+    ROUGH: '毛坯',
+    LUXURY: '豪装'
+  }
   return map[house.value?.decoration] || house.value?.decoration || '-'
 })
 
@@ -224,7 +266,7 @@ function disablePastDates(date) {
 
 /** 查询当前房源是否已被当前用户收藏 */
 async function checkCollected() {
-  if (!userStore.isLoggedIn) return
+  if (!userStore.isLoggedIn || !isTenant.value) return
   try {
     const res = await getMyCollections({ page: 1, pageSize: 100 })
     const list = Array.isArray(res) ? res : (res?.records || res?.list || [])
@@ -265,6 +307,11 @@ async function handleCollect() {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
     router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  // 房东/管理员无需收藏，直接给出提示
+  if (!isTenant.value) {
+    ElMessage.warning('仅租客可以收藏房源')
     return
   }
   collecting.value = true
