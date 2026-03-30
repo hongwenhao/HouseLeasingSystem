@@ -169,6 +169,39 @@ public class HouseServiceImpl implements HouseService {
     }
 
     /**
+     * 删除房源，同时清理关联的图片明细和用户收藏行为记录。
+     * <p>操作人必须是该房源的所有者，否则抛出 403 业务异常。</p>
+     *
+     * @param id      要删除的房源 ID
+     * @param ownerId 操作人用户 ID
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "hotHouses", allEntries = true) // 删除房源后清除热门房源缓存
+    public void deleteHouse(Long id, Long ownerId) {
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        // 验证操作人是否是该房源的所有者
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限删除该房源");
+        }
+        // 清理关联的图片明细记录
+        LambdaQueryWrapper<HouseImage> imageWrapper = new LambdaQueryWrapper<>();
+        imageWrapper.eq(HouseImage::getHouseId, id);
+        houseImageMapper.delete(imageWrapper);
+        // 清理用户对该房源的收藏行为记录
+        LambdaQueryWrapper<UserBehavior> behaviorWrapper = new LambdaQueryWrapper<>();
+        behaviorWrapper.eq(UserBehavior::getHouseId, id)
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
+        userBehaviorMapper.delete(behaviorWrapper);
+        // 删除房源主记录
+        houseMapper.deleteById(id);
+        log.info("House {} deleted by owner {}", id, ownerId);
+    }
+
+    /**
      * 查询房源详情，同时尝试增加浏览量（失败不影响主流程）。
      * 图片列表优先从 house_images 明细表读取并重建 images JSON 字段，
      * 确保 house_images 表中的排序信息得到实际使用。
