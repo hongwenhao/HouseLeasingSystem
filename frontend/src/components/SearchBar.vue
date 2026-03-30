@@ -3,8 +3,54 @@
        房间数、房东类型、装修情况等多维度筛选条件输入。
        通过 v-model（modelValue）与父组件双向绑定筛选对象，
        点击搜索按钮触发 search 事件通知父组件发起请求。
-       布局为垂直堆叠，适合放置在侧边栏中。 -->
-  <div class="search-bar">
+       compact=true 时渲染为首页用的单行横向搜索栏；
+       默认为垂直堆叠布局，适合放置在侧边栏中。 -->
+
+  <!-- 紧凑横向模式（首页 Hero 区域使用） -->
+  <div v-if="compact" class="compact-bar">
+    <el-input
+      v-model="localFilters.keyword"
+      placeholder="搜索关键词、小区名..."
+      clearable
+      :prefix-icon="Search"
+      class="compact-keyword"
+    />
+    <el-select
+      v-model="localFilters.city"
+      placeholder="选择城市"
+      clearable
+      filterable
+      class="compact-city"
+    >
+      <el-option
+        v-for="city in allCitiesFlat"
+        :key="city.value"
+        :label="city.label"
+        :value="city.value"
+      />
+    </el-select>
+    <el-select v-model="localFilters.rooms" placeholder="房间数" clearable class="compact-rooms">
+      <el-option label="不限" :value="null" />
+      <el-option label="1室" :value="1" />
+      <el-option label="2室" :value="2" />
+      <el-option label="3室" :value="3" />
+      <el-option label="4+室" :value="4" />
+    </el-select>
+    <el-select v-model="compactPriceRange" placeholder="价格区间" clearable class="compact-price">
+      <el-option label="1500元以下" value="0-1500" />
+      <el-option label="1500~3000元" value="1500-3000" />
+      <el-option label="3000~5000元" value="3000-5000" />
+      <el-option label="5000~8000元" value="5000-8000" />
+      <el-option label="8000元以上" value="8000-" />
+    </el-select>
+    <el-button type="primary" class="compact-btn" @click="handleSearch">
+      <el-icon><Search /></el-icon>
+      搜索
+    </el-button>
+  </div>
+
+  <!-- 完整侧边栏模式（房源列表页使用） -->
+  <div v-else class="search-bar">
     <div class="search-bar-header">
       <el-icon class="header-icon"><Filter /></el-icon>
       <span class="header-title">筛选条件</span>
@@ -142,11 +188,12 @@
       搜索
     </el-button>
   </div>
+
 </template>
 
 <script setup>
 // 说明：搜索栏组件，管理本地筛选状态并通过事件与父组件通信
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { regionData } from 'element-china-area-data'
 import { Filter, Search } from '@element-plus/icons-vue'
 
@@ -154,6 +201,10 @@ const props = defineProps({
   modelValue: {
     type: Object,
     default: () => ({})  // 父组件传入的当前筛选值
+  },
+  compact: {
+    type: Boolean,
+    default: false  // true 时渲染为首页单行横向搜索栏
   }
 })
 
@@ -233,6 +284,33 @@ const districtOptions = computed(() => {
   if (!province) return []
   const city = province.cities.find((c) => c.value === localFilters.city)
   return city?.districts || []
+})
+
+// 紧凑模式：所有城市扁平列表（不含省份/区县）
+const allCitiesFlat = computed(() =>
+  allProvinceData.flatMap((p) => p.cities.map((c) => ({ label: c.label, value: c.value })))
+)
+
+// 紧凑模式：价格区间快速选项
+// 根据已有的 minPrice/maxPrice 初始化对应的快速区间选项
+function detectCompactPriceRange(min, max) {
+  if (min === 0 && max === 1500) return '0-1500'
+  if (min === 1500 && max === 3000) return '1500-3000'
+  if (min === 3000 && max === 5000) return '3000-5000'
+  if (min === 5000 && max === 8000) return '5000-8000'
+  if (min === 8000 && max == null) return '8000-'
+  return ''
+}
+const compactPriceRange = ref(detectCompactPriceRange(localFilters.minPrice, localFilters.maxPrice))
+watch(compactPriceRange, (val) => {
+  if (!val) {
+    localFilters.minPrice = null
+    localFilters.maxPrice = null
+  } else {
+    const [min, max] = val.split('-')
+    localFilters.minPrice = min ? Number(min) : null
+    localFilters.maxPrice = max ? Number(max) : null
+  }
 })
 
 // 监听本地筛选状态变化，实时同步到父组件（实现 v-model 双向绑定）
@@ -343,6 +421,44 @@ function handleSearch() {
 }
 
 .search-btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== 紧凑横向模式（首页 Hero 搜索栏） ===== */
+.compact-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.compact-keyword {
+  flex: 2;
+  min-width: 180px;
+}
+
+.compact-city,
+.compact-rooms,
+.compact-price {
+  flex: 1;
+  min-width: 130px;
+}
+
+/* 紧凑模式搜索按钮：渐变背景 + 固定高度 */
+.compact-btn {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 22px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.compact-btn:hover {
   opacity: 0.9;
 }
 </style>

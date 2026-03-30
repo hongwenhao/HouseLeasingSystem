@@ -1,19 +1,48 @@
 <template>
-  <!-- 组件说明：首页视图，包含 Hero 搜索区域、平台数据统计横幅、
-       精选推荐房源网格，以及平台优势展示区域。
+  <!-- 组件说明：首页视图，包含 Hero 搜索区域、精选推荐房源网格、
+       平台数据统计横幅，以及平台优势展示区域。
+       精选推荐房源置于统计横幅之前，优先展示核心租房内容。
        页面挂载时同时执行数字动画计数和推荐房源加载。 -->
   <div class="home-page">
     <NavBar />
 
-    <!-- Hero 区域：大图背景 + 搜索栏 -->
+    <!-- Hero 区域：大图背景 + 紧凑搜索栏 -->
     <section class="hero">
       <div class="hero-content">
         <h1 class="hero-title">找到您理想的租房</h1>
         <p class="hero-subtitle">真实房源 · 安全交易 · 快速成交</p>
-        <!-- 搜索栏：v-model 双向绑定筛选条件，search 事件触发跳转到房源列表页 -->
+        <!-- 单行紧凑搜索栏 -->
         <div class="hero-search">
-          <SearchBar v-model="filters" @search="handleSearch" />
+          <SearchBar v-model="filters" :compact="true" @search="handleSearch" />
         </div>
+      </div>
+    </section>
+
+    <!-- 精选推荐房源区域（紧随 Hero，突出展示） -->
+    <section class="featured-section">
+      <div class="featured-inner">
+        <div class="featured-header">
+          <div class="featured-title-wrap">
+            <span class="featured-badge">🔥 精选推荐</span>
+            <h2 class="featured-title">为您推荐的好房源</h2>
+            <p class="featured-subtitle">严格筛选，品质保证，快速找到理想居所</p>
+          </div>
+          <router-link to="/houses" class="view-more">查看全部房源 →</router-link>
+        </div>
+        <!-- 加载中：骨架屏占位 -->
+        <div v-if="loading" class="loading-wrap">
+          <el-skeleton :rows="3" animated />
+        </div>
+        <!-- 推荐房源网格 -->
+        <div v-else-if="recommendedHouses.length > 0" class="house-grid">
+          <HouseCard
+            v-for="house in recommendedHouses"
+            :key="house.id"
+            :house="house"
+          />
+        </div>
+        <!-- 暂无推荐数据 -->
+        <el-empty v-else description="暂无推荐房源" />
       </div>
     </section>
 
@@ -37,30 +66,6 @@
           <span class="stat-num">{{ animatedStats.cities }}+</span>
           <span class="stat-label">覆盖城市</span>
         </div>
-      </div>
-    </section>
-
-    <!-- 精选推荐房源区域 -->
-    <section class="section">
-      <div class="section-inner">
-        <div class="section-header">
-          <h2 class="section-title">精选推荐房源</h2>
-          <router-link to="/houses" class="view-more">查看全部 →</router-link>
-        </div>
-        <!-- 加载中：骨架屏占位 -->
-        <div v-if="loading" class="loading-wrap">
-          <el-skeleton :rows="3" animated />
-        </div>
-        <!-- 推荐房源网格 -->
-        <div v-else-if="recommendedHouses.length > 0" class="house-grid">
-          <HouseCard
-            v-for="house in recommendedHouses"
-            :key="house.id"
-            :house="house"
-          />
-        </div>
-        <!-- 暂无推荐数据 -->
-        <el-empty v-else description="暂无推荐房源" />
       </div>
     </section>
 
@@ -189,7 +194,7 @@ function handleSearch(searchFilters) {
 /* ===== Hero 主视觉区域：大面积渐变 + 装饰光圈 ===== */
 .hero {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 40%, #f093fb 100%);
-  padding: 100px 20px 80px;
+  padding: 60px 20px 50px;
   color: #fff;
   position: relative;
   overflow: hidden;
@@ -228,9 +233,9 @@ function handleSearch(searchFilters) {
 
 /* Hero 大标题：白色 + 文字阴影增强可读性 */
 .hero-title {
-  font-size: 48px;
+  font-size: 42px;
   font-weight: 800;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #fff;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
   letter-spacing: 2px;
@@ -239,8 +244,8 @@ function handleSearch(searchFilters) {
 
 /* Hero 副标题 */
 .hero-subtitle {
-  font-size: 18px;
-  margin-bottom: 40px;
+  font-size: 17px;
+  margin-bottom: 28px;
   opacity: 0.92;
   font-weight: 300;
   letter-spacing: 1px;
@@ -307,54 +312,63 @@ function handleSearch(searchFilters) {
   letter-spacing: 0.5px;
 }
 
-/* ===== 推荐房源区域 ===== */
-.section {
-  padding: 64px 20px;
+/* ===== 精选推荐房源区域（Hero 正下方，突出展示） ===== */
+.featured-section {
+  background: linear-gradient(180deg, #faf7ff 0%, #ffffff 100%);
+  padding: 56px 20px 64px;
+  border-top: 3px solid rgba(102, 126, 234, 0.15);
 }
 
-.section-inner {
+.featured-inner {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.section-header {
+/* 区域头部：左侧标题组 + 右侧"查看全部"链接 */
+.featured-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-/* 区块标题：左侧装饰线条 */
-.section-title {
-  font-size: 26px;
-  font-weight: 700;
+.featured-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 橙红渐变小徽章 */
+.featured-badge {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #ff9800, #ff5722);
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+  box-shadow: 0 2px 8px rgba(255, 87, 34, 0.35);
+}
+
+/* 大标题 */
+.featured-title {
+  font-size: 30px;
+  font-weight: 800;
   color: #1a1a2e;
-  position: relative;
-  padding-left: 16px;
+  line-height: 1.2;
 }
 
-.section-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 4px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #667eea, #764ba2);
+/* 副标题说明文字 */
+.featured-subtitle {
+  font-size: 14px;
+  color: #909399;
 }
 
-.section-title.center {
-  text-align: center;
-  margin-bottom: 48px;
-  padding-left: 0;
-}
-
-.section-title.center::before {
-  display: none;
-}
-
-/* "查看更多"链接 */
+/* "查看全部"链接 */
 .view-more {
   color: #667eea;
   text-decoration: none;
@@ -364,6 +378,7 @@ function handleSearch(searchFilters) {
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .view-more:hover {
@@ -385,6 +400,18 @@ function handleSearch(searchFilters) {
 .advantages {
   background: linear-gradient(180deg, #f8f9fe 0%, #f0f2f5 100%);
   padding: 64px 20px;
+}
+
+/* 优势区域标题 */
+.section-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.section-title.center {
+  text-align: center;
+  margin-bottom: 48px;
 }
 
 .advantages-inner {
