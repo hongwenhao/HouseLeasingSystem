@@ -6,11 +6,9 @@
     <div class="register-container">
       <!-- 注册页头部：Logo + 标题 -->
       <div class="register-header">
-        <router-link to="/" class="back-home">
-          <img src="../assets/logo.svg" alt="logo" class="logo" />
-        </router-link>
+        <div class="logo-box" role="img" aria-label="房屋租赁系统">🏠</div>
         <h2 class="title">创建账户</h2>
-        <p class="subtitle">加入房屋租赁系统，开启智能租房体验</p>
+        <p class="subtitle">加入我们，开启便捷租房之旅</p>
       </div>
 
       <!-- 注册表单 -->
@@ -24,59 +22,61 @@
         <el-form-item label="用户名" prop="username">
           <el-input
             v-model="form.username"
-            placeholder="请输入用户名（4-20个字符）"
-            prefix-icon="User"
+            placeholder="请输入用户名"
             size="large"
             clearable
           />
         </el-form-item>
-        <!-- 手机号 -->
-        <el-form-item label="手机号" prop="phone">
-          <el-input
-            v-model="form.phone"
-            placeholder="请输入手机号"
-            prefix-icon="Phone"
-            size="large"
-            clearable
-          />
-        </el-form-item>
-        <!-- 邮箱 -->
-        <el-form-item label="邮箱" prop="email">
-          <el-input
-            v-model="form.email"
-            placeholder="请输入邮箱"
-            prefix-icon="Message"
-            size="large"
-            clearable
-          />
-        </el-form-item>
-        <!-- 密码 -->
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="form.password"
-            type="password"
-            placeholder="请输入密码（至少6位）"
-            prefix-icon="Lock"
-            size="large"
-            show-password
-          />
-        </el-form-item>
-        <!-- 确认密码 -->
-        <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input
-            v-model="form.confirmPassword"
-            type="password"
-            placeholder="请再次输入密码"
-            prefix-icon="Lock"
-            size="large"
-            show-password
-          />
-        </el-form-item>
+
+        <div class="form-row">
+          <!-- 手机号 -->
+          <el-form-item label="手机号" prop="phone">
+            <el-input
+              v-model="form.phone"
+              placeholder="请输入手机号"
+              size="large"
+              clearable
+            />
+          </el-form-item>
+          <!-- 邮箱 -->
+          <el-form-item label="邮箱（必填）" prop="email" required>
+            <el-input
+              v-model="form.email"
+              placeholder="请输入邮箱"
+              size="large"
+              clearable
+            />
+          </el-form-item>
+        </div>
+
+        <div class="form-row">
+          <!-- 密码 -->
+          <el-form-item label="密码" prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="请输入密码"
+              size="large"
+              show-password
+            />
+          </el-form-item>
+          <!-- 确认密码 -->
+          <el-form-item label="确认密码" prop="confirmPassword">
+            <el-input
+              v-model="form.confirmPassword"
+              type="password"
+              placeholder="请再次输入密码"
+              size="large"
+              show-password
+            />
+          </el-form-item>
+        </div>
+
         <!-- 注册身份选择：租客 or 房东 -->
-        <el-form-item label="注册身份" prop="role">
+        <el-form-item label="我是" prop="role">
           <el-radio-group v-model="form.role" size="large" class="role-group">
-            <el-radio-button value="TENANT">🏠 我是租客</el-radio-button>
-            <el-radio-button value="LANDLORD">🔑 我是房东</el-radio-button>
+            <el-radio-button value="TENANT">🧍 租客（找房）</el-radio-button>
+            <el-radio-button value="LANDLORD">🏡 房东（出租）</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <!-- 服务条款同意 -->
@@ -97,7 +97,7 @@
           :loading="loading"
           @click="handleRegister"
         >
-          注册
+          立即注册
         </el-button>
       </el-form>
 
@@ -250,9 +250,9 @@ async function handleRegister() {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
-  padding: 44px 40px;
+  padding: 44px 38px 40px;
   width: 100%;
-  max-width: 460px;
+  max-width: 430px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.2);
   position: relative;
   z-index: 1;
@@ -266,23 +266,20 @@ async function handleRegister() {
 
 .register-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
-.back-home {
-  display: inline-block;
-  margin-bottom: 16px;
-  transition: transform 0.3s ease;
-}
-
-.back-home:hover {
-  transform: scale(1.1);
-}
-
-.logo {
+.logo-box {
   width: 56px;
   height: 56px;
-  filter: drop-shadow(0 4px 8px rgba(64, 158, 255, 0.3));
+  margin: 0 auto 16px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
 .title {
@@ -298,6 +295,15 @@ async function handleRegister() {
   color: #909399;
 }
 
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .el-form-item {
+  flex: 1;
+}
+
 /* ===== 角色选择按钮组 ===== */
 .role-group {
   width: 100%;
@@ -310,6 +316,22 @@ async function handleRegister() {
 
 .role-group :deep(.el-radio-button__inner) {
   width: 100%;
+  border-radius: 10px;
+}
+
+.role-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: #eef2ff;
+  border-color: #667eea;
+  color: #4f63d8;
+  box-shadow: none;
+}
+
+.register-container :deep(.el-input__wrapper) {
+  border-radius: 10px;
+}
+
+.register-container :deep(.el-form-item) {
+  margin-bottom: 18px;
 }
 
 .terms-link {
@@ -337,7 +359,7 @@ async function handleRegister() {
 
 .register-footer {
   text-align: center;
-  margin-top: 24px;
+  margin-top: 20px;
   font-size: 14px;
   color: #606266;
 }
