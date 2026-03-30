@@ -110,6 +110,15 @@ public interface HouseService {
     void incrementViewCount(Long houseId);
 
     /**
+     * 删除房源（仅房源所有者可操作）
+     * <p>同时清理关联的图片明细记录和用户收藏行为记录，并清除热门房源缓存。</p>
+     *
+     * @param id      要删除的房源 ID
+     * @param ownerId 操作人用户 ID（必须是该房源的房东，否则抛出 403 业务异常）
+     */
+    void deleteHouse(Long id, Long ownerId);
+
+    /**
      * 查询指定房源的图片列表（从 house_images 明细表读取，按 sort 升序）
      *
      * @param houseId 房源 ID

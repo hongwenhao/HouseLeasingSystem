@@ -191,6 +191,23 @@ public class HouseController {
     }
 
     /**
+     * 删除指定房源（需要认证，且只能删除自己的房源）
+     *
+     * @param id          要删除的房源 ID
+     * @param userDetails 当前登录用户信息
+     * @return 操作成功的响应
+     */
+    @Operation(summary = "Delete house")
+    @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public Result<Void> deleteHouse(@PathVariable Long id,
+                                    @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        houseService.deleteHouse(id, user.getId());
+        return Result.success();
+    }
+
+    /**
      * 取消收藏指定房源（需要认证）
      *
      * @param id          要取消收藏的房源 ID
