@@ -305,7 +305,7 @@ async function handleCommand(cmd) {
     flex-direction: column;
     padding: 12px 0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    z-index: 999;
+    z-index: 1001;
   }
 
   .nav-links.open {
@@ -319,4 +319,3 @@ async function handleCommand(cmd) {
   }
 }
 </style>
-
