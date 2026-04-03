@@ -17,6 +17,7 @@ import com.houseleasing.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 订单服务实现类
@@ -46,6 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private final MessageProducer messageProducer;
     private final MessageService messageService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript();
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -195,8 +196,10 @@ public class OrderServiceImpl implements OrderService {
         if (tenantCancelling) {
             String day = LocalDate.now().toString();
             String cancelCountKey = "order:cancel:" + order.getTenantId() + ":" + order.getHouseId() + ":" + day;
-            Long cancelledCount = redisTemplate.opsForValue().increment(cancelCountKey);
-            redisTemplate.expire(cancelCountKey, 1, TimeUnit.DAYS);
+            Long cancelledCount = redisTemplate.execute(
+                    INCR_WITH_EXPIRE_ONE_DAY_SCRIPT,
+                    java.util.Collections.singletonList(cancelCountKey)
+            );
             shouldDeductCredit = cancelledCount != null && cancelledCount == 11L;
         }
 
@@ -331,5 +334,18 @@ public class OrderServiceImpl implements OrderService {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int random = ThreadLocalRandom.current().nextInt(1000, 9999);
         return prefix + timestamp + random;
+    }
+
+    private static DefaultRedisScript<Long> buildIncrWithExpireOneDayScript() {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setScriptText("""
+                local cnt = redis.call('INCR', KEYS[1])
+                if cnt == 1 then
+                  redis.call('EXPIRE', KEYS[1], 86400)
+                end
+                return cnt
+                """);
+        script.setResultType(Long.class);
+        return script;
     }
 }

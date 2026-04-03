@@ -116,8 +116,6 @@ public class UserServiceImpl implements UserService {
             user.setUpdateTime(LocalDateTime.now());
             userMapper.updateById(user);
         }
-        // 刷新用户对象，确保返回给前端的是最新信用分/日期
-        user = userMapper.selectById(user.getId());
         // 生成 JWT Token（包含用户名和角色）
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
         user.setPassword(null); // 清空密码后放入返回结果
