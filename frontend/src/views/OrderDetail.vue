@@ -94,7 +94,7 @@
                   <el-icon><Close /></el-icon> 拒绝预约
                 </el-button>
               </template>
-              <template v-if="role === 'TENANT' && order.status === 'PENDING'">
+              <template v-if="role === 'TENANT' && (order.status === 'PENDING' || order.status === 'APPROVED')">
                 <el-button type="warning" size="large" :loading="actioning" @click="handleCancel">
                   取消预约
                 </el-button>
@@ -102,6 +102,11 @@
               <template v-if="role === 'LANDLORD' && order.status === 'APPROVED'">
                 <el-button type="primary" size="large" @click="openCreateContractDialog">
                   <el-icon><Document /></el-icon> 生成合同
+                </el-button>
+              </template>
+              <template v-if="role === 'LANDLORD' && (order.status === 'PENDING' || order.status === 'APPROVED')">
+                <el-button type="warning" size="large" :loading="actioning" @click="handleCancel">
+                  取消订单
                 </el-button>
               </template>
             </div>
@@ -203,14 +208,18 @@ const statusType = computed(() => {
 })
 
 /**
- * 计算是否显示操作按钮区域
- * 房东可操作：订单待确认（确认/拒绝）或已确认（生成合同）
- * 租客可操作：订单待确认（取消预约）
- */
+             * 计算是否显示操作按钮区域
+             * 房东可操作：
+             * - PENDING：确认/拒绝/取消
+             * - APPROVED：生成合同/取消
+             * 租客可操作：
+             * - PENDING：取消预约
+             * - APPROVED：取消预约（未签约前允许双方撤销预约）
+             */
 const showActions = computed(() => {
   if (!order.value) return false
   if (role === 'LANDLORD' && (order.value.status === 'PENDING' || order.value.status === 'APPROVED')) return true
-  if (role === 'TENANT' && order.value.status === 'PENDING') return true
+  if (role === 'TENANT' && (order.value.status === 'PENDING' || order.value.status === 'APPROVED')) return true
   return false
 })
 

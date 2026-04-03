@@ -156,7 +156,8 @@
                 >
                   <span class="title-cell">{{ order.houseTitle || `房源#${order.houseId}` }}</span>
                   <span>{{ formatDateTime(order.appointmentTime) }}</span>
-                  <span>{{ formatDate(order.createdAt) }}</span>
+                  <!-- 兼容后端实际字段 createTime 与历史字段 createdAt -->
+                  <span>{{ formatDate(order.createTime || order.createdAt) }}</span>
                   <span>
                     <el-tag :type="orderStatusType(order.status)" size="small">
                       {{ orderStatusLabel(order.status) }}

@@ -246,10 +246,9 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public PageResult<Order> listLandlordOrders(Long landlordId, int page, int size) {
         Page<Order> pageObj = new Page<>(page, size);
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Order::getLandlordId, landlordId);
-        wrapper.orderByDesc(Order::getCreateTime);
-        Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
+
+        // 兼容历史数据：landlord_id 直接命中，或订单房源归属当前房东（JOIN houses.owner_id）
+        Page<Order> result = orderMapper.selectLandlordOrdersPage(pageObj, landlordId);
         result.getRecords().forEach(order -> {
             if (order.getTenantId() != null) {
                 User tenant = userMapper.selectById(order.getTenantId());
