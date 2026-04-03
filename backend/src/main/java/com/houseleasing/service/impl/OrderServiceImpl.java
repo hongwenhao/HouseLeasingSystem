@@ -73,7 +73,6 @@ public class OrderServiceImpl implements OrderService {
         order.setTenantId(tenantId);
         order.setLandlordId(house.getOwnerId());
         order.setOrderNo(generateOrderNo("INT")); // INT 前缀表示意向订单
-        order.setOrderType("INTENT");
         order.setStatus("PENDING");
         order.setMonthlyRent(house.getPrice());
         order.setDeposit(depositAmount); // 存储实际押金金额（元），而非月数
@@ -116,7 +115,6 @@ public class OrderServiceImpl implements OrderService {
         order.setTenantId(tenantId);
         order.setLandlordId(house.getOwnerId());
         order.setOrderNo(generateOrderNo("APT")); // APT 前缀表示预约订单
-        order.setOrderType(request.getOrderType() != null ? request.getOrderType() : "APPOINTMENT");
         order.setStatus("PENDING");
         order.setAppointmentTime(request.getAppointmentTime());
         order.setStartDate(request.getStartDate());

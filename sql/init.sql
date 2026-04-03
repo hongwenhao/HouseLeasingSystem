@@ -95,7 +95,6 @@ CREATE TABLE IF NOT EXISTS `house_images` (
 -- ============================================================
 -- 订单表（orders）
 -- 存储租客发起的预约看房订单
--- order_type: APPOINTMENT（预约看房）/ INTENT（意向订单）/ LEASE（正式租约）
 -- status 流转：PENDING → APPROVED/REJECTED/CANCELLED → COMPLETED/SIGNED
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `orders` (

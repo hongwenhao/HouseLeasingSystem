@@ -304,12 +304,6 @@ async function submitReject() {
   }
 }
 
-/** 房源状态枚举转中文 */
-function houseStatusLabel(status) {
-  const map = { PENDING: '审核中', ONLINE: '已上架', APPROVED: '已上架', REJECTED: '审核拒绝', OFFLINE: '已下架' }
-  return map[status] || status
-}
-
 /** 房源状态对应 Tag 类型 */
 function houseStatusType(status) {
   const map = { PENDING: 'warning', ONLINE: 'success', APPROVED: 'success', REJECTED: 'danger', OFFLINE: 'info' }
@@ -318,7 +312,7 @@ function houseStatusType(status) {
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
-  const map = { PENDING: '待确认', APPROVED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
   return map[status] || status
 }
 

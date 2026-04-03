@@ -30,8 +30,6 @@ public class Order {
     private String orderNo;
     /** 订单状态：PENDING（待处理）、APPROVED（已批准）、REJECTED（已拒绝）、CANCELLED（已取消）、COMPLETED（已完成） */
     private String status = "PENDING";
-    /** 订单类型：INTENT（意向订单）、APPOINTMENT（预约看房） */
-    private String orderType;
     /** 预约看房时间 */
     private LocalDateTime appointmentTime;
     /** 租赁开始日期 */

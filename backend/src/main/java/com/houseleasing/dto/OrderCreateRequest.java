@@ -15,8 +15,6 @@ import java.time.LocalDateTime;
 public class OrderCreateRequest {
     /** 目标房源的 ID */
     private Long houseId;
-    /** 订单类型：INTENT（意向订单）、APPOINTMENT（预约看房） */
-    private String orderType;
     /** 预约看房的具体时间 */
     private LocalDateTime appointmentTime;
     /** 期望租赁开始日期 */
