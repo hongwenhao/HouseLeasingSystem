@@ -135,7 +135,7 @@
               <template #label>
                 <div class="tab-label">
                   <el-icon><Calendar /></el-icon>
-                  <span>预约管理</span>
+                  <span>预约订单管理</span>
                 </div>
               </template>
               <div v-if="ordersLoading">
