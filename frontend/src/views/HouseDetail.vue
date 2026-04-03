@@ -421,11 +421,11 @@ async function handleCollect() {
  * 调用创建订单接口，成功后跳转到订单详情页
  */
 async function submitAppointment() {
-  // 可能存在“登录后长期未刷新页面”导致的本地用户信息过期，预约前拉取一次最新资料再判断实名认证状态
-  if (!userStore.userInfo?.isRealNameAuth) {
-    try {
-      await userStore.fetchProfile()
-    } catch (e) { /* ignore */ }
+  // 预约提交前主动拉取一次最新用户资料，避免本地缓存过期导致实名认证状态误判
+  try {
+    await userStore.fetchProfile()
+  } catch (e) {
+    console.warn('预约前刷新用户资料失败，将使用缓存数据验证实名认证状态（可能存在短暂误判）:', e)
   }
   if (!userStore.userInfo?.isRealNameAuth) {
     ElMessage.warning('请先在个人中心完成实名认证后再预约看房')
