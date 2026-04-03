@@ -16,6 +16,7 @@ import com.houseleasing.service.MessageService;
 import com.houseleasing.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 订单服务实现类
@@ -43,6 +45,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserMapper userMapper;
     private final MessageProducer messageProducer;
     private final MessageService messageService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -185,23 +188,16 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(403, "没有操作权限");
         }
 
-        // 仅当“租客本人”取消时触发信用分惩罚逻辑：
-        // 1) 先在“更新订单状态前”统计当日该租客对该房源已取消次数（不含本次）
-        // 2) 本次取消提交后，若累计次数将超过 10 次（即之前已 >=10 次），则扣减 10 分
-        // 这样与“同一天取消同个房源预约次数超过10次”规则严格一致。
+        // 仅当“租客本人”取消时触发信用分惩罚逻辑（Redis按日计数）：
+        // 第 11 次取消触发一次扣分，计数 key 过期时间固定 1 天。
         boolean tenantCancelling = Objects.equals(userId, order.getTenantId());
         boolean shouldDeductCredit = false;
         if (tenantCancelling) {
-            // 并发控制：对租客行加锁，确保同一租客并发取消时“次数判断+扣分”串行执行。
-            userMapper.selectByIdForUpdate(order.getTenantId());
-            LocalDate today = LocalDate.now();
-            LocalDateTime dayStart = today.atStartOfDay();
-            LocalDateTime nextDayStart = today.plusDays(1).atStartOfDay();
-            Integer cancelledCountBefore = orderMapper.countTenantHouseCancelledInRange(
-                    order.getTenantId(), order.getHouseId(), dayStart, nextDayStart);
-            int safeCountBefore = cancelledCountBefore == null ? 0 : cancelledCountBefore;
-            // 仅在“第 11 次取消”时扣一次分：即本次前恰好已取消 10 次。
-            shouldDeductCredit = safeCountBefore == 10;
+            String day = LocalDate.now().toString();
+            String cancelCountKey = "order:cancel:" + order.getTenantId() + ":" + order.getHouseId() + ":" + day;
+            Long cancelledCount = redisTemplate.opsForValue().increment(cancelCountKey);
+            redisTemplate.expire(cancelCountKey, 1, TimeUnit.DAYS);
+            shouldDeductCredit = cancelledCount != null && cancelledCount == 11L;
         }
 
         order.setStatus("CANCELLED");

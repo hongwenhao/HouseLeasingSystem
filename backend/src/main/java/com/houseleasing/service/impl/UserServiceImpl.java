@@ -15,14 +15,17 @@ import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户服务实现类
@@ -39,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 用户注册：验证用户名、手机号、邮箱的唯一性，加密密码后保存用户信息
@@ -103,8 +107,15 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(403, "账号已被禁用");
         }
         // 每日登录信用分 +1（同一自然日仅加一次）：
-        // 使用数据库原子条件更新，避免并发登录导致同一天重复加分。
-        userMapper.addLoginCreditIfNotToday(user.getId());
+        // 使用 Redis SETNX + 日期维度 key 去重，key 过期时间固定 1 天。
+        String loginCreditKey = "credit:login:" + user.getId() + ":" + LocalDate.now();
+        Boolean firstLoginToday = redisTemplate.opsForValue().setIfAbsent(loginCreditKey, "1", 1, TimeUnit.DAYS);
+        if (Boolean.TRUE.equals(firstLoginToday)) {
+            int currentScore = user.getCreditScore() == null ? 0 : user.getCreditScore();
+            user.setCreditScore(Math.min(200, currentScore + 1));
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.updateById(user);
+        }
         // 刷新用户对象，确保返回给前端的是最新信用分/日期
         user = userMapper.selectById(user.getId());
         // 生成 JWT Token（包含用户名和角色）
