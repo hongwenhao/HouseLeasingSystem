@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,6 +88,7 @@ public class UserServiceImpl implements UserService {
      * @return 包含 token 和用户信息的 Map
      */
     @Override
+    @Transactional
     public Map<String, Object> login(LoginRequest request) {
         // 支持「用户名」或「手机号」作为统一登录入口，减少前端区分字段的负担
         User user = userMapper.selectByUsernameOrPhone(request.getUsername());
@@ -100,6 +102,17 @@ public class UserServiceImpl implements UserService {
         // 检查账号是否被封禁
         if ("BANNED".equals(user.getStatus())) {
             throw new BusinessException(403, "账号已被禁用");
+        }
+        // 每日登录信用分 +1（同一自然日仅加一次）：
+        // 1) 通过 lastCreditAddDate 记录上次加分日期，避免同一天重复加分
+        // 2) 分值上限仍由业务规则限制为 200
+        LocalDate today = LocalDate.now();
+        if (user.getLastCreditAddDate() == null || !today.equals(user.getLastCreditAddDate())) {
+            int currentScore = user.getCreditScore() == null ? 0 : user.getCreditScore();
+            user.setCreditScore(Math.min(200, currentScore + 1));
+            user.setLastCreditAddDate(today);
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.updateById(user);
         }
         // 生成 JWT Token（包含用户名和角色）
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());

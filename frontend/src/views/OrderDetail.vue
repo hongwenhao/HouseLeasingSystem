@@ -67,8 +67,20 @@
               <el-descriptions-item label="租客" v-if="order.tenant">
                 {{ order.tenant.username || order.tenantId }}
               </el-descriptions-item>
+              <el-descriptions-item label="租客手机号" v-if="order.tenant">
+                {{ order.tenant.phone || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="租客信用分" v-if="order.tenant">
+                {{ order.tenant.creditScore ?? '-' }}
+              </el-descriptions-item>
               <el-descriptions-item label="房东" v-if="order.landlord">
                 {{ order.landlord.username || order.landlordId }}
+              </el-descriptions-item>
+              <el-descriptions-item label="房东手机号" v-if="order.landlord">
+                {{ order.landlord.phone || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="房东信用分" v-if="order.landlord">
+                {{ order.landlord.creditScore ?? '-' }}
               </el-descriptions-item>
               <el-descriptions-item label="留言" v-if="order.remark">
                 {{ order.remark }}

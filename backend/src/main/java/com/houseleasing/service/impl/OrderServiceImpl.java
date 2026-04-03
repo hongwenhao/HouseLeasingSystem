@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
@@ -64,6 +65,10 @@ public class OrderServiceImpl implements OrderService {
         if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth())) {
             throw new BusinessException(403, "请先完成实名认证后再预约看房");
         }
+        // 信用分 <= 0 时禁止发起预约（包括意向预约）
+        if (tenant.getCreditScore() == null || tenant.getCreditScore() <= 0) {
+            throw new BusinessException(403, "当前信用分过低，暂不可发起预约房源");
+        }
         Order order = new Order();
         // 押金金额 = 押金月数 × 月租金（houses.deposit 存储的是月数，需乘以月租金得到实际金额）
         BigDecimal depositAmount = (house.getDeposit() != null && house.getPrice() != null)
@@ -105,6 +110,10 @@ public class OrderServiceImpl implements OrderService {
         }
         if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth())) {
             throw new BusinessException(403, "请先完成实名认证后再预约看房");
+        }
+        // 信用分 <= 0 时禁止发起预约（包括标准预约）
+        if (tenant.getCreditScore() == null || tenant.getCreditScore() <= 0) {
+            throw new BusinessException(403, "当前信用分过低，暂不可发起预约房源");
         }
         Order order = new Order();
         // 押金金额 = 押金月数 × 月租金（houses.deposit 存储的是月数，需乘以月租金得到实际金额）
@@ -177,6 +186,27 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+
+        // 仅当“租客本人”取消时触发信用分惩罚逻辑：
+        // 同一租客在同一天取消同一个房源预约次数 > 10，信用分 -10。
+        // 统计窗口使用“本地自然日 [00:00, 次日00:00)”。
+        if (userId.equals(order.getTenantId())) {
+            LocalDate today = LocalDate.now();
+            LocalDateTime dayStart = today.atStartOfDay();
+            LocalDateTime nextDayStart = today.plusDays(1).atStartOfDay();
+            Integer cancelledCount = orderMapper.countTenantHouseCancelledInRange(
+                    order.getTenantId(), order.getHouseId(), dayStart, nextDayStart);
+            int safeCount = cancelledCount == null ? 0 : cancelledCount;
+            if (safeCount > 10) {
+                User tenant = userMapper.selectById(order.getTenantId());
+                if (tenant != null) {
+                    int currentScore = tenant.getCreditScore() == null ? 0 : tenant.getCreditScore();
+                    tenant.setCreditScore(Math.max(0, currentScore - 10));
+                    tenant.setUpdateTime(LocalDateTime.now());
+                    userMapper.updateById(tenant);
+                }
+            }
+        }
     }
 
     /**

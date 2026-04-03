@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.time.LocalDateTime;
+
 /**
  * 订单数据访问层接口
  *
@@ -35,4 +37,27 @@ public interface OrderMapper extends BaseMapper<Order> {
             ORDER BY o.create_time DESC
             """)
     Page<Order> selectLandlordOrdersPage(Page<Order> page, @Param("landlordId") Long landlordId);
+
+    /**
+     * 统计指定租客在指定房源、指定时间窗口内的取消预约次数。
+     *
+     * @param tenantId  租客 ID
+     * @param houseId   房源 ID
+     * @param startTime 时间窗口开始（含）
+     * @param endTime   时间窗口结束（不含）
+     * @return 取消次数
+     */
+    @Select("""
+            SELECT COUNT(1)
+            FROM orders
+            WHERE tenant_id = #{tenantId}
+              AND house_id = #{houseId}
+              AND status = 'CANCELLED'
+              AND update_time >= #{startTime}
+              AND update_time < #{endTime}
+            """)
+    Integer countTenantHouseCancelledInRange(@Param("tenantId") Long tenantId,
+                                             @Param("houseId") Long houseId,
+                                             @Param("startTime") LocalDateTime startTime,
+                                             @Param("endTime") LocalDateTime endTime);
 }
