@@ -70,8 +70,6 @@ public class House {
     private String coverImage;
     /** 房源标签（如：近地铁、可养宠物），多标签用逗号分隔 */
     private String tags;
-    /** 工作流实例 ID（用于审核流程追踪） */
-    private String workflowInstanceId;
     /** 居室数量（几室） */
     private Integer rooms;
     /** 厅的数量（几厅） */

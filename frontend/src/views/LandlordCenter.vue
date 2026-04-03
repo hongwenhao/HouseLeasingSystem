@@ -49,7 +49,7 @@
           </el-tab-pane>
 
           <!-- Orders Tab -->
-          <el-tab-pane label="预约管理订单" name="orders">
+          <el-tab-pane label="预约订单管理" name="orders">
             <div v-if="ordersLoading">
               <el-skeleton :rows="4" animated />
             </div>

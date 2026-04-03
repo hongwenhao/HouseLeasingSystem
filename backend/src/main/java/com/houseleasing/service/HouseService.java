@@ -57,7 +57,7 @@ public interface HouseService {
      * @param approved true 表示审核通过上线，false 表示拒绝
      * @param reason   审核意见
      */
-    void approveHouse(Long id, boolean approved, String reason);
+//    void approveHouse(Long id, boolean approved, String reason);
 
     /**
      * 查询指定房东发布的房源列表（分页）

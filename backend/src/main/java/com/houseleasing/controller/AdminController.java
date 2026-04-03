@@ -88,64 +88,6 @@ public class AdminController {
     }
 
     /**
-     * 查询待审核的房源列表（分页）
-     *
-     * @param page 当前页码
-     * @param size 每页大小
-     * @return 待审核的分页房源列表
-     */
-    @Operation(summary = "List pending approval houses")
-    @GetMapping("/houses/pending")
-    public Result<PageResult<House>> listPendingHouses(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        com.houseleasing.dto.HouseSearchRequest req = new com.houseleasing.dto.HouseSearchRequest();
-        req.setPage(page);
-        req.setSize(size);
-        // 直接查询状态为 PENDING 的房源
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<House> wrapper =
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
-        wrapper.eq(House::getStatus, "PENDING").orderByDesc(House::getCreateTime);
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> pageObj =
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
-        com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> result =
-                houseMapper.selectPage(pageObj, wrapper);
-        return Result.success(PageResult.of(result.getTotal(), result.getRecords(), page, size));
-    }
-
-    /**
-     * 审核通过指定房源（上线发布）
-     *
-     * @param id      要审核通过的房源 ID
-     * @param request 请求体，包含可选的审核意见 reason
-     * @return 操作成功的响应
-     */
-    @Operation(summary = "Approve house")
-    @PutMapping("/houses/{id}/approve")
-    public Result<Void> approveHouse(@PathVariable Long id,
-                                     @RequestBody(required = false) Map<String, String> request) {
-        String reason = request != null ? request.get("reason") : null;
-        houseService.approveHouse(id, true, reason);
-        return Result.success();
-    }
-
-    /**
-     * 拒绝指定房源上线
-     *
-     * @param id      要拒绝的房源 ID
-     * @param request 请求体，包含可选的拒绝原因 reason
-     * @return 操作成功的响应
-     */
-    @Operation(summary = "Reject house")
-    @PutMapping("/houses/{id}/reject")
-    public Result<Void> rejectHouse(@PathVariable Long id,
-                                    @RequestBody(required = false) Map<String, String> request) {
-        String reason = request != null ? request.get("reason") : null;
-        houseService.approveHouse(id, false, reason);
-        return Result.success();
-    }
-
-    /**
      * 查询系统所有订单列表（分页）
      *
      * @param page 当前页码

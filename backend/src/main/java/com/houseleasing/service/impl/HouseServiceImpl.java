@@ -294,30 +294,6 @@ public class HouseServiceImpl implements HouseService {
     }
 
     /**
-     * 管理员审核房源：通过则上线，拒绝则标记为已拒绝，并清除缓存
-     *
-     * @param id       房源 ID
-     * @param approved 是否批准
-     * @param reason   审核意见
-     */
-    @Override
-    @Transactional
-    @CacheEvict(value = "hotHouses", allEntries = true) // 审核状态变化后清除缓存
-    public void approveHouse(Long id, boolean approved, String reason) {
-        House house = houseMapper.selectById(id);
-        if (house == null) {
-            throw new BusinessException(404, "房源不存在");
-        }
-        house.setStatus(approved ? "ONLINE" : "REJECTED");
-        house.setUpdateTime(LocalDateTime.now());
-        houseMapper.updateById(house);
-        if (house.getWorkflowInstanceId() != null) {
-            workflowService.approveHouseProcess(house.getWorkflowInstanceId(), approved, reason);
-        }
-        log.info("House {} {}: {}", id, approved ? "approved" : "rejected", reason);
-    }
-
-    /**
      * 查询指定房东发布的所有房源（分页）
      *
      * @param ownerId 房东用户 ID
