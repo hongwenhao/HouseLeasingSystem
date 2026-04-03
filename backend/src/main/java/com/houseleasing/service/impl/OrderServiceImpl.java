@@ -47,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final MessageService messageService;
     private final RedisTemplate<String, Object> redisTemplate;
     private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript();
+    private static final long CANCEL_COUNT_DEDUCT_THRESHOLD = 11L;
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -200,7 +201,7 @@ public class OrderServiceImpl implements OrderService {
                     INCR_WITH_EXPIRE_ONE_DAY_SCRIPT,
                     java.util.Collections.singletonList(cancelCountKey)
             );
-            shouldDeductCredit = cancelledCount != null && cancelledCount == 11L;
+            shouldDeductCredit = cancelledCount != null && cancelledCount == CANCEL_COUNT_DEDUCT_THRESHOLD;
         }
 
         order.setStatus("CANCELLED");

@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   `is_real_name_auth` TINYINT DEFAULT 0 COMMENT '是否实名认证，0否1是，默认值为0',
   `status` ENUM('ACTIVE','BANNED') DEFAULT 'ACTIVE' COMMENT '账户状态，ACTIVE正常，BANNED封禁，默认值为ACTIVE',
   `gender` TINYINT DEFAULT 0 COMMENT '性别，0未知1男2女，默认值为0',
-  `last_credit_add_date` DATE COMMENT '最近一次因登录增加信用分的日期（用于每日登录仅加1分）',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

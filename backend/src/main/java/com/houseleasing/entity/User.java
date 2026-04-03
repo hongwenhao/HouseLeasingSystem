@@ -3,7 +3,6 @@ package com.houseleasing.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -41,8 +40,6 @@ public class User {
     private Integer gender = 0;
     /** 账号状态：ACTIVE（正常）、BANNED（封禁） */
     private String status = "ACTIVE";
-    /** 最近一次因登录获得信用分的日期（用于“每日登录+1分”去重） */
-    private LocalDate lastCreditAddDate;
     /** 用户头像 URL */
     private String avatar;
     /** 创建时间，插入时自动填充 */
