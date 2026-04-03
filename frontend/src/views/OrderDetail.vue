@@ -192,7 +192,7 @@ const role = localStorage.getItem('role') || ''  // 当前用户角色（从 loc
 
 /** 订单状态对应的中文标签 */
 const statusLabel = computed(() => {
-  const map = { PENDING: '待确认', APPROVED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
   return map[order.value?.status] || order.value?.status || '-'
 })
 

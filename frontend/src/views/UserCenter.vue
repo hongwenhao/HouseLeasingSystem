@@ -559,7 +559,7 @@ async function markAllMessagesRead() {
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
-  const map = { PENDING: '待房东确认', APPROVED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
   return map[status] || status
 }
 
