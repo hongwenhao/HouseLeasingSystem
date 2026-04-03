@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -174,7 +175,7 @@ public class OrderServiceImpl implements OrderService {
      * @param userId  操作人用户 ID
      */
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public void cancelOrder(Long orderId, Long userId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
@@ -202,6 +203,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus("CANCELLED");
+        order.setCancelledTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
 

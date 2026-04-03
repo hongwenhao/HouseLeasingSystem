@@ -3,7 +3,9 @@ package com.houseleasing.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.houseleasing.entity.User;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 /**
  * 用户数据访问层接口
@@ -50,4 +52,21 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Select("SELECT * FROM users WHERE email = #{email}")
     User selectByEmail(String email);
+
+    /**
+     * 每日登录信用分原子加分：
+     * 仅当当天尚未加分时更新，避免并发登录导致重复加分。
+     *
+     * @param userId 用户 ID
+     * @return 受影响行数（1=成功加分，0=当天已加分或用户不存在）
+     */
+    @Update("""
+            UPDATE users
+            SET credit_score = CASE WHEN IFNULL(credit_score, 0) + 1 > 200 THEN 200 ELSE IFNULL(credit_score, 0) + 1 END,
+                last_credit_add_date = CURRENT_DATE,
+                update_time = NOW()
+            WHERE id = #{userId}
+              AND (last_credit_add_date IS NULL OR last_credit_add_date <> CURRENT_DATE)
+            """)
+    int addLoginCreditIfNotToday(@Param("userId") Long userId);
 }

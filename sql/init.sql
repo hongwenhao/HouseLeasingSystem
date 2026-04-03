@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `total_amount` DECIMAL(12,2) COMMENT '总金额',
   `payment_status` ENUM('UNPAID','PAID','REFUNDED') DEFAULT 'UNPAID' COMMENT '支付状态，默认值为UNPAID，UNPAID未支付/PAID已支付/REFUNDED已退款',
   `remark` TEXT COMMENT '备注',
+  `cancelled_time` DATETIME COMMENT '取消时间（仅状态为CANCELLED时有值）',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX `idx_house_id` (`house_id`),

@@ -53,8 +53,8 @@ public interface OrderMapper extends BaseMapper<Order> {
             WHERE tenant_id = #{tenantId}
               AND house_id = #{houseId}
               AND status = 'CANCELLED'
-              AND update_time >= #{startTime}
-              AND update_time < #{endTime}
+              AND cancelled_time >= #{startTime}
+              AND cancelled_time < #{endTime}
             """)
     Integer countTenantHouseCancelledInRange(@Param("tenantId") Long tenantId,
                                              @Param("houseId") Long houseId,
