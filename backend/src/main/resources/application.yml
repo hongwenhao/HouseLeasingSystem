@@ -68,7 +68,7 @@ mybatis-plus:
 # ---- JWT Token 配置 ----
 jwt:
   # 签名密钥：生产环境必须通过 JWT_SECRET 环境变量设置强密钥
-  secret: ${JWT_SECRET:HouseLeasingSystem2024SecretKey12345678901234567890}
+  secret: ${JWT_SECRET:HouseLeasingSystemc2024SecretKey12345678901234567890}
   # Token 有效期（毫秒）：86400000 = 24小时，可通过 JWT_EXPIRATION 覆盖
   expiration: ${JWT_EXPIRATION:86400000}
 

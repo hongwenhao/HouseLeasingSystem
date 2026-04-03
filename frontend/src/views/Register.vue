@@ -39,7 +39,7 @@
             />
           </el-form-item>
           <!-- 邮箱 -->
-          <el-form-item label="邮箱（必填）" prop="email" required>
+          <el-form-item label="邮箱" prop="email" required>
             <el-input
               v-model="form.email"
               placeholder="请输入邮箱"

@@ -97,9 +97,11 @@ public class WorkflowService {
      */
     public String startContractSigningProcess(Long contractId, Long tenantId, Long landlordId) {
         Map<String, Object> variables = new HashMap<>();
+        // 组装流程变量，供后续用户任务节点读取使用
         variables.put("contractId", contractId);
         variables.put("tenantId", tenantId);
         variables.put("landlordId", landlordId);
+        // 启动流程，并设置业务主键为 CONTRACT-{id}，方便后续关联查询
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(
                 "contractSigningProcess",
                 "CONTRACT-" + contractId,
@@ -117,21 +119,36 @@ public class WorkflowService {
      * @param approved          是否同意签署
      */
     public void completeContractTask(String processInstanceId, Long userId, String role, boolean approved) {
+        // 1. 查询待办任务
+        // 构建任务查询条件：匹配指定的流程实例ID以及当前用户ID（需转为String以匹配Assignee字段）
+        // singleResult() 确保查询结果唯一，如果无结果返回null，多于一个结果则抛出异常
         Task task = taskService.createTaskQuery()
                 .processInstanceId(processInstanceId)
                 .taskAssignee(String.valueOf(userId))
                 .singleResult();
+        // 2. 校验任务是否存在
+        // 如果查询结果为空，说明当前用户在该流程中没有待处理的签署任务，抛出业务异常
         if (task == null) {
             throw new BusinessException(404, "未找到合同签署任务");
         }
+        // 3. 准备流程变量
+        // 用于在完成任务时回写给工作流引擎，驱动流程流转或更新流程状态
         Map<String, Object> vars = new HashMap<>();
+        // 设置通用的审批结果变量，供流程网关判断走向（如：通过则进入下一节点，拒绝则结束或驳回）
         vars.put("approved", approved);
+        // 4. 根据角色设置特定的签署状态变量
+        // 这种设计允许流程中记录每一方的独立签署状态，便于后续查询或并行签署逻辑
         if ("TENANT".equals(role)) {
             vars.put("tenantSigned", approved);
+            // 如果是租客角色，设置租客已签署变量
         } else if ("LANDLORD".equals(role)) {
             vars.put("landlordSigned", approved);
         }
+        // 5. 完成任务
+        // 调用工作流服务，传入任务ID和流程变量集合，正式结束当前任务节点
         taskService.complete(task.getId(), vars);
+        // 6. 记录操作日志
+        // 记录用户ID、任务ID和角色，便于后续审计和问题追踪
         log.info("User {} completed contract task {} with role {}", userId, task.getId(), role);
     }
 

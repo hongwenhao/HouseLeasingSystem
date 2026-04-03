@@ -53,7 +53,7 @@ public class HouseServiceImpl implements HouseService {
     private static final String BEHAVIOR_COLLECT = "COLLECT";
 
     /**
-     * 发布新房源，设置初始状态为待审核，清除热门房源缓存
+     * 发布新房源，设置初始状态为已上架，清除热门房源缓存
      *
      * @param house   房源信息
      * @param ownerId 房东用户 ID
