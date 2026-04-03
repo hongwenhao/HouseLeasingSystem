@@ -83,4 +83,24 @@ public class MessageConsumer {
             log.error("Error handling order message: {}", e.getMessage(), e);
         }
     }
+
+    /**
+     * 处理登录提醒消息队列中的消息
+     *
+     * @param message 从队列接收的消息（Map 格式）
+     */
+    @RabbitListener(queues = "login.queue")
+    public void handleLogin(java.util.Map<String, Object> message) {
+        try {
+            log.info("Received login message: {}", message);
+            Long userId = message.get("userId") != null ? Long.valueOf(message.get("userId").toString()) : null;
+            String title = (String) message.getOrDefault("title", "登录提醒");
+            String content = (String) message.getOrDefault("content", "");
+            if (userId != null) {
+                messageService.sendMessage(userId, title, content, "LOGIN");
+            }
+        } catch (Exception e) {
+            log.error("Error handling login message: {}", e.getMessage(), e);
+        }
+    }
 }

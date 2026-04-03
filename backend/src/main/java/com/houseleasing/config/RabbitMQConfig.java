@@ -28,6 +28,8 @@ public class RabbitMQConfig {
     public static final String CONTRACT_QUEUE = "contract.queue";
     /** 订单消息队列名称 */
     public static final String ORDER_QUEUE = "order.queue";
+    /** 登录消息队列名称 */
+    public static final String LOGIN_QUEUE = "login.queue";
 
     /**
      * 创建持久化 Topic 交换机
@@ -71,6 +73,16 @@ public class RabbitMQConfig {
     }
 
     /**
+     * 创建持久化登录消息队列
+     *
+     * @return 登录消息队列实例
+     */
+    @Bean
+    public Queue loginQueue() {
+        return QueueBuilder.durable(LOGIN_QUEUE).build();
+    }
+
+    /**
      * 将预约队列绑定到交换机，路由键模式为 appointment.*
      *
      * @param appointmentQueue 预约队列
@@ -104,6 +116,18 @@ public class RabbitMQConfig {
     @Bean
     public Binding orderBinding(Queue orderQueue, TopicExchange houseExchange) {
         return BindingBuilder.bind(orderQueue).to(houseExchange).with("order.*");
+    }
+
+    /**
+     * 将登录队列绑定到交换机，路由键模式为 login.*
+     *
+     * @param loginQueue    登录队列
+     * @param houseExchange 交换机
+     * @return 绑定关系
+     */
+    @Bean
+    public Binding loginBinding(Queue loginQueue, TopicExchange houseExchange) {
+        return BindingBuilder.bind(loginQueue).to(houseExchange).with("login.*");
     }
 
     /**

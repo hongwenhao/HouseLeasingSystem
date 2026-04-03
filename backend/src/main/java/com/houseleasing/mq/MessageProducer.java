@@ -98,6 +98,29 @@ public class MessageProducer {
     }
 
     /**
+     * 发送登录提醒消息
+     * 登录属于关键操作，需要在消息中心保留可追溯记录。
+     *
+     * @param userId  接收通知的用户 ID
+     * @param content 登录提醒正文
+     */
+    public void sendLoginNotification(Long userId, String content) {
+        try {
+            if (rabbitTemplate != null) {
+                // 登录提醒使用独立路由键 login.*，便于按消息类型解耦与监控。
+                rabbitTemplate.convertAndSend("house.exchange", "login.notice",
+                        buildMessage(userId, "登录提醒", content));
+                log.debug("Sent login notification to queue for user {}", userId);
+            } else {
+                saveMessageDirectly(userId, "登录提醒", content, "LOGIN");
+            }
+        } catch (Exception e) {
+            log.warn("RabbitMQ unavailable, saving login message directly: {}", e.getMessage());
+            saveMessageDirectly(userId, "登录提醒", content, "LOGIN");
+        }
+    }
+
+    /**
      * 降级处理：直接调用消息服务将消息保存到数据库
      *
      * @param userId  接收用户 ID

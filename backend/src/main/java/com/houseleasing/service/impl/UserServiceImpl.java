@@ -40,6 +40,15 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    /** 每日首次登录可获得的信用分奖励 */
+    private static final int DAILY_LOGIN_CREDIT_BONUS = 1;
+    /** 信用分系统上限 */
+    private static final int CREDIT_SCORE_MAX = 200;
+    /** 每日首次登录提醒文案模板 */
+    private static final String DAILY_LOGIN_BONUS_MESSAGE_TEMPLATE = "今日登录成功，信用分+%d（每日仅首次登录生效）";
+    /** 非首次登录提醒文案 */
+    private static final String DAILY_LOGIN_REPEAT_MESSAGE = "登录成功（今日已完成登录加分，不重复累计）";
+
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -114,20 +123,19 @@ public class UserServiceImpl implements UserService {
         Boolean firstLoginToday = redisTemplate.opsForValue().setIfAbsent(loginCreditKey, "1", 1, TimeUnit.DAYS);
         if (Boolean.TRUE.equals(firstLoginToday)) {
             int currentScore = user.getCreditScore() == null ? 0 : user.getCreditScore();
-            user.setCreditScore(Math.min(200, currentScore + 1));
+            user.setCreditScore(Math.min(CREDIT_SCORE_MAX, currentScore + DAILY_LOGIN_CREDIT_BONUS));
             user.setUpdateTime(LocalDateTime.now());
             userMapper.updateById(user);
             // 每日首次登录时，向消息中心推送一条“登录成功”通知：
             // 1) 明确告知用户本次登录已记录；
             // 2) 同步提示“每日登录加分”规则，帮助用户理解信用分变动来源；
             // 3) 仅首次登录发送，避免同一天内重复提醒造成打扰。
-            messageProducer.sendOrderStatusChange(user.getId(),
-                    "今日登录成功，信用分+1（每日仅首次登录生效）");
+            messageProducer.sendLoginNotification(user.getId(),
+                    String.format(DAILY_LOGIN_BONUS_MESSAGE_TEMPLATE, DAILY_LOGIN_CREDIT_BONUS));
         } else {
             // 非每日首次登录也保留登录通知，便于用户在消息中心追溯关键登录行为；
             // 文案明确“已登录但不重复加分”，避免用户误解积分规则。
-            messageProducer.sendOrderStatusChange(user.getId(),
-                    "登录成功（今日已完成登录加分，不重复累计）");
+            messageProducer.sendLoginNotification(user.getId(), DAILY_LOGIN_REPEAT_MESSAGE);
         }
         // 生成 JWT Token（包含用户名和角色）
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
