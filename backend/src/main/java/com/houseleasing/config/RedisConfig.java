@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -95,5 +96,55 @@ public class RedisConfig {
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(config)
                 .build();
+    }
+
+    /**
+     * 缓存异常处理器：当读取到历史/损坏缓存值导致反序列化失败时，删除该 key 并回源数据库。
+     *
+     * <p>说明：历史环境可能存在由旧序列化策略写入的值（如 "[]"），与当前 Jackson 多态反序列化不兼容。
+     * 这里在 GET 失败时自动清理坏缓存，避免请求直接报错。</p>
+     *
+     * @return 自定义缓存错误处理器
+     */
+    @Bean
+    public CacheErrorHandler cacheErrorHandler() {
+        return new CacheErrorHandler() {
+            @Override
+            public void handleCacheGetError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {
+                log.warn("Cache get failed, fallback to DB. cache={}, key={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown", key,
+                        exception.getClass().getSimpleName(), exception.getMessage());
+                if (cache != null && key != null) {
+                    try {
+                        cache.evict(key);
+                    } catch (Exception evictException) {
+                        log.warn("Failed to evict corrupted cache entry. cache={}, key={}, type={}, reason={}",
+                                cache.getName(), key, evictException.getClass().getSimpleName(),
+                                evictException.getMessage());
+                    }
+                }
+            }
+
+            @Override
+            public void handleCachePutError(RuntimeException exception, org.springframework.cache.Cache cache, Object key, Object value) {
+                log.warn("Cache put failed. cache={}, key={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown", key,
+                        exception.getClass().getSimpleName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheEvictError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {
+                log.warn("Cache evict failed. cache={}, key={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown", key,
+                        exception.getClass().getSimpleName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheClearError(RuntimeException exception, org.springframework.cache.Cache cache) {
+                log.warn("Cache clear failed. cache={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown",
+                        exception.getClass().getSimpleName(), exception.getMessage());
+            }
+        };
     }
 }
