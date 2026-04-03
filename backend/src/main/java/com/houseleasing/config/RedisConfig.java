@@ -111,34 +111,39 @@ public class RedisConfig {
         return new CacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {
-                log.warn("Cache get failed, fallback to DB. cache={}, key={}, reason={}",
-                        cache != null ? cache.getName() : "unknown", key, exception.getMessage());
+                log.warn("Cache get failed, fallback to DB. cache={}, key={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown", key,
+                        exception.getClass().getSimpleName(), exception.getMessage());
                 if (cache != null && key != null) {
                     try {
                         cache.evict(key);
                     } catch (Exception evictException) {
-                        log.warn("Failed to evict corrupted cache entry. cache={}, key={}, reason={}",
-                                cache.getName(), key, evictException.getMessage());
+                        log.warn("Failed to evict corrupted cache entry. cache={}, key={}, type={}, reason={}",
+                                cache.getName(), key, evictException.getClass().getSimpleName(),
+                                evictException.getMessage());
                     }
                 }
             }
 
             @Override
             public void handleCachePutError(RuntimeException exception, org.springframework.cache.Cache cache, Object key, Object value) {
-                log.warn("Cache put failed. cache={}, key={}, reason={}",
-                        cache != null ? cache.getName() : "unknown", key, exception.getMessage());
+                log.warn("Cache put failed. cache={}, key={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown", key,
+                        exception.getClass().getSimpleName(), exception.getMessage());
             }
 
             @Override
             public void handleCacheEvictError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {
-                log.warn("Cache evict failed. cache={}, key={}, reason={}",
-                        cache != null ? cache.getName() : "unknown", key, exception.getMessage());
+                log.warn("Cache evict failed. cache={}, key={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown", key,
+                        exception.getClass().getSimpleName(), exception.getMessage());
             }
 
             @Override
             public void handleCacheClearError(RuntimeException exception, org.springframework.cache.Cache cache) {
-                log.warn("Cache clear failed. cache={}, reason={}",
-                        cache != null ? cache.getName() : "unknown", exception.getMessage());
+                log.warn("Cache clear failed. cache={}, type={}, reason={}",
+                        cache != null ? cache.getName() : "unknown",
+                        exception.getClass().getSimpleName(), exception.getMessage());
             }
         };
     }
