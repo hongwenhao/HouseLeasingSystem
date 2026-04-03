@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Isolation;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -175,7 +174,7 @@ public class OrderServiceImpl implements OrderService {
      * @param userId  操作人用户 ID
      */
     @Override
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional
     public void cancelOrder(Long orderId, Long userId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
@@ -193,13 +192,16 @@ public class OrderServiceImpl implements OrderService {
         boolean tenantCancelling = Objects.equals(userId, order.getTenantId());
         boolean shouldDeductCredit = false;
         if (tenantCancelling) {
+            // 并发控制：对租客行加锁，确保同一租客并发取消时“次数判断+扣分”串行执行。
+            userMapper.selectByIdForUpdate(order.getTenantId());
             LocalDate today = LocalDate.now();
             LocalDateTime dayStart = today.atStartOfDay();
             LocalDateTime nextDayStart = today.plusDays(1).atStartOfDay();
             Integer cancelledCountBefore = orderMapper.countTenantHouseCancelledInRange(
                     order.getTenantId(), order.getHouseId(), dayStart, nextDayStart);
             int safeCountBefore = cancelledCountBefore == null ? 0 : cancelledCountBefore;
-            shouldDeductCredit = safeCountBefore >= 10;
+            // 仅在“第 11 次取消”时扣一次分：即本次前恰好已取消 10 次。
+            shouldDeductCredit = safeCountBefore == 10;
         }
 
         order.setStatus("CANCELLED");

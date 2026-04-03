@@ -54,6 +54,15 @@ public interface UserMapper extends BaseMapper<User> {
     User selectByEmail(String email);
 
     /**
+     * 按用户 ID 查询并加行级锁（用于并发敏感业务）。
+     *
+     * @param userId 用户 ID
+     * @return 用户对象
+     */
+    @Select("SELECT * FROM users WHERE id = #{userId} FOR UPDATE")
+    User selectByIdForUpdate(@Param("userId") Long userId);
+
+    /**
      * 每日登录信用分原子加分：
      * 仅当当天尚未加分时更新，避免并发登录导致重复加分。
      *
