@@ -48,6 +48,10 @@ public class OrderServiceImpl implements OrderService {
     private final RedisTemplate<String, Object> redisTemplate;
     private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript();
     private static final long CANCEL_COUNT_DEDUCT_THRESHOLD = 11L;
+    private static final String TENANT_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
+    private static final String TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE = "租客已取消预约订单";
+    private static final String LANDLORD_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
+    private static final String LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE = "房东已取消预约订单";
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -207,6 +211,15 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        // 订单取消属于关键业务事件：同时通知租客与房东，确保双方都能第一时间在消息中心看到状态变化。
+        // 这里统一复用“订单状态通知”渠道，消息内容根据操作人身份区分，便于双方理解取消原因。
+        if (tenantCancelling) {
+            messageProducer.sendOrderStatusChange(order.getTenantId(), TENANT_CANCEL_SELF_MESSAGE);
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE);
+        } else {
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), LANDLORD_CANCEL_SELF_MESSAGE);
+            messageProducer.sendOrderStatusChange(order.getTenantId(), LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE);
+        }
 
         // 满足扣分条件时执行信用分扣减（下限为 0）
         if (shouldDeductCredit) {
