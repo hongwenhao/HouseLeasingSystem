@@ -261,13 +261,13 @@
                 </div>
               </template>
               <div class="credit-section">
-                <div class="credit-score-card">
-                  <div class="score-display">
-                    <span class="score-num">{{ creditScore }}</span>
-                    <span class="score-total">/100</span>
-                  </div>
-                  <el-progress
-                    :percentage="creditScore"
+                  <div class="credit-score-card">
+                    <div class="score-display">
+                      <span class="score-num">{{ creditScore }}</span>
+                      <span class="score-total">/200</span>
+                    </div>
+                    <el-progress
+                    :percentage="creditProgress"
                     :color="creditColor(creditScore)"
                     :stroke-width="16"
                     class="credit-progress"
@@ -278,7 +278,7 @@
                   <h4>信用评分说明</h4>
                   <p>信用评分反映您在平台上的信誉状况，由交易记录、合同履约情况等综合计算。</p>
                   <ul>
-                    <li>90-100分：优秀信用，享受优先推荐</li>
+                    <li>90-200分：优秀信用，享受优先推荐</li>
                     <li>70-89分：良好信用</li>
                     <li>60-69分：一般信用</li>
                     <li>60分以下：信用较低，部分功能受限</li>
@@ -330,6 +330,9 @@ const pwdFormRef = ref(null)
 // 从 Pinia store 计算用户信息
 const userInfo = computed(() => userStore.userInfo)
 const creditScore = computed(() => userInfo.value.creditScore || 100)
+// 信用分满分调整为 200：进度条组件要求 0~100，因此这里换算为百分比展示。
+// 同时用 Math.min 做上限保护，避免异常数据导致进度条超出。
+const creditProgress = computed(() => Math.min(100, Math.round((creditScore.value / 200) * 100)))
 const unreadMessages = computed(() => messages.value.filter(m => !m.isRead).length)
 const isRealNameAuth = computed(() => !!userInfo.value.isRealNameAuth)
 const creditStatClass = computed(() => {

@@ -12,6 +12,7 @@ import com.houseleasing.dto.ResetPasswordRequest;
 import com.houseleasing.dto.UserUpdateRequest;
 import com.houseleasing.entity.User;
 import com.houseleasing.mapper.UserMapper;
+import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final MessageProducer messageProducer;
 
     /**
      * 用户注册：验证用户名、手机号、邮箱的唯一性，加密密码后保存用户信息
@@ -115,6 +117,17 @@ public class UserServiceImpl implements UserService {
             user.setCreditScore(Math.min(200, currentScore + 1));
             user.setUpdateTime(LocalDateTime.now());
             userMapper.updateById(user);
+            // 每日首次登录时，向消息中心推送一条“登录成功”通知：
+            // 1) 明确告知用户本次登录已记录；
+            // 2) 同步提示“每日登录加分”规则，帮助用户理解信用分变动来源；
+            // 3) 仅首次登录发送，避免同一天内重复提醒造成打扰。
+            messageProducer.sendOrderStatusChange(user.getId(),
+                    "今日登录成功，信用分+1（每日仅首次登录生效）");
+        } else {
+            // 非每日首次登录也保留登录通知，便于用户在消息中心追溯关键登录行为；
+            // 文案明确“已登录但不重复加分”，避免用户误解积分规则。
+            messageProducer.sendOrderStatusChange(user.getId(),
+                    "登录成功（今日已完成登录加分，不重复累计）");
         }
         // 生成 JWT Token（包含用户名和角色）
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());

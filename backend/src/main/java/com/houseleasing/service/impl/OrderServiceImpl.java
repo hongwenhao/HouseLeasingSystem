@@ -207,6 +207,15 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        // 订单取消属于关键业务事件：同时通知租客与房东，确保双方都能第一时间在消息中心看到状态变化。
+        // 这里统一复用“订单状态通知”渠道，消息内容根据操作人身份区分，便于双方理解取消原因。
+        if (tenantCancelling) {
+            messageProducer.sendOrderStatusChange(order.getTenantId(), "您已取消该预约订单");
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已取消预约订单");
+        } else {
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), "您已取消该预约订单");
+            messageProducer.sendOrderStatusChange(order.getTenantId(), "房东已取消预约订单");
+        }
 
         // 满足扣分条件时执行信用分扣减（下限为 0）
         if (shouldDeductCredit) {
