@@ -46,8 +46,6 @@ public class Order {
     private String paymentStatus = "UNPAID";
     /** 订单备注信息 */
     private String remark;
-    /** 取消时间（仅当状态为 CANCELLED 时有值） */
-    private LocalDateTime cancelledTime;
     /** 创建时间，插入时自动填充 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

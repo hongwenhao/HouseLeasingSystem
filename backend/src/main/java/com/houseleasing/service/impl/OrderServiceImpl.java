@@ -205,7 +205,6 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus("CANCELLED");
-        order.setCancelledTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
 
