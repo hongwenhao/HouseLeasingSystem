@@ -477,7 +477,7 @@ async function handleSubmit() {
       ElMessage.success('房源更新成功')
     } else {
       await createHouse(payload)
-      ElMessage.success('房源发布成功，已直接上线')
+      ElMessage.success('房源发布成功，已上线')
     }
     router.push('/landlord-center')  // 返回房东中心查看房源状态
   } catch (e) {
