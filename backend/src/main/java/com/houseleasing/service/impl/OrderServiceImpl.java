@@ -22,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 /**
  * 订单服务实现类
@@ -249,24 +247,8 @@ public class OrderServiceImpl implements OrderService {
     public PageResult<Order> listLandlordOrders(Long landlordId, int page, int size) {
         Page<Order> pageObj = new Page<>(page, size);
 
-        // 兼容历史数据说明：
-        // 1) 新数据按 orders.landlord_id 直接归属给房东；
-        // 2) 旧数据可能存在 landlord_id 与当前房东不一致/为空的情况，但 house_id 仍指向该房东名下房源。
-        // 因此这里采用“双路径”查询：landlord_id 命中 或 house_id 属于当前房东。
-        List<Long> ownerHouseIds = houseMapper.selectList(
-                new LambdaQueryWrapper<House>()
-                        .select(House::getId)
-                        .eq(House::getOwnerId, landlordId)
-        ).stream().map(House::getId).collect(Collectors.toList());
-
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Order::getLandlordId, landlordId);
-        if (!ownerHouseIds.isEmpty()) {
-            wrapper.or(w -> w.in(Order::getHouseId, ownerHouseIds));
-        }
-        wrapper.orderByDesc(Order::getCreateTime);
-
-        Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
+        // 兼容历史数据：landlord_id 直接命中，或订单房源归属当前房东（JOIN houses.owner_id）
+        Page<Order> result = orderMapper.selectLandlordOrdersPage(pageObj, landlordId);
         result.getRecords().forEach(order -> {
             if (order.getTenantId() != null) {
                 User tenant = userMapper.selectById(order.getTenantId());

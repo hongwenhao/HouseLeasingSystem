@@ -93,9 +93,6 @@
                 <el-button type="danger" size="large" @click="rejectDialogVisible = true">
                   <el-icon><Close /></el-icon> 拒绝预约
                 </el-button>
-                <el-button type="warning" size="large" :loading="actioning" @click="handleCancel">
-                  取消订单
-                </el-button>
               </template>
               <template v-if="role === 'TENANT' && (order.status === 'PENDING' || order.status === 'APPROVED')">
                 <el-button type="warning" size="large" :loading="actioning" @click="handleCancel">
@@ -106,6 +103,8 @@
                 <el-button type="primary" size="large" @click="openCreateContractDialog">
                   <el-icon><Document /></el-icon> 生成合同
                 </el-button>
+              </template>
+              <template v-if="role === 'LANDLORD' && (order.status === 'PENDING' || order.status === 'APPROVED')">
                 <el-button type="warning" size="large" :loading="actioning" @click="handleCancel">
                   取消订单
                 </el-button>
