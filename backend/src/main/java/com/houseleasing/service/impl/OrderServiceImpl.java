@@ -16,12 +16,16 @@ import com.houseleasing.service.MessageService;
 import com.houseleasing.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -41,6 +45,9 @@ public class OrderServiceImpl implements OrderService {
     private final UserMapper userMapper;
     private final MessageProducer messageProducer;
     private final MessageService messageService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript();
+    private static final long CANCEL_COUNT_DEDUCT_THRESHOLD = 11L;
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -63,6 +70,10 @@ public class OrderServiceImpl implements OrderService {
         }
         if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth())) {
             throw new BusinessException(403, "请先完成实名认证后再预约看房");
+        }
+        // 信用分 <= 0 时禁止发起预约（包括意向预约）
+        if (tenant.getCreditScore() == null || tenant.getCreditScore() <= 0) {
+            throw new BusinessException(403, "当前信用分过低，暂不可发起预约房源");
         }
         Order order = new Order();
         // 押金金额 = 押金月数 × 月租金（houses.deposit 存储的是月数，需乘以月租金得到实际金额）
@@ -105,6 +116,10 @@ public class OrderServiceImpl implements OrderService {
         }
         if (!Boolean.TRUE.equals(tenant.getIsRealNameAuth())) {
             throw new BusinessException(403, "请先完成实名认证后再预约看房");
+        }
+        // 信用分 <= 0 时禁止发起预约（包括标准预约）
+        if (tenant.getCreditScore() == null || tenant.getCreditScore() <= 0) {
+            throw new BusinessException(403, "当前信用分过低，暂不可发起预约房源");
         }
         Order order = new Order();
         // 押金金额 = 押金月数 × 月租金（houses.deposit 存储的是月数，需乘以月租金得到实际金额）
@@ -171,12 +186,38 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(404, "订单不存在");
         }
         // 验证操作人是租客或房东
-        if (!order.getTenantId().equals(userId) && !order.getLandlordId().equals(userId)) {
+        if (!Objects.equals(order.getTenantId(), userId) && !Objects.equals(order.getLandlordId(), userId)) {
             throw new BusinessException(403, "没有操作权限");
         }
+
+        // 仅当“租客本人”取消时触发信用分惩罚逻辑（Redis按日计数）：
+        // 第 11 次取消触发一次扣分，计数 key 过期时间固定 1 天。
+        boolean tenantCancelling = Objects.equals(userId, order.getTenantId());
+        boolean shouldDeductCredit = false;
+        if (tenantCancelling) {
+            String day = LocalDate.now().toString();
+            String cancelCountKey = "order:cancel:" + order.getTenantId() + ":" + order.getHouseId() + ":" + day;
+            Long cancelledCount = redisTemplate.execute(
+                    INCR_WITH_EXPIRE_ONE_DAY_SCRIPT,
+                    java.util.Collections.singletonList(cancelCountKey)
+            );
+            shouldDeductCredit = cancelledCount != null && cancelledCount == CANCEL_COUNT_DEDUCT_THRESHOLD;
+        }
+
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+
+        // 满足扣分条件时执行信用分扣减（下限为 0）
+        if (shouldDeductCredit) {
+            User tenant = userMapper.selectById(order.getTenantId());
+            if (tenant != null) {
+                int currentScore = tenant.getCreditScore() == null ? 0 : tenant.getCreditScore();
+                tenant.setCreditScore(Math.max(0, currentScore - 10));
+                tenant.setUpdateTime(LocalDateTime.now());
+                userMapper.updateById(tenant);
+            }
+        }
     }
 
     /**
@@ -293,5 +334,18 @@ public class OrderServiceImpl implements OrderService {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int random = ThreadLocalRandom.current().nextInt(1000, 9999);
         return prefix + timestamp + random;
+    }
+
+    private static DefaultRedisScript<Long> buildIncrWithExpireOneDayScript() {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setScriptText("""
+                local cnt = redis.call('INCR', KEYS[1])
+                if cnt == 1 then
+                  redis.call('EXPIRE', KEYS[1], 86400)
+                end
+                return cnt
+                """);
+        script.setResultType(Long.class);
+        return script;
     }
 }

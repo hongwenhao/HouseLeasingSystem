@@ -35,4 +35,5 @@ public interface OrderMapper extends BaseMapper<Order> {
             ORDER BY o.create_time DESC
             """)
     Page<Order> selectLandlordOrdersPage(Page<Order> page, @Param("landlordId") Long landlordId);
+
 }

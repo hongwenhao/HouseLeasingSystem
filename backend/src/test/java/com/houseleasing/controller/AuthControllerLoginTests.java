@@ -62,6 +62,7 @@ class AuthControllerLoginTests {
                     is_real_name_auth BOOLEAN,
                     gender INT,
                     status VARCHAR(20),
+                    last_credit_add_date DATE,
                     create_time TIMESTAMP,
                     update_time TIMESTAMP
                 )
