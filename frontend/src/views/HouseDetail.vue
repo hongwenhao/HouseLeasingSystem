@@ -421,6 +421,12 @@ async function handleCollect() {
  * 调用创建订单接口，成功后跳转到订单详情页
  */
 async function submitAppointment() {
+  // 可能存在“登录后长期未刷新页面”导致的本地用户信息过期，预约前拉取一次最新资料再判断实名认证状态
+  if (!userStore.userInfo?.isRealNameAuth) {
+    try {
+      await userStore.fetchProfile()
+    } catch (e) { /* ignore */ }
+  }
   if (!userStore.userInfo?.isRealNameAuth) {
     ElMessage.warning('请先在个人中心完成实名认证后再预约看房')
     return
