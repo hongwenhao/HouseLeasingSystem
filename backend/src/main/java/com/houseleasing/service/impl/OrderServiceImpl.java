@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -180,31 +181,38 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(404, "订单不存在");
         }
         // 验证操作人是租客或房东
-        if (!order.getTenantId().equals(userId) && !order.getLandlordId().equals(userId)) {
+        if (!Objects.equals(order.getTenantId(), userId) && !Objects.equals(order.getLandlordId(), userId)) {
             throw new BusinessException(403, "没有操作权限");
         }
+
+        // 仅当“租客本人”取消时触发信用分惩罚逻辑：
+        // 1) 先在“更新订单状态前”统计当日该租客对该房源已取消次数（不含本次）
+        // 2) 本次取消提交后，若累计次数将超过 10 次（即之前已 >=10 次），则扣减 10 分
+        // 这样与“同一天取消同个房源预约次数超过10次”规则严格一致。
+        boolean tenantCancelling = Objects.equals(userId, order.getTenantId());
+        boolean shouldDeductCredit = false;
+        if (tenantCancelling) {
+            LocalDate today = LocalDate.now();
+            LocalDateTime dayStart = today.atStartOfDay();
+            LocalDateTime nextDayStart = today.plusDays(1).atStartOfDay();
+            Integer cancelledCountBefore = orderMapper.countTenantHouseCancelledInRange(
+                    order.getTenantId(), order.getHouseId(), dayStart, nextDayStart);
+            int safeCountBefore = cancelledCountBefore == null ? 0 : cancelledCountBefore;
+            shouldDeductCredit = safeCountBefore >= 10;
+        }
+
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
 
-        // 仅当“租客本人”取消时触发信用分惩罚逻辑：
-        // 同一租客在同一天取消同一个房源预约次数 > 10，信用分 -10。
-        // 统计窗口使用“本地自然日 [00:00, 次日00:00)”。
-        if (userId.equals(order.getTenantId())) {
-            LocalDate today = LocalDate.now();
-            LocalDateTime dayStart = today.atStartOfDay();
-            LocalDateTime nextDayStart = today.plusDays(1).atStartOfDay();
-            Integer cancelledCount = orderMapper.countTenantHouseCancelledInRange(
-                    order.getTenantId(), order.getHouseId(), dayStart, nextDayStart);
-            int safeCount = cancelledCount == null ? 0 : cancelledCount;
-            if (safeCount > 10) {
-                User tenant = userMapper.selectById(order.getTenantId());
-                if (tenant != null) {
-                    int currentScore = tenant.getCreditScore() == null ? 0 : tenant.getCreditScore();
-                    tenant.setCreditScore(Math.max(0, currentScore - 10));
-                    tenant.setUpdateTime(LocalDateTime.now());
-                    userMapper.updateById(tenant);
-                }
+        // 满足扣分条件时执行信用分扣减（下限为 0）
+        if (shouldDeductCredit) {
+            User tenant = userMapper.selectById(order.getTenantId());
+            if (tenant != null) {
+                int currentScore = tenant.getCreditScore() == null ? 0 : tenant.getCreditScore();
+                tenant.setCreditScore(Math.max(0, currentScore - 10));
+                tenant.setUpdateTime(LocalDateTime.now());
+                userMapper.updateById(tenant);
             }
         }
     }
