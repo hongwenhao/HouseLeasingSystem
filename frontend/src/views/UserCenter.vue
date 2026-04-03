@@ -168,7 +168,7 @@
                     <el-button
                       size="small"
                       type="danger"
-                      v-if="order.status === 'PENDING'"
+                      v-if="isTenant && order.status === 'PENDING'"
                       @click="cancelMyOrder(order.id)"
                     >取消</el-button>
                   </div>
@@ -306,7 +306,7 @@ import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
-import { getMyOrders, cancelOrder } from '../api/order.js'
+import { getMyOrders, getLandlordOrders, cancelOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
@@ -413,11 +413,13 @@ onMounted(async () => {
   loadCollections()
 })
 
-/** 加载当前用户的预约订单列表（最多20条） */
+/** 加载当前用户的预约订单列表（租客取我的预约；房东取收到的预约） */
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const res = await getMyOrders({ page: 1, size: 20 })
+    const res = isTenant.value
+      ? await getMyOrders({ page: 1, size: 20 })
+      : await getLandlordOrders({ page: 1, size: 50 })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     myOrders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
