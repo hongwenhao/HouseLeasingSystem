@@ -398,6 +398,12 @@ function paymentStatusLabel(status) {
   return map[status] || status || '-'
 }
 
+/** 支付状态对应 Tag 类型 */
+function paymentStatusType(status) {
+  const map = { UNPAID: 'warning', PAID: 'success', REFUNDED: 'info' }
+  return map[status] || 'info'
+}
+
 /** 合同状态枚举转中文 */
 function contractStatusLabel(status) {
   const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', TENANT_SIGNED: '租客已签', LANDLORD_SIGNED: '房东已签', FULLY_SIGNED: '双方已签', CANCELLED: '已取消' }
