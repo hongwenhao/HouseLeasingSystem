@@ -21,12 +21,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +69,7 @@ public class AdminController {
     private static final String OWNER_HOUSE_ONLINE_MESSAGE = "管理员已将您的房源上架，可正常展示给租客。";
     private static final String OWNER_HOUSE_OFFLINE_MESSAGE = "管理员已将您的房源下架，暂不可展示给租客。";
     private static final String TENANT_HOUSE_OFFLINE_MESSAGE_TEMPLATE = "管理员已将您关注/下单的房源《%s》下架。";
+    private static final String ADMIN_HOUSE_OPERATION_LOG_TABLE = "admin_house_operation_logs";
 
     private static final String CREDIT_RANGE_EXCELLENT = "90-100(优秀)";
     private static final String CREDIT_RANGE_GOOD = "70-89(良好)";
@@ -417,15 +422,12 @@ public class AdminController {
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         wrapper.eq(AdminHouseOperationLog::getHouseId, id)
                 .orderByDesc(AdminHouseOperationLog::getCreateTime);
-        try {
-            return Result.success(adminHouseOperationLogMapper.selectList(wrapper));
-        } catch (BadSqlGrammarException ex) {
-            if (isMissingAdminHouseOperationLogsTable(ex)) {
-                log.warn("admin_house_operation_logs table is missing, return empty operation logs for houseId={}", id);
-                return Result.success(new ArrayList<>());
-            }
-            throw ex;
-        }
+        List<AdminHouseOperationLog> logs = executeWithMissingLogTableFallback(
+                () -> adminHouseOperationLogMapper.selectList(wrapper),
+                new ArrayList<>(),
+                () -> log.warn("admin_house_operation_logs table is missing, return empty operation logs for houseId={}", id)
+        );
+        return Result.success(logs);
     }
 
     /**
@@ -531,23 +533,62 @@ public class AdminController {
         } else {
             logRecord.setOperatorName("SYSTEM");
         }
+        runWithMissingLogTableFallback(
+                () -> adminHouseOperationLogMapper.insert(logRecord),
+                () -> log.warn("admin_house_operation_logs table is missing, skip writing operation log for houseId={}", houseId)
+        );
+    }
+
+    private boolean isMissingAdminHouseOperationLogsTable(DataAccessException ex) {
+        if (ex == null) {
+            return false;
+        }
+        Throwable cause = ex.getCause();
+        while (cause != null) {
+            if (cause instanceof SQLSyntaxErrorException syntaxErrorException) {
+                if (isMissingTableBySqlStateAndMessage(syntaxErrorException.getSQLState(), syntaxErrorException.getMessage())) {
+                    return true;
+                }
+            }
+            if (cause instanceof SQLException sqlException) {
+                if (isMissingTableBySqlStateAndMessage(sqlException.getSQLState(), sqlException.getMessage())) {
+                    return true;
+                }
+            }
+            cause = cause.getCause();
+        }
+        return isMissingTableBySqlStateAndMessage(null, ex.getMessage());
+    }
+
+    private boolean isMissingTableBySqlStateAndMessage(String sqlState, String message) {
+        boolean sqlStateIndicatesMissingTable = "42S02".equalsIgnoreCase(sqlState) || "42P01".equalsIgnoreCase(sqlState);
+        String normalizedMessage = message == null ? "" : message.toLowerCase();
+        boolean messageIndicatesMissingTable =
+                normalizedMessage.contains(ADMIN_HOUSE_OPERATION_LOG_TABLE)
+                        && (normalizedMessage.contains("doesn't exist")
+                        || normalizedMessage.contains("does not exist")
+                        || normalizedMessage.contains("not found")
+                        || normalizedMessage.contains("no such table"));
+        return sqlStateIndicatesMissingTable || messageIndicatesMissingTable;
+    }
+
+    private <T> T executeWithMissingLogTableFallback(Supplier<T> action, T fallback, Runnable onMissingTable) {
         try {
-            adminHouseOperationLogMapper.insert(logRecord);
-        } catch (BadSqlGrammarException ex) {
+            return action.get();
+        } catch (DataAccessException ex) {
             if (isMissingAdminHouseOperationLogsTable(ex)) {
-                log.warn("admin_house_operation_logs table is missing, skip writing operation log for houseId={}", houseId);
-                return;
+                onMissingTable.run();
+                return fallback;
             }
             throw ex;
         }
     }
 
-    private boolean isMissingAdminHouseOperationLogsTable(BadSqlGrammarException ex) {
-        if (ex == null || ex.getMessage() == null) {
-            return false;
-        }
-        String message = ex.getMessage().toLowerCase();
-        return message.contains("admin_house_operation_logs") && message.contains("doesn't exist");
+    private void runWithMissingLogTableFallback(Runnable action, Runnable onMissingTable) {
+        executeWithMissingLogTableFallback(() -> {
+            action.run();
+            return null;
+        }, null, onMissingTable);
     }
 
     /**
