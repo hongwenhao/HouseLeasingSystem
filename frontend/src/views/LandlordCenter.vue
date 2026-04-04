@@ -68,7 +68,7 @@
                 class="table-row"
               >
                 <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
-                <span class="title-cell">{{ getOrderHouseTitle(order) }}</span>
+                <span class="title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
                 <span>{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
                 <span>{{ formatDateTime(order.appointmentTime) }}</span>
                 <span>
@@ -432,7 +432,7 @@ function formatDateTime(date) {
  * 获取预约订单中的房源标题（房东端）
  * 为兼容历史接口与嵌套对象结构，按 house.title -> houseTitle -> houseId 的顺序回退。
  */
-function getOrderHouseTitle(order) {
+function getOrderHouseTitleWithFallback(order) {
   return order?.house?.title || order?.houseTitle || (order?.houseId ? `房源#${order.houseId}` : '-')
 }
 </script>

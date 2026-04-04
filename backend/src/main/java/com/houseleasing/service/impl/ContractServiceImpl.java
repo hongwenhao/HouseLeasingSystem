@@ -45,6 +45,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ContractServiceImpl implements ContractService {
 
+    /** 租金逾期违约金比例（千分比，0.5%/日） */
+    private static final BigDecimal DAILY_LATE_FEE_RATE_PERCENT = new BigDecimal("0.5");
+    /** 租金逾期达到该天数后，出租方可按约解除合同 */
+    private static final int RENT_OVERDUE_TERMINATION_DAYS = 15;
+
     private final WorkflowService workflowService;
     private final ContractMapper contractMapper;
     private final OrderMapper orderMapper;
@@ -219,7 +224,7 @@ public class ContractServiceImpl implements ContractService {
         // 第三条：租金与支付周期（补充“首期支付”“逾期处理”等常见市场条款）
         sb.append("第三条 租金及付款方式\n");
         sb.append("3.1 月租金：人民币").append(monthlyRent).append("元整。\n");
-        sb.append("3.2 租金按“先付后住”原则支付，乙方应于每自然月1日前支付当月租金；首次租金应于合同签署当日支付。\n");
+        sb.append("3.2 租金按先付后住原则支付，乙方应于每自然月1日前支付当月租金；首次租金应于合同签署当日支付。\n");
         sb.append("3.3 支付方式：银行转账、线上支付或双方书面确认的其他方式；乙方支付后应保存支付凭证。\n");
         sb.append("3.4 乙方逾期支付租金的，甲方有权书面催告；催告后仍未支付的，按本合同违约条款处理。\n\n");
 
@@ -268,7 +273,11 @@ public class ContractServiceImpl implements ContractService {
 
         // 第十条：违约责任（拆分典型违约场景，增强可执行性）
         sb.append("第十条 违约责任\n");
-        sb.append("10.1 乙方未按时支付租金，每逾期一日按应付租金的0.5%支付违约金；逾期超过15日的，甲方有权解除合同。\n");
+        sb.append("10.1 乙方未按时支付租金，每逾期一日按应付租金的")
+                .append(DAILY_LATE_FEE_RATE_PERCENT)
+                .append("%支付违约金；逾期超过")
+                .append(RENT_OVERDUE_TERMINATION_DAYS)
+                .append("日的，甲方有权解除合同。\n");
         sb.append("10.2 乙方擅自转租、从事违法活动或严重扰民的，甲方有权解除合同并要求乙方赔偿损失。\n");
         sb.append("10.3 甲方在租赁期间无正当理由收回房屋或妨碍乙方正常使用房屋的，应承担违约责任并赔偿乙方损失。\n");
         sb.append("10.4 因一方违约导致诉讼、仲裁、律师费等维权成本的，违约方应承担相应费用。\n\n");

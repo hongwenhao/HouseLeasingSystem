@@ -251,6 +251,7 @@ const clauseList = computed(() => {
   return raw
     .split('\n')
     .map(i => i.trim())
+    // 仅提取编号条款行，匹配格式示例：3.1、10.2
     .filter(i => /^\d+\.\d+/.test(i))
     .map(i => i.replace(/^\d+\.\d+\s*/, ''))
     .filter(i => i && !i.includes('签字：'))
