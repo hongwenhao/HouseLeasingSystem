@@ -777,7 +777,8 @@ function openReviewDialog(order) {
 /** 提交订单评价：评分必填，成功后关闭弹窗并刷新订单列表。 */
 async function submitOrderReview() {
   if (!reviewTargetOrder.value?.id) return
-  if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
+  // el-rate 的评分范围已由组件约束为 0~5，这里只需校验是否已选择（>0）。
+  if (!reviewForm.rating) {
     ElMessage.warning('请先选择1-5星评分')
     return
   }
@@ -785,7 +786,7 @@ async function submitOrderReview() {
   try {
     await reviewOrder(reviewTargetOrder.value.id, {
       rating: reviewForm.rating,
-      content: reviewForm.content?.trim() || null
+      content: reviewForm.content.trim() || null
     })
     ElMessage.success('评价提交成功')
     reviewDialogVisible.value = false

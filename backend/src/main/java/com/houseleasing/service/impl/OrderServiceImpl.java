@@ -538,7 +538,8 @@ public class OrderServiceImpl implements OrderService {
         }
         LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Review::getOrderId, order.getId()).eq(Review::getUserId, order.getTenantId());
-        order.setReviewed(reviewMapper.selectCount(wrapper) > 0);
+        wrapper.last("LIMIT 1");
+        order.setReviewed(reviewMapper.selectOne(wrapper) != null);
     }
 
     /**
