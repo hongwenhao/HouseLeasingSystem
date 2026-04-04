@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
+import com.houseleasing.entity.User;
 import com.houseleasing.mapper.HouseImageMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserBehaviorMapper;
@@ -60,6 +61,10 @@ class HouseServiceImplTest {
     void addHouse_shouldSyncHouseImagesIntoHouseImagesTable() {
         House newHouse = new House();
         newHouse.setImages("[\"/api/uploads/a.jpg\", \"/api/uploads/b.jpg\"]");
+        User owner = new User();
+        owner.setId(1L);
+        owner.setCreditScore(100);
+        when(userMapper.selectById(1L)).thenReturn(owner);
 
         // 模拟数据库插入后返回自增主键
         doAnswer(invocation -> {
