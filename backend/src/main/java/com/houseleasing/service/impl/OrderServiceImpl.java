@@ -514,23 +514,19 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 查询房东收到的评价记录（分页）：
-     * 通过订单中的 landlordId 归属到房东，确保口径与订单业务一致。
+     * 按“订单归属房东”作为主口径查询，确保与订单业务权限一致。
+     *
+     * 背景说明：
+     * - 评价数据本身只存了 houseId / orderId / tenantId；
+     * - 如果仅按 houses.owner_id 过滤，房源发生转手或历史数据归属变更时，
+     *   老订单对应的评价会被错误排除，导致房东端“查不到自己房源评价”；
+     * - 因此这里统一委托 Mapper 走“orders.landlord_id 主口径 + houses.owner_id 兼容口径”查询，
+     *   既保证当前业务正确性，也兼容历史数据。
      */
     @Override
     public PageResult<ReviewRecordResponse> listLandlordReviewRecords(Long landlordId, int page, int size) {
-        LambdaQueryWrapper<House> houseWrapper = new LambdaQueryWrapper<>();
-        houseWrapper.eq(House::getOwnerId, landlordId);
-        List<House> houses = houseMapper.selectList(houseWrapper);
-        List<Long> houseIds = houses.stream().map(House::getId).filter(Objects::nonNull).toList();
-        if (houseIds.isEmpty()) {
-            return PageResult.of(0, List.of(), page, size);
-        }
-
         Page<Review> pageObj = new Page<>(page, size);
-        LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(Review::getHouseId, houseIds);
-        wrapper.orderByDesc(Review::getCreateTime);
-        Page<Review> result = reviewMapper.selectPage(pageObj, wrapper);
+        Page<Review> result = reviewMapper.selectLandlordReviewPage(pageObj, landlordId);
         List<ReviewRecordResponse> records = toReviewRecordResponses(result.getRecords());
         return PageResult.of(result.getTotal(), records, page, size);
     }
