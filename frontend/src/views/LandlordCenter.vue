@@ -162,7 +162,8 @@
 
 <script setup>
 // 说明：房东中心页逻辑，管理房东的房源列表、预约订单管理、合同管理和收益统计
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
@@ -172,6 +173,7 @@ import { getMyContracts } from '../api/contract.js'
 import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const activeTab = ref('houses')        // 当前激活 tab
+const route = useRoute()               // 当前路由对象，用于读取 ?tab=xxx 参数
 const housesLoading = ref(false)       // 我的房源加载状态
 const ordersLoading = ref(false)       // 预约订单加载状态
 const contractsLoading = ref(false)    // 合同列表加载状态
@@ -184,6 +186,8 @@ const rejectReason = ref('')           // 拒绝原因输入内容
 const rejecting = ref(false)           // 拒绝按钮 loading 状态
 const currentRejectOrder = ref(null)   // 当前正在被拒绝的订单
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
+// 允许通过 query 切换的标签页白名单（仅接受已有标签，避免无效参数）
+const allowedTabs = ['houses', 'orders', 'contracts', 'stats']
 
 onMounted(() => {
   // 房源和合同数据加载完成后再计算统计信息（computeStats 依赖这两项数据）
@@ -191,6 +195,21 @@ onMounted(() => {
   // 预约订单独立加载（统计信息不依赖订单数据，两者互不阻塞）
   loadOrders()
 })
+
+/**
+ * 监听 query.tab 变化，支持在房东中心页内重复点击顶部导航后即时切换标签页。
+ * 对非白名单参数保持忽略，防止 URL 参数异常导致 UI 状态错误。
+ */
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const targetTab = typeof tab === 'string' ? tab : ''
+    if (allowedTabs.includes(targetTab)) {
+      activeTab.value = targetTab
+    }
+  },
+  { immediate: true }
+)
 
 /** 加载房东自己发布的房源列表 */
 async function loadHouses() {

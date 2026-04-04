@@ -14,6 +14,27 @@
       <div class="nav-links" :class="{ open: menuOpen }">
         <router-link to="/" class="nav-link" @click="menuOpen = false">首页</router-link>
         <router-link to="/houses" class="nav-link" @click="menuOpen = false">房源列表</router-link>
+        <!-- 已登录用户可见：预约订单管理，按角色跳转到对应页面并定位到 orders 标签页 -->
+        <router-link
+          v-if="isLoggedIn"
+          :to="ordersNavTarget"
+          class="nav-link"
+          @click="menuOpen = false"
+        >预约订单管理</router-link>
+        <!-- 已登录用户可见：合同管理，按角色跳转到对应页面并定位到 contracts 标签页 -->
+        <router-link
+          v-if="isLoggedIn"
+          :to="contractsNavTarget"
+          class="nav-link"
+          @click="menuOpen = false"
+        >合同管理</router-link>
+        <!-- 已登录用户可见：消息中心（目前统一在个人中心 messages 标签页展示） -->
+        <router-link
+          v-if="isLoggedIn"
+          :to="messagesNavTarget"
+          class="nav-link"
+          @click="menuOpen = false"
+        >消息中心</router-link>
         <!-- 仅房东角色可见：房东中心入口 -->
         <router-link
           v-if="role === 'LANDLORD'"
@@ -105,6 +126,20 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
 // 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
 const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
+// 顶栏“预约订单管理”目标路由：房东进入房东中心订单标签，其他角色进入个人中心订单标签
+const ordersNavTarget = computed(() => (
+  role.value === 'LANDLORD'
+    ? { path: '/landlord-center', query: { tab: 'orders' } }
+    : { path: '/user-center', query: { tab: 'orders' } }
+))
+// 顶栏“合同管理”目标路由：房东进入房东中心合同标签，其他角色进入个人中心合同标签
+const contractsNavTarget = computed(() => (
+  role.value === 'LANDLORD'
+    ? { path: '/landlord-center', query: { tab: 'contracts' } }
+    : { path: '/user-center', query: { tab: 'contracts' } }
+))
+// 顶栏“消息中心”目标路由：消息目前统一在个人中心 messages 标签页
+const messagesNavTarget = computed(() => ({ path: '/user-center', query: { tab: 'messages' } }))
 
 onMounted(async () => {
   // 已登录时，异步拉取未读消息数量，展示在消息角标上
