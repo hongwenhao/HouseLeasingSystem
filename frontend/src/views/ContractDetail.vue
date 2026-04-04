@@ -239,14 +239,23 @@ const landlordNeedWaitHint = computed(() => {
   return !contract.value.tenantSigned && ['DRAFT', 'PENDING_SIGN'].includes(contract.value.status)
 })
 
-/** 从合同正文提取展示型条款 */
+/**
+ * 从合同正文提取“主要条款”用于前端列表展示
+ * 处理策略：
+ * 1) 仅保留编号条款（如 3.1 / 10.2），过滤标题、签字行、空行；
+ * 2) 去掉条款编号前缀，只展示自然语言内容，提升阅读体验；
+ * 3) 保留更多条款（最多 12 条），让合同详情更接近真实租赁合同的展示密度。
+ */
 const clauseList = computed(() => {
   const raw = contract.value?.content || contract.value?.clauses || contract.value?.terms || ''
   return raw
     .split('\n')
     .map(i => i.trim())
-    .filter(i => i && !i.includes('房屋租赁合同') && !i.includes('签字：'))
-    .slice(0, 6)
+    // 仅提取编号条款行，兼容 3、3.1、3.1.1 等格式
+    .filter(i => /^\d+(?:\.\d+)*\s*/.test(i))
+    .map(i => i.replace(/^\d+(?:\.\d+)*\s*/, ''))
+    .filter(i => i && !i.includes('签字：'))
+    .slice(0, 12)
 })
 
 onMounted(async () => {
