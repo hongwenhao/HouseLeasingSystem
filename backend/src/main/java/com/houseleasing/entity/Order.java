@@ -44,6 +44,12 @@ public class Order {
     private BigDecimal totalAmount;
     /** 支付状态：UNPAID（未支付）、PAID（已支付） */
     private String paymentStatus = "UNPAID";
+    /** 关联合同状态（非数据库字段，用于前端判断是否可支付） */
+    @TableField(exist = false)
+    private String contractStatus;
+    /** 是否达到可支付条件（非数据库字段：仅当合同双方都签署时为 true） */
+    @TableField(exist = false)
+    private Boolean canPay;
     /** 订单备注信息 */
     private String remark;
     /** 创建时间，插入时自动填充 */

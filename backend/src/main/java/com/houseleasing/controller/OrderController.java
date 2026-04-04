@@ -128,6 +128,42 @@ public class OrderController {
     }
 
     /**
+     * 租客支付订单：
+     * 仅当订单已批准且合同双方都签署后才允许支付。
+     * 支付成功后，订单状态自动更新为 COMPLETED，支付状态更新为 PAID。
+     *
+     * @param id          订单 ID
+     * @param userDetails 当前登录租客
+     * @return 操作成功响应
+     */
+    @Operation(summary = "Pay order (tenant)")
+    @PutMapping("/{id}/pay")
+    public Result<Void> payOrder(@PathVariable Long id,
+                                 @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        orderService.payOrder(id, user.getId());
+        return Result.success();
+    }
+
+    /**
+     * 租客退款订单：
+     * 仅允许对已支付订单发起退款。
+     * 退款成功后，订单状态更新为 CANCELLED，支付状态更新为 REFUNDED。
+     *
+     * @param id          订单 ID
+     * @param userDetails 当前登录租客
+     * @return 操作成功响应
+     */
+    @Operation(summary = "Refund order (tenant)")
+    @PutMapping("/{id}/refund")
+    public Result<Void> refundOrder(@PathVariable Long id,
+                                    @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        orderService.refundOrder(id, user.getId());
+        return Result.success();
+    }
+
+    /**
      * 查询当前用户作为租客的订单列表
      *
      * @param userDetails 当前登录用户信息

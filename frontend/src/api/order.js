@@ -9,6 +9,8 @@
  *   - PUT  /orders/:id/approve    房东审批预约（approve=true 确认，approve=false 拒绝）
  *   - PUT  /orders/:id/cancel     租客取消预约
  *   - PUT  /orders/:id/complete   将订单标记为完成状态
+ *   - PUT  /orders/:id/pay        租客支付订单（合同双方已签后）
+ *   - PUT  /orders/:id/refund     租客退款订单（已支付后）
  */
 
 import request from './index'
@@ -49,3 +51,9 @@ export const cancelOrder = (id) => request.put(`/orders/${id}/cancel`)
 
 /** 将已确认的订单标记为完成（实际看房/成交后） */
 export const completeOrder = (id) => request.put(`/orders/${id}/complete`)
+
+/** 租客支付订单：成功后后端会把订单改为 COMPLETED，支付状态改为 PAID */
+export const payOrder = (id) => request.put(`/orders/${id}/pay`)
+
+/** 租客退款订单：成功后后端会把订单改为 CANCELLED，支付状态改为 REFUNDED */
+export const refundOrder = (id) => request.put(`/orders/${id}/refund`)

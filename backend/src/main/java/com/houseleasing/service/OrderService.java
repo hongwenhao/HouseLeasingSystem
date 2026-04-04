@@ -82,4 +82,24 @@ public interface OrderService {
      * @param orderId 要完成的订单 ID
      */
     void completeOrder(Long orderId);
+
+    /**
+     * 支付订单（租客操作）
+     * 仅当订单为 APPROVED 且合同双方已签署时允许支付；
+     * 支付后订单状态更新为 COMPLETED，支付状态更新为 PAID。
+     *
+     * @param orderId   订单 ID
+     * @param tenantId  当前租客用户 ID（用于权限校验）
+     */
+    void payOrder(Long orderId, Long tenantId);
+
+    /**
+     * 退款订单（租客操作）
+     * 仅当订单支付状态为 PAID 时允许退款；
+     * 退款后订单状态更新为 CANCELLED，支付状态更新为 REFUNDED。
+     *
+     * @param orderId   订单 ID
+     * @param tenantId  当前租客用户 ID（用于权限校验）
+     */
+    void refundOrder(Long orderId, Long tenantId);
 }
