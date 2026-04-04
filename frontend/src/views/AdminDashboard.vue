@@ -84,15 +84,15 @@
               <el-table-column prop="creditScore" label="信用分" width="100" />
               <el-table-column prop="status" label="状态" width="100">
                 <template #default="{ row }">
-                  <el-tag :type="row.banned ? 'danger' : 'success'" size="small">
-                    {{ row.banned ? '已封禁' : '正常' }}
+                  <el-tag :type="row.status === 'BANNED' ? 'danger' : 'success'" size="small">
+                    {{ row.status === 'BANNED' ? '已封禁' : '正常' }}
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="140" fixed="right">
                 <template #default="{ row }">
                   <el-button
-                    v-if="!row.banned"
+                    v-if="row.status !== 'BANNED'"
                     size="small"
                     type="danger"
                     @click="handleBanUser(row)"
@@ -216,6 +216,7 @@ import {
 } from '../api/admin.js'
 
 const activeTab = ref('overview')        // 当前激活 tab
+const ADMIN_LIST_PAGE_SIZE = 100          // 后台管理列表默认一次拉取数量
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
@@ -263,7 +264,7 @@ async function loadStats() {
 async function loadUsers() {
   usersLoading.value = true
   try {
-    const res = await getUserList({ page: 1, pageSize: 100 })
+    const res = await getUserList({ page: 1, pageSize: ADMIN_LIST_PAGE_SIZE })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     users.value = Array.isArray(res) ? res : (res?.records || [])
     filteredUsers.value = [...users.value]  // 初始不过滤
@@ -277,7 +278,7 @@ async function loadPendingHouses() {
   try {
     const res = await getPendingHouses({
       page: 1,
-      size: 100,
+      size: ADMIN_LIST_PAGE_SIZE,
       keyword: pendingHouseKeyword.value || undefined
     })
     pendingHouses.value = Array.isArray(res) ? res : (res?.records || [])
@@ -292,7 +293,7 @@ async function loadPendingHouses() {
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const res = await getOrderList({ page: 1, size: 100 })
+    const res = await getOrderList({ page: 1, size: ADMIN_LIST_PAGE_SIZE })
     orders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
     ElMessage.error(e.message || '加载订单失败')
@@ -305,7 +306,7 @@ async function loadOrders() {
 async function loadContracts() {
   contractsLoading.value = true
   try {
-    const res = await getContractList({ page: 1, size: 100 })
+    const res = await getContractList({ page: 1, size: ADMIN_LIST_PAGE_SIZE })
     contracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
     ElMessage.error(e.message || '加载合同失败')
@@ -427,7 +428,7 @@ async function initCharts() {
 async function handleBanUser(user) {
   try {
     await banUser(user.id)
-    user.banned = true  // 本地更新状态，无需重新请求列表
+    user.status = 'BANNED'  // 本地更新状态，无需重新请求列表
     ElMessage.success(`已封禁用户 ${user.username}`)
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
@@ -441,7 +442,7 @@ async function handleBanUser(user) {
 async function handleUnbanUser(user) {
   try {
     await unbanUser(user.id)
-    user.banned = false
+    user.status = 'ACTIVE'
     ElMessage.success(`已解封用户 ${user.username}`)
   } catch (e) {
     ElMessage.error(e.message || '操作失败')
@@ -477,13 +478,13 @@ function roleTagType(role) {
 
 /** 房源状态枚举转中文 */
 function houseStatusLabel(status) {
-  const map = { ONLINE: '已上架', OFFLINE: '待审核', REJECTED: '已拒绝', APPROVED: '已上架', PENDING: '待审核' }
+  const map = { ONLINE: '已上架', OFFLINE: '待审核', REJECTED: '已拒绝' }
   return map[status] || status
 }
 
 /** 房源状态对应的 Tag 类型 */
 function houseStatusTagType(status) {
-  const map = { ONLINE: 'success', OFFLINE: 'warning', REJECTED: 'danger', APPROVED: 'success', PENDING: 'warning' }
+  const map = { ONLINE: 'success', OFFLINE: 'warning', REJECTED: 'danger' }
   return map[status] || 'info'
 }
 

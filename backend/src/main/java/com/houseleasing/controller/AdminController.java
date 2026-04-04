@@ -11,7 +11,6 @@ import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
 import com.houseleasing.mapper.UserMapper;
-import com.houseleasing.service.HouseService;
 import com.houseleasing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -28,9 +27,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 后台管理控制器
@@ -46,6 +49,21 @@ import java.util.Map;
 @SecurityRequirement(name = "Bearer Authentication")
 @PreAuthorize("hasRole('ADMIN')") // 仅允许管理员角色访问此控制器的所有接口
 public class AdminController {
+    private static final int AREA_STATS_LIMIT = 12;
+    private static final int PRICE_TRENDS_LIMIT = 6;
+    private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
+
+    private static final String CREDIT_RANGE_EXCELLENT = "90-100(优秀)";
+    private static final String CREDIT_RANGE_GOOD = "70-89(良好)";
+    private static final String CREDIT_RANGE_NORMAL = "60-69(一般)";
+    private static final String CREDIT_RANGE_LOW = "60以下(较低)";
+
+    private static final String CREDIT_RANGE_CASE_SQL =
+            "CASE " +
+                    "WHEN credit_score >= 90 THEN '" + CREDIT_RANGE_EXCELLENT + "' " +
+                    "WHEN credit_score >= 70 THEN '" + CREDIT_RANGE_GOOD + "' " +
+                    "WHEN credit_score >= 60 THEN '" + CREDIT_RANGE_NORMAL + "' " +
+                    "ELSE '" + CREDIT_RANGE_LOW + "' END";
 
     private final UserService userService;
     private final UserMapper userMapper;
@@ -117,14 +135,21 @@ public class AdminController {
         wrapper.orderByDesc(Order::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
         List<Order> records = result.getRecords();
-        // 追加关联信息，便于管理后台直接展示房源标题、租客/房东用户名等
+        // 批量查询关联信息，避免 N+1 查询
+        Map<Long, House> houseMap = mapById(houseMapper.selectBatchIds(records.stream()
+                .map(Order::getHouseId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet())), House::getId);
+        Set<Long> userIds = new HashSet<>();
         records.forEach(order -> {
-            House house = houseMapper.selectById(order.getHouseId());
-            User tenant = userMapper.selectById(order.getTenantId());
-            User landlord = userMapper.selectById(order.getLandlordId());
-            order.setHouse(house);
-            order.setTenant(sanitizeUser(tenant));
-            order.setLandlord(sanitizeUser(landlord));
+            if (order.getTenantId() != null) userIds.add(order.getTenantId());
+            if (order.getLandlordId() != null) userIds.add(order.getLandlordId());
+        });
+        Map<Long, User> userMap = mapById(userMapper.selectBatchIds(userIds), User::getId);
+        records.forEach(order -> {
+            order.setHouse(houseMap.get(order.getHouseId()));
+            order.setTenant(sanitizeUser(userMap.get(order.getTenantId())));
+            order.setLandlord(sanitizeUser(userMap.get(order.getLandlordId())));
         });
         return Result.success(PageResult.of(result.getTotal(), records, page, size));
     }
@@ -148,18 +173,27 @@ public class AdminController {
         wrapper.orderByDesc(Contract::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Contract> result = contractMapper.selectPage(pageObj, wrapper);
         List<Contract> records = result.getRecords();
-        // 追加关联信息，便于后台合同管理页直观展示业务上下文
+        // 批量查询关联信息，避免 N+1 查询
+        Map<Long, House> houseMap = mapById(houseMapper.selectBatchIds(records.stream()
+                .map(Contract::getHouseId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet())), House::getId);
+        Set<Long> userIds = new HashSet<>();
         records.forEach(contract -> {
-            House house = houseMapper.selectById(contract.getHouseId());
-            User tenant = userMapper.selectById(contract.getTenantId());
-            User landlord = userMapper.selectById(contract.getLandlordId());
-            contract.setHouse(house);
-            contract.setTenant(sanitizeUser(tenant));
-            contract.setLandlord(sanitizeUser(landlord));
-            Order order = orderMapper.selectById(contract.getOrderId());
-            if (order != null) {
-                contract.setOrderNo(order.getOrderNo());
-            }
+            if (contract.getTenantId() != null) userIds.add(contract.getTenantId());
+            if (contract.getLandlordId() != null) userIds.add(contract.getLandlordId());
+        });
+        Map<Long, User> userMap = mapById(userMapper.selectBatchIds(userIds), User::getId);
+        Map<Long, Order> orderMap = mapById(orderMapper.selectBatchIds(records.stream()
+                .map(Contract::getOrderId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet())), Order::getId);
+        records.forEach(contract -> {
+            contract.setHouse(houseMap.get(contract.getHouseId()));
+            contract.setTenant(sanitizeUser(userMap.get(contract.getTenantId())));
+            contract.setLandlord(sanitizeUser(userMap.get(contract.getLandlordId())));
+            Order order = orderMap.get(contract.getOrderId());
+            if (order != null) contract.setOrderNo(order.getOrderNo());
         });
         return Result.success(PageResult.of(result.getTotal(), records, page, size));
     }
@@ -211,7 +245,7 @@ public class AdminController {
                 .ne("city", "")
                 .groupBy("city")
                 .orderByDesc("count")
-                .last("LIMIT 12");
+                .last("LIMIT " + AREA_STATS_LIMIT);
         return Result.success(houseMapper.selectMaps(wrapper));
     }
 
@@ -228,11 +262,11 @@ public class AdminController {
         wrapper.select("DATE_FORMAT(create_time, '%Y-%m') AS month", "ROUND(AVG(price), 2) AS avgPrice")
                 .groupBy("DATE_FORMAT(create_time, '%Y-%m')")
                 .orderByDesc("month")
-                .last("LIMIT 6");
+                .last("LIMIT " + PRICE_TRENDS_LIMIT);
         List<Map<String, Object>> raw = houseMapper.selectMaps(wrapper);
         List<Map<String, Object>> formatted = new ArrayList<>();
         raw.stream()
-                .sorted(Comparator.comparing(map -> YearMonth.parse(String.valueOf(map.get("month")), DateTimeFormatter.ofPattern("yyyy-MM"))))
+                .sorted(Comparator.comparing(map -> YearMonth.parse(String.valueOf(map.get("month")), MONTH_FORMATTER)))
                 .forEach(item -> {
                     Map<String, Object> row = new LinkedHashMap<>();
                     row.put("month", item.get("month"));
@@ -251,23 +285,24 @@ public class AdminController {
     @GetMapping("/stats/credit")
     public Result<List<Map<String, Object>>> getCreditDistribution() {
         Map<String, Long> buckets = new LinkedHashMap<>();
-        buckets.put("90-100(优秀)", 0L);
-        buckets.put("70-89(良好)", 0L);
-        buckets.put("60-69(一般)", 0L);
-        buckets.put("60以下(较低)", 0L);
-        List<User> users = userMapper.selectList(null);
-        for (User user : users) {
-            int score = user.getCreditScore() == null ? 0 : user.getCreditScore();
-            if (score >= 90) {
-                buckets.put("90-100(优秀)", buckets.get("90-100(优秀)") + 1);
-            } else if (score >= 70) {
-                buckets.put("70-89(良好)", buckets.get("70-89(良好)") + 1);
-            } else if (score >= 60) {
-                buckets.put("60-69(一般)", buckets.get("60-69(一般)") + 1);
-            } else {
-                buckets.put("60以下(较低)", buckets.get("60以下(较低)") + 1);
+        buckets.put(CREDIT_RANGE_EXCELLENT, 0L);
+        buckets.put(CREDIT_RANGE_GOOD, 0L);
+        buckets.put(CREDIT_RANGE_NORMAL, 0L);
+        buckets.put(CREDIT_RANGE_LOW, 0L);
+
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        wrapper.select(CREDIT_RANGE_CASE_SQL + " AS score_range", "COUNT(*) AS count")
+                .groupBy(CREDIT_RANGE_CASE_SQL);
+        List<Map<String, Object>> aggregated = userMapper.selectMaps(wrapper);
+        for (Map<String, Object> item : aggregated) {
+            String range = String.valueOf(item.get("score_range"));
+            long count = toLong(item.get("count"));
+            if (buckets.containsKey(range)) {
+                buckets.put(range, count);
             }
         }
+
         List<Map<String, Object>> result = new ArrayList<>();
         buckets.forEach((range, count) -> {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -366,5 +401,34 @@ public class AdminController {
         } catch (Exception ignored) {
             return BigDecimal.ZERO;
         }
+    }
+
+    /**
+     * 将对象转换为 long（兼容 Number 与字符串形式）。
+     */
+    private long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (Exception ignored) {
+            return 0L;
+        }
+    }
+
+    /**
+     * 将对象列表按主键映射为 Map，便于 O(1) 关联访问。
+     */
+    private <T> Map<Long, T> mapById(List<T> list, Function<T, Long> idGetter) {
+        if (list == null || list.isEmpty()) {
+            return Map.of();
+        }
+        return list.stream()
+                .filter(item -> item != null && idGetter.apply(item) != null)
+                .collect(Collectors.toMap(idGetter, Function.identity(), (a, b) -> a));
     }
 }
