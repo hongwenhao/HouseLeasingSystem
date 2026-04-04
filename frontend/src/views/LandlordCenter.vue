@@ -8,7 +8,7 @@
           <!-- My Houses Tab -->
           <el-tab-pane label="我的房源" name="houses">
             <div class="tab-toolbar">
-              <el-button type="primary" @click="$router.push('/publish-house')">
+              <el-button type="primary" @click="router.push('/publish-house')">
                 <el-icon><Plus /></el-icon> 发布新房源
               </el-button>
             </div>
@@ -40,7 +40,7 @@
                   </div>
                 </div>
                 <div class="house-item-actions">
-                  <el-button size="small" type="primary" @click="$router.push(`/publish-house/${house.id}`)">编辑</el-button>
+                  <el-button size="small" type="primary" @click="router.push(`/publish-house/${house.id}`)">编辑</el-button>
                   <el-button size="small" type="danger" @click="deleteMyHouse(house.id)">删除</el-button>
                 </div>
               </div>
@@ -82,12 +82,12 @@
                   </el-tag>
                 </span>
                 <div class="row-actions">
-                  <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看订单</el-button>
+                  <el-button size="small" @click="router.push(`/orders/${order.id}`)">查看订单</el-button>
                   <!-- 直接平铺可执行操作，不再收纳到“更多操作”下拉，减少点击路径并提升可见性 -->
                   <el-button
                     v-if="order.contractId"
                     size="small"
-                    @click="$router.push(`/contracts/${order.contractId}`)"
+                    @click="router.push(`/contracts/${order.contractId}`)"
                   >
                     查看合同
                   </el-button>
@@ -144,13 +144,13 @@
                   </el-tag>
                 </span>
                 <div class="row-actions">
-                  <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
+                  <el-button size="small" @click="router.push(`/contracts/${contract.id}`)">查看合同</el-button>
                   <el-button
                     v-if="contract.orderId"
                     size="small"
                     type="primary"
                     plain
-                    @click="$router.push(`/orders/${contract.orderId}`)"
+                    @click="router.push(`/orders/${contract.orderId}`)"
                   >
                     查看订单
                   </el-button>
@@ -232,7 +232,7 @@
 <script setup>
 // 说明：房东中心页逻辑，管理房东的房源列表、预约订单管理、合同管理和收益统计
 import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
@@ -243,6 +243,7 @@ import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const activeTab = ref('houses')        // 当前激活 tab
 const route = useRoute()               // 当前路由对象，用于读取 ?tab=xxx 参数
+const router = useRouter()             // 路由实例（用于命令式跳转）
 const housesLoading = ref(false)       // 我的房源加载状态
 const ordersLoading = ref(false)       // 预约订单加载状态
 const contractsLoading = ref(false)    // 合同列表加载状态
