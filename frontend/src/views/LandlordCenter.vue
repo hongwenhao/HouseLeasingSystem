@@ -8,7 +8,7 @@
           <!-- My Houses Tab -->
           <el-tab-pane label="我的房源" name="houses">
             <div class="tab-toolbar">
-              <el-button type="primary" @click="$router.push('/publish-house')">
+              <el-button type="primary" @click="router.push('/publish-house')">
                 <el-icon><Plus /></el-icon> 发布新房源
               </el-button>
             </div>
@@ -40,7 +40,7 @@
                   </div>
                 </div>
                 <div class="house-item-actions">
-                  <el-button size="small" type="primary" @click="$router.push(`/publish-house/${house.id}`)">编辑</el-button>
+                  <el-button size="small" type="primary" @click="router.push(`/publish-house/${house.id}`)">编辑</el-button>
                   <el-button size="small" type="danger" @click="deleteMyHouse(house.id)">删除</el-button>
                 </div>
               </div>
@@ -82,19 +82,33 @@
                   </el-tag>
                 </span>
                 <div class="row-actions">
-                  <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看订单</el-button>
-                  <el-dropdown trigger="click" @command="(command) => handleLandlordOrderAction(command, order)">
-                    <el-button size="small" type="primary" plain>
-                      更多操作
-                    </el-button>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item v-if="order.contractId" command="viewContract">查看合同</el-dropdown-item>
-                        <el-dropdown-item v-if="order.status === 'PENDING'" command="approve">确认预约</el-dropdown-item>
-                        <el-dropdown-item v-if="order.status === 'PENDING'" command="reject">拒绝预约</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
+                  <el-button size="small" @click="router.push(`/orders/${order.id}`)">查看订单</el-button>
+                  <!-- 直接平铺可执行操作，不再收纳到“更多操作”下拉，减少点击路径并提升可见性 -->
+                  <el-button
+                    v-if="order.contractId"
+                    size="small"
+                    @click="router.push(`/contracts/${order.contractId}`)"
+                  >
+                    查看合同
+                  </el-button>
+                  <el-button
+                    v-if="order.status === 'PENDING'"
+                    size="small"
+                    type="success"
+                    plain
+                    @click="handleConfirmOrder(order.id)"
+                  >
+                    确认预约
+                  </el-button>
+                  <el-button
+                    v-if="order.status === 'PENDING'"
+                    size="small"
+                    type="danger"
+                    plain
+                    @click="openRejectDialog(order)"
+                  >
+                    拒绝预约
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -130,13 +144,13 @@
                   </el-tag>
                 </span>
                 <div class="row-actions">
-                  <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
+                  <el-button size="small" @click="router.push(`/contracts/${contract.id}`)">查看合同</el-button>
                   <el-button
                     v-if="contract.orderId"
                     size="small"
                     type="primary"
                     plain
-                    @click="$router.push(`/orders/${contract.orderId}`)"
+                    @click="router.push(`/orders/${contract.orderId}`)"
                   >
                     查看订单
                   </el-button>
@@ -392,24 +406,6 @@ async function submitReject() {
   }
 }
 
-/**
- * 房东预约列表“更多操作”统一入口：
- * 以命令分发替代多按钮平铺，避免操作列按钮过多导致换行混乱。
- */
-function handleLandlordOrderAction(command, order) {
-  if (command === 'viewContract' && order?.contractId) {
-    router.push(`/contracts/${order.contractId}`)
-    return
-  }
-  if (command === 'approve') {
-    handleConfirmOrder(order.id)
-    return
-  }
-  if (command === 'reject') {
-    openRejectDialog(order)
-  }
-}
-
 /** 房源状态枚举转中文 */
 function houseStatusLabel(status) {
   const map = { PENDING: '审核中', ONLINE: '已上架', APPROVED: '已上架', REJECTED: '审核拒绝', OFFLINE: '已下架' }
@@ -639,6 +635,13 @@ function getOrderHouseTitleWithFallback(order) {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+}
+
+/* 预约管理操作区按钮统一最小宽度，避免各行按钮长短不一导致视觉不齐 */
+.orders-table .row-actions :deep(.el-button) {
+  min-width: 88px;
+  margin-left: 0;
 }
 
 /* “操作”列标题保持居中，与按钮区域对齐 */
