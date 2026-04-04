@@ -21,6 +21,12 @@ export const getStats = () => request.get('/admin/stats')
 /** 获取用户列表，params 支持 page/pageSize 及关键词搜索 */
 export const getUserList = (params) => request.get('/admin/users', { params })
 
+/** 获取管理员订单列表（分页） */
+export const getOrderList = (params) => request.get('/admin/orders', { params })
+
+/** 获取管理员合同列表（分页） */
+export const getContractList = (params) => request.get('/admin/contracts', { params })
+
 /** 获取状态为 PENDING 的待审核房源列表 */
 export const getPendingHouses = (params) => request.get('/admin/houses/pending', { params })
 

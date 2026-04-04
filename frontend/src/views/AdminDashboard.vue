@@ -108,11 +108,83 @@
             </el-table>
           </el-tab-pane>
 
-          <!-- Contract Audit Tab Placeholder -->
-          <el-tab-pane label="合同审核" name="audit">
-            <div class="empty-audit">
-              <el-empty description="合同审核请在合同流程中处理" />
+          <!-- House Audit Tab -->
+          <el-tab-pane label="房源审核" name="houseAudit">
+            <div class="tab-toolbar toolbar-row">
+              <el-input
+                v-model="pendingHouseKeyword"
+                placeholder="搜索标题/城市/地址"
+                clearable
+                style="width:280px"
+                @keyup.enter="loadPendingHouses"
+              />
+              <el-button type="primary" @click="loadPendingHouses">查询</el-button>
             </div>
+            <el-table :data="pendingHouses" v-loading="pendingHousesLoading" stripe border class="data-table">
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="title" label="房源标题" min-width="220" />
+              <el-table-column prop="city" label="城市" width="110" />
+              <el-table-column prop="district" label="区域" width="130" />
+              <el-table-column prop="price" label="租金(元/月)" width="130" />
+              <el-table-column label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="houseStatusTagType(row.status)" size="small">{{ houseStatusLabel(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="220" fixed="right">
+                <template #default="{ row }">
+                  <el-button size="small" type="success" @click="handleAuditHouse(row, 'APPROVED')">通过</el-button>
+                  <el-button size="small" type="danger" @click="handleAuditHouse(row, 'REJECTED')">拒绝</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <!-- Order Management Tab -->
+          <el-tab-pane label="订单管理" name="orders">
+            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table">
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="orderNo" label="订单编号" min-width="160" />
+              <el-table-column label="房源" min-width="180">
+                <template #default="{ row }">{{ row.house?.title || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="租客" width="120">
+                <template #default="{ row }">{{ row.tenant?.username || row.tenantId || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="房东" width="120">
+                <template #default="{ row }">{{ row.landlord?.username || row.landlordId || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="orderStatusTagType(row.status)" size="small">{{ orderStatusLabel(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="createTime" label="创建时间" min-width="170" />
+            </el-table>
+          </el-tab-pane>
+
+          <!-- Contract Management Tab -->
+          <el-tab-pane label="合同管理" name="contracts">
+            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table">
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="contractNo" label="合同编号" min-width="170" />
+              <el-table-column prop="orderNo" label="关联订单" min-width="160" />
+              <el-table-column label="房源" min-width="180">
+                <template #default="{ row }">{{ row.house?.title || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="租客" width="120">
+                <template #default="{ row }">{{ row.tenant?.username || row.tenantId || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="房东" width="120">
+                <template #default="{ row }">{{ row.landlord?.username || row.landlordId || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="contractStatusTagType(row.status)" size="small">{{ contractStatusLabel(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="createTime" label="创建时间" min-width="170" />
+            </el-table>
           </el-tab-pane>
         </el-tabs>
       </div>
@@ -123,13 +195,25 @@
 </template>
 
 <script setup>
-// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供数据概览、用户管理功能
+// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源审核、订单、合同管理功能
 import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
-import { getStats, getUserList, getAreaStats, getPriceTrends, getCreditDistribution, banUser, unbanUser } from '../api/admin.js'
+import {
+  getStats,
+  getUserList,
+  getAreaStats,
+  getPriceTrends,
+  getCreditDistribution,
+  getPendingHouses,
+  auditHouseAdmin,
+  getOrderList,
+  getContractList,
+  banUser,
+  unbanUser
+} from '../api/admin.js'
 
 const activeTab = ref('overview')        // 当前激活 tab
 const stats = ref({})                    // 平台概览统计数据
@@ -137,6 +221,16 @@ const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
 const usersLoading = ref(false)          // 用户列表加载状态
 const userSearch = ref('')               // 用户搜索关键词
+
+const pendingHouses = ref([])            // 待审核房源列表
+const pendingHousesLoading = ref(false)  // 待审核房源加载状态
+const pendingHouseKeyword = ref('')      // 待审核房源关键词
+
+const orders = ref([])                   // 管理员订单列表
+const ordersLoading = ref(false)         // 订单列表加载状态
+
+const contracts = ref([])                // 管理员合同列表
+const contractsLoading = ref(false)      // 合同列表加载状态
 
 // ECharts 图表 DOM 引用
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
@@ -147,6 +241,9 @@ onMounted(async () => {
   // 并发加载统计数据、用户列表
   loadStats()
   loadUsers()
+  loadPendingHouses()
+  loadOrders()
+  loadContracts()
   // 等待 DOM 渲染完成后再初始化 ECharts 图表（避免容器尺寸为 0）
   await nextTick()
   setTimeout(() => {
@@ -172,6 +269,49 @@ async function loadUsers() {
     filteredUsers.value = [...users.value]  // 初始不过滤
   } catch (e) { /* ignore */ }
   finally { usersLoading.value = false }
+}
+
+/** 加载待审核房源（当前实现口径为 OFFLINE/未上线房源） */
+async function loadPendingHouses() {
+  pendingHousesLoading.value = true
+  try {
+    const res = await getPendingHouses({
+      page: 1,
+      size: 100,
+      keyword: pendingHouseKeyword.value || undefined
+    })
+    pendingHouses.value = Array.isArray(res) ? res : (res?.records || [])
+  } catch (e) {
+    ElMessage.error(e.message || '加载待审核房源失败')
+  } finally {
+    pendingHousesLoading.value = false
+  }
+}
+
+/** 加载管理员订单列表 */
+async function loadOrders() {
+  ordersLoading.value = true
+  try {
+    const res = await getOrderList({ page: 1, size: 100 })
+    orders.value = Array.isArray(res) ? res : (res?.records || [])
+  } catch (e) {
+    ElMessage.error(e.message || '加载订单失败')
+  } finally {
+    ordersLoading.value = false
+  }
+}
+
+/** 加载管理员合同列表 */
+async function loadContracts() {
+  contractsLoading.value = true
+  try {
+    const res = await getContractList({ page: 1, size: 100 })
+    contracts.value = Array.isArray(res) ? res : (res?.records || [])
+  } catch (e) {
+    ElMessage.error(e.message || '加载合同失败')
+  } finally {
+    contractsLoading.value = false
+  }
 }
 
 /**
@@ -308,6 +448,21 @@ async function handleUnbanUser(user) {
   }
 }
 
+/**
+ * 管理员审核房源
+ * @param {Object} house - 房源对象
+ * @param {'APPROVED'|'REJECTED'} status - 审核结果
+ */
+async function handleAuditHouse(house, status) {
+  try {
+    await auditHouseAdmin(house.id, { status })
+    ElMessage.success(status === 'APPROVED' ? '房源审核通过' : '房源已拒绝')
+    loadPendingHouses()
+  } catch (e) {
+    ElMessage.error(e.message || '审核失败')
+  }
+}
+
 /** 用户角色枚举转中文标签 */
 function roleLabel(role) {
   const map = { TENANT: '租客', LANDLORD: '房东', ADMIN: '管理员' }
@@ -318,6 +473,42 @@ function roleLabel(role) {
 function roleTagType(role) {
   const map = { TENANT: '', LANDLORD: 'success', ADMIN: 'danger' }
   return map[role] || 'info'
+}
+
+/** 房源状态枚举转中文 */
+function houseStatusLabel(status) {
+  const map = { ONLINE: '已上架', OFFLINE: '待审核', REJECTED: '已拒绝', APPROVED: '已上架', PENDING: '待审核' }
+  return map[status] || status
+}
+
+/** 房源状态对应的 Tag 类型 */
+function houseStatusTagType(status) {
+  const map = { ONLINE: 'success', OFFLINE: 'warning', REJECTED: 'danger', APPROVED: 'success', PENDING: 'warning' }
+  return map[status] || 'info'
+}
+
+/** 订单状态枚举转中文 */
+function orderStatusLabel(status) {
+  const map = { PENDING: '待处理', APPROVED: '已通过', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  return map[status] || status
+}
+
+/** 订单状态对应 Tag 类型 */
+function orderStatusTagType(status) {
+  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  return map[status] || 'info'
+}
+
+/** 合同状态枚举转中文 */
+function contractStatusLabel(status) {
+  const map = { DRAFT: '草稿', PENDING_SIGN: '待签署', TENANT_SIGNED: '租客已签', LANDLORD_SIGNED: '房东已签', FULLY_SIGNED: '双方已签', CANCELLED: '已取消' }
+  return map[status] || status
+}
+
+/** 合同状态对应 Tag 类型 */
+function contractStatusTagType(status) {
+  const map = { DRAFT: 'info', PENDING_SIGN: 'warning', TENANT_SIGNED: 'warning', LANDLORD_SIGNED: 'warning', FULLY_SIGNED: 'success', CANCELLED: 'danger' }
+  return map[status] || 'info'
 }
 </script>
 
@@ -438,6 +629,12 @@ function roleTagType(role) {
 
 .tab-toolbar {
   margin-bottom: 16px;
+}
+
+.toolbar-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .data-table {
