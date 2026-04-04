@@ -203,40 +203,13 @@
 
     <Footer />
 
-    <!-- 房源详情弹窗：管理员在“房源管理”中点击“查看详情”后展示 -->
-    <el-dialog
-      v-model="houseDetailDialogVisible"
-      title="房源详情"
-      width="680px"
-      destroy-on-close
-    >
-      <el-descriptions v-if="currentHouseDetail" :column="2" border>
-        <el-descriptions-item label="标题">{{ currentHouseDetail.title || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ houseStatusLabel(currentHouseDetail.status) }}</el-descriptions-item>
-        <el-descriptions-item label="省市区">
-          {{ currentHouseDetail.province || '-' }} {{ currentHouseDetail.city || '-' }} {{ currentHouseDetail.district || '-' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="详细地址">{{ currentHouseDetail.address || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="租金(元/月)">{{ currentHouseDetail.price ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="面积(㎡)">{{ currentHouseDetail.area ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="户型">
-          {{ currentHouseDetail.rooms ?? 0 }}室{{ currentHouseDetail.halls ?? 0 }}厅{{ currentHouseDetail.bathrooms ?? 0 }}卫
-        </el-descriptions-item>
-        <el-descriptions-item label="楼层">
-          {{ currentHouseDetail.floor ?? '-' }}/{{ currentHouseDetail.totalFloor ?? '-' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="描述" :span="2">{{ currentHouseDetail.description || '-' }}</el-descriptions-item>
-      </el-descriptions>
-      <template #footer>
-        <el-button @click="houseDetailDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
 // 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源管理、订单、合同管理功能
 import { ref, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
 import NavBar from '../components/NavBar.vue'
@@ -248,7 +221,6 @@ import {
   getPriceTrends,
   getCreditDistribution,
   getHouseManagementList,
-  getHouseManagementDetail,
   putHouseOnlineByAdmin,
   putHouseOfflineByAdmin,
   getOrderList,
@@ -258,6 +230,7 @@ import {
 } from '../api/admin.js'
 
 const activeTab = ref('overview')        // 当前激活 tab
+const router = useRouter()               // 路由实例（用于跳转房源详情页）
 const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
@@ -274,9 +247,6 @@ const ordersLoading = ref(false)         // 订单列表加载状态
 
 const contracts = ref([])                // 管理员合同列表
 const contractsLoading = ref(false)      // 合同列表加载状态
-
-const houseDetailDialogVisible = ref(false) // 房源详情弹窗显示状态
-const currentHouseDetail = ref(null)        // 当前查看的房源详情
 
 // ECharts 图表 DOM 引用
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
@@ -516,15 +486,9 @@ async function handlePutHouseOffline(house) {
   }
 }
 
-/** 查看管理员房源管理详情（弹窗展示关键字段） */
-async function handleViewHouseDetail(house) {
-  try {
-    const detail = await getHouseManagementDetail(house.id)
-    currentHouseDetail.value = detail || null
-    houseDetailDialogVisible.value = true
-  } catch (e) {
-    ElMessage.error(e.message || '获取房源详情失败')
-  }
+/** 查看管理员房源管理详情（跳转到独立详情页） */
+function handleViewHouseDetail(house) {
+  router.push(`/admin/houses/${house.id}`)
 }
 
 /** 用户角色枚举转中文标签 */

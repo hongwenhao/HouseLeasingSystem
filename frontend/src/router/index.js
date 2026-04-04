@@ -21,6 +21,7 @@ import PublishHouse from '../views/PublishHouse.vue'
 import OrderDetail from '../views/OrderDetail.vue'
 import ContractDetail from '../views/ContractDetail.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
+import AdminHouseDetail from '../views/AdminHouseDetail.vue'
 import NotFound from '../views/NotFound.vue'
 
 /** 路由表：定义 URL 路径与组件的映射关系 */
@@ -41,6 +42,7 @@ const routes = [
   { path: '/contracts/:id', component: ContractDetail, meta: { requiresAuth: true } },
   // 管理后台只允许 ADMIN 角色访问
   { path: '/admin', component: AdminDashboard, meta: { requiresAuth: true, requiresRole: 'ADMIN' } },
+  { path: '/admin/houses/:id', component: AdminHouseDetail, meta: { requiresAuth: true, requiresRole: 'ADMIN' } },
   // 兜底路由：匹配所有未定义路径，显示 404 页面
   { path: '/:pathMatch(.*)*', component: NotFound }
 ]
