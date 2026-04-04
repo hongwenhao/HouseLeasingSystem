@@ -281,18 +281,18 @@ public class ContractServiceImpl implements ContractService {
         }
         if ("FIXED".equalsIgnoreCase(feeType)) {
             if (amount != null) {
-                return "固定费用" + amount + " " + unit;
+                return "固定费用 " + amount + " " + unit;
             }
             return "固定费用，具体金额按双方确认清单执行";
         }
         if ("METERED".equalsIgnoreCase(feeType)) {
             if (amount != null) {
-                return "按表计量，单价" + amount + " " + unit;
+                return "按表计量，单价 " + amount + " " + unit;
             }
             return "按表计量，据实结算";
         }
         if (amount != null) {
-            return "按双方约定执行（参考金额" + amount + " " + unit + "）";
+            return "按双方约定执行（参考金额 " + amount + " " + unit + "）";
         }
         return "按双方约定执行";
     }
