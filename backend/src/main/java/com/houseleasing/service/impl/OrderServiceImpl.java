@@ -59,6 +59,14 @@ public class OrderServiceImpl implements OrderService {
     private static final String TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE = "租客已取消预约订单";
     private static final String LANDLORD_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
     private static final String LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE = "房东已取消预约订单";
+    private static final int REVIEW_MIN_RATING = 1;
+    private static final int REVIEW_MAX_RATING = 5;
+    private static final int REVIEW_MIDDLE_RATING = 3;
+    private static final int REVIEW_GOOD_RATING = 4;
+    private static final int CREDIT_DELTA_LOW_RATING = -10;
+    private static final int CREDIT_DELTA_THREE_STARS = 3;
+    private static final int CREDIT_DELTA_FOUR_STARS = 4;
+    private static final int CREDIT_DELTA_FIVE_STARS = 5;
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -436,7 +444,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(400, "评分不能为空");
         }
         int rating = request.getRating();
-        if (rating < 1 || rating > 5) {
+        if (rating < REVIEW_MIN_RATING || rating > REVIEW_MAX_RATING) {
             throw new BusinessException(400, "评分必须在1到5之间");
         }
 
@@ -459,14 +467,14 @@ public class OrderServiceImpl implements OrderService {
         if (landlord != null) {
             int currentScore = landlord.getCreditScore() == null ? 0 : landlord.getCreditScore();
             int delta;
-            if (rating < 3) {
-                delta = -10;
-            } else if (rating == 3) {
-                delta = 3;
-            } else if (rating == 4) {
-                delta = 4;
+            if (rating < REVIEW_MIDDLE_RATING) {
+                delta = CREDIT_DELTA_LOW_RATING;
+            } else if (rating == REVIEW_MIDDLE_RATING) {
+                delta = CREDIT_DELTA_THREE_STARS;
+            } else if (rating == REVIEW_GOOD_RATING) {
+                delta = CREDIT_DELTA_FOUR_STARS;
             } else {
-                delta = 5;
+                delta = CREDIT_DELTA_FIVE_STARS;
             }
             landlord.setCreditScore(currentScore + delta);
             landlord.setUpdateTime(LocalDateTime.now());
