@@ -399,13 +399,6 @@ const pwdRules = {
 }
 
 onMounted(async () => {
-  // 首次进入页面时，优先读取 URL 中的 tab 参数，支持从顶栏一键定位到目标模块
-  const targetTab = typeof route.query.tab === 'string' ? route.query.tab : ''
-  if (allowedTabs.includes(targetTab)) {
-    // favorites 仅租客可见，后续会在监听中做角色兜底修正
-    activeTab.value = targetTab
-  }
-
   // 拉取最新用户信息，更新资料表单的初始值
   try {
     await userStore.fetchProfile()
