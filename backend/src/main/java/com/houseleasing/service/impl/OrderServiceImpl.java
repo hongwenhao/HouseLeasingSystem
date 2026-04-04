@@ -422,7 +422,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 按订单 ID 查询最新合同（同一订单理论上一份合同，取最新可兼容历史重复数据）。
+     * 按订单 ID 查询用于支付判断的合同：
+     * 正常业务下同一订单只应存在一份合同；若历史上出现多份合同，
+     * 统一按 create_time 最新的一份作为“当前有效合同”参与支付资格判断，
+     * 以保证前后端状态判断口径一致并避免读取过期合同状态。
      */
     private Contract findLatestContractByOrderId(Long orderId) {
         LambdaQueryWrapper<Contract> wrapper = new LambdaQueryWrapper<>();

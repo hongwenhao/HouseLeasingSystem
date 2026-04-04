@@ -42,7 +42,7 @@ public class Order {
     private BigDecimal deposit;
     /** 订单总金额（元） */
     private BigDecimal totalAmount;
-    /** 支付状态：UNPAID（未支付）、PAID（已支付） */
+    /** 支付状态：UNPAID（未支付）、PAID（已支付）、REFUNDED（已退款） */
     private String paymentStatus = "UNPAID";
     /** 关联合同状态（非数据库字段，用于前端判断是否可支付） */
     @TableField(exist = false)

@@ -745,7 +745,7 @@ function formatDateTime(date) {
   /* profile grid: avatar | forms (1 : 1.5 ratio, form side wider) */
   --profile-avatar-form-cols: 1fr 1.5fr;
   /* table columns */
-  --orders-table-cols: 2fr 1.2fr 1.2fr 1fr 1fr 1.4fr;   /* title | appointment | created | orderStatus | payStatus | actions */
+  --orders-table-cols: 2fr 1.2fr 1.2fr 1fr 1fr 1.8fr;   /* title | appointment | created | orderStatus | payStatus | actions */
   --contracts-table-cols: 2fr 1.4fr 1.1fr 1fr 1.2fr;   /* number | lease | rent | status | actions */
   --avatar-area-inset-shadow-alpha: 0.8;
 }
