@@ -291,8 +291,12 @@ const EXCLUDED_REGIONS = ['香港特别行政区', '澳门特别行政区', '台
  */
 function normalizeDistricts(districtCandidates = []) {
   return districtCandidates.flatMap((districtNode) => {
+    // 防御式处理：容错空节点，避免读取 label 时触发运行时异常
+    if (!districtNode || !districtNode.label) return []
     if (GROUPING_NODE_LABELS.includes(districtNode.label)) {
-      return (districtNode.children || []).map((child) => ({ label: child.label, value: child.label }))
+      return (districtNode.children || [])
+        .filter((child) => child && child.label)
+        .map((child) => ({ label: child.label, value: child.label }))
     }
     return [{ label: districtNode.label, value: districtNode.label }]
   })
@@ -546,6 +550,7 @@ async function handleLocalImageChange(uploadFile) {
 
 <style scoped>
 .publish-house-page {
+  --room-layout-input-width: 88px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -644,7 +649,8 @@ async function handleLocalImageChange(uploadFile) {
 }
 
 .room-layout-input {
-  width: 88px;
+  /* 88px 可完整容纳 el-input-number（含控制按钮） 与单位文字，避免“卫”被压缩遮挡 */
+  width: var(--room-layout-input-width);
 }
 
 .fee-config-row {
