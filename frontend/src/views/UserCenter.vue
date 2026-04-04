@@ -148,14 +148,15 @@
                   <span>创建时间</span>
                   <span>订单状态</span>
                   <span>支付状态</span>
-                  <span>操作</span>
+                  <span class="action-head">操作</span>
                 </div>
                 <div
                   v-for="order in myOrders"
                   :key="order.id"
                   class="table-row"
                 >
-                  <span class="title-cell">{{ order.houseTitle || `房源#${order.houseId}` }}</span>
+                  <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
+                  <span class="title-cell">{{ getOrderHouseTitle(order) }}</span>
                   <span>{{ formatDateTime(order.appointmentTime) }}</span>
                   <!-- 兼容后端实际字段 createTime 与历史字段 createdAt -->
                   <span>{{ formatDate(order.createTime || order.createdAt) }}</span>
@@ -242,7 +243,7 @@
                   <span>租期</span>
                   <span>月租</span>
                   <span>状态</span>
-                  <span>操作</span>
+                  <span class="action-head">操作</span>
                 </div>
                 <div
                   v-for="contract in myContracts"
@@ -750,6 +751,14 @@ function formatDateTime(date) {
   if (!date) return '-'
   return new Date(date).toLocaleString('zh-CN', { hour12: false })
 }
+
+/**
+ * 获取订单对应房源标题（用于“预约管理”列表展示）
+ * 兼容后端可能返回的多种字段结构，保证尽量展示可读标题而不是纯 ID。
+ */
+function getOrderHouseTitle(order) {
+  return order?.house?.title || order?.houseTitle || (order?.houseId ? `房源#${order.houseId}` : '-')
+}
 </script>
 
 <style scoped>
@@ -965,8 +974,13 @@ function formatDateTime(date) {
 
 .row-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 8px;
+}
+
+/* “操作”列表头与按钮区域保持视觉居中，便于快速定位操作入口 */
+.action-head {
+  text-align: center;
 }
 
 .credit-section {
