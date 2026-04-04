@@ -24,7 +24,7 @@ public interface ReviewMapper extends BaseMapper<Review> {
      *
      * 查询口径（按优先级）：
      * - 主口径：评价关联订单的 landlord_id = 当前房东；
-     * - 兼容口径：若历史订单缺失/不规范，再回退到评价关联房源的 owner_id = 当前房东。
+     * - 兼容口径：若历史订单缺失，或订单存在但 landlord_id 为空，再回退到评价关联房源的 owner_id = 当前房东。
      *
      * 这样可同时覆盖：
      * - 正常新数据（订单已固定房东归属）；
@@ -36,7 +36,7 @@ public interface ReviewMapper extends BaseMapper<Review> {
             LEFT JOIN orders o ON o.id = r.order_id
             LEFT JOIN houses h ON h.id = r.house_id
             WHERE o.landlord_id = #{landlordId}
-               OR (o.id IS NULL AND h.owner_id = #{landlordId})
+               OR ((o.id IS NULL OR o.landlord_id IS NULL) AND h.owner_id = #{landlordId})
             ORDER BY r.create_time DESC
             """)
     Page<Review> selectLandlordReviewPage(Page<Review> page, @Param("landlordId") Long landlordId);
