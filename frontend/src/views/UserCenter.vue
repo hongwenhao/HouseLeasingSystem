@@ -296,8 +296,8 @@
 
 <script setup>
 // 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'     // 用于密码修改后跳转到登录页
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'     // 用于密码修改后跳转到登录页与读取路由参数
 import { ElMessage } from 'element-plus'
 import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled, Star } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
@@ -312,6 +312,7 @@ import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
 
 const router = useRouter()                 // 获取路由实例以便在密码修改后跳转
+const route = useRoute()                   // 获取当前路由，用于识别 ?tab=xxx 参数
 const userStore = useUserStore()
 const activeTab = ref('profile')      // 当前激活的 tab 标签名
 const savingProfile = ref(false)      // 保存资料按钮 loading 状态
@@ -349,6 +350,11 @@ const roleLabel = computed(() => {
   return map[userInfo.value.role] || userInfo.value.role || '用户'
 })
 const isTenant = computed(() => userInfo.value.role === 'TENANT')
+/**
+ * 允许通过 URL query 指定的标签页白名单，避免无效参数污染界面状态。
+ * 例如：/user-center?tab=orders 会自动切换到“预约管理”。
+ */
+const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'credit']
 
 // 资料编辑表单（初始值从 store 取）
 const profileForm = reactive({
@@ -393,6 +399,13 @@ const pwdRules = {
 }
 
 onMounted(async () => {
+  // 首次进入页面时，优先读取 URL 中的 tab 参数，支持从顶栏一键定位到目标模块
+  const targetTab = typeof route.query.tab === 'string' ? route.query.tab : ''
+  if (allowedTabs.includes(targetTab)) {
+    // favorites 仅租客可见，后续会在监听中做角色兜底修正
+    activeTab.value = targetTab
+  }
+
   // 拉取最新用户信息，更新资料表单的初始值
   try {
     await userStore.fetchProfile()
@@ -415,6 +428,26 @@ onMounted(async () => {
   loadMessages()
   loadCollections()
 })
+
+/**
+ * 监听路由 query.tab 变化：
+ * - 支持在当前页面内重复点击顶栏导航时动态切换 tab
+ * - 对无效 tab 值自动忽略，防止错误参数影响页面
+ */
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const targetTab = typeof tab === 'string' ? tab : ''
+    if (!allowedTabs.includes(targetTab)) return
+    // favorites 仅租客可见：非租客误传该 tab 时回退到 profile，防止进入不存在标签页
+    if (targetTab === 'favorites' && !isTenant.value) {
+      activeTab.value = 'profile'
+      return
+    }
+    activeTab.value = targetTab
+  },
+  { immediate: true }
+)
 
 /** 加载当前用户的预约订单列表（租客取我的预约；房东取收到的预约） */
 async function loadOrders() {
