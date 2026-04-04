@@ -7,8 +7,6 @@ import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.Order;
 import com.houseleasing.entity.User;
-import com.houseleasing.entity.AdminHouseOperationLog;
-import com.houseleasing.mapper.AdminHouseOperationLogMapper;
 import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
@@ -19,8 +17,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -80,7 +76,6 @@ public class AdminController {
     private final HouseMapper houseMapper;
     private final OrderMapper orderMapper;
     private final ContractMapper contractMapper;
-    private final AdminHouseOperationLogMapper adminHouseOperationLogMapper;
     private final MessageProducer messageProducer;
 
     /**
@@ -397,27 +392,6 @@ public class AdminController {
     }
 
     /**
-     * 管理员房源管理：查询某个房源的操作日志时间线（按时间倒序）。
-     * 返回内容可直接用于前端时间线组件渲染“谁在何时做了上架/下架”等动作。
-     *
-     * @param id 房源 ID
-     * @return 日志列表
-     */
-    @Operation(summary = "Get house operation timeline for admin")
-    @GetMapping("/houses/{id}/operation-logs")
-    public Result<List<AdminHouseOperationLog>> getHouseOperationLogs(@PathVariable Long id) {
-        House house = houseMapper.selectById(id);
-        if (house == null) {
-            throw new BusinessException(404, "房源不存在");
-        }
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AdminHouseOperationLog> wrapper =
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
-        wrapper.eq(AdminHouseOperationLog::getHouseId, id)
-                .orderByDesc(AdminHouseOperationLog::getCreateTime);
-        return Result.success(adminHouseOperationLogMapper.selectList(wrapper));
-    }
-
-    /**
      * 管理员审核房源上线状态：
      * status=APPROVED/ONLINE 视为通过并上线；status=REJECTED/OFFLINE 视为驳回并保持下线。
      *
@@ -428,8 +402,7 @@ public class AdminController {
     @Operation(summary = "Audit house")
     @PutMapping("/houses/{id}/audit")
     public Result<Void> auditHouse(@PathVariable Long id,
-                                   @RequestBody(required = false) Map<String, Object> body,
-                                   @AuthenticationPrincipal UserDetails userDetails) {
+                                   @RequestBody(required = false) Map<String, Object> body) {
         House house = houseMapper.selectById(id);
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -442,8 +415,6 @@ public class AdminController {
         house.setStatus(approved ? "ONLINE" : "OFFLINE");
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
-        recordHouseOperationLog(house.getId(), approved ? HOUSE_ACTION_ONLINE : HOUSE_ACTION_OFFLINE, userDetails,
-                "管理员通过审核接口执行房源状态变更");
         // 审核动作后通知房东，便于房东及时感知房源状态变化
         sendHouseManagementNotificationToOwner(house, approved ? HOUSE_ACTION_ONLINE : HOUSE_ACTION_OFFLINE,
                 approved ? OWNER_HOUSE_ONLINE_MESSAGE : OWNER_HOUSE_OFFLINE_MESSAGE);
@@ -458,8 +429,7 @@ public class AdminController {
      */
     @Operation(summary = "Put house online by admin")
     @PutMapping("/houses/{id}/online")
-    public Result<Void> putHouseOnline(@PathVariable Long id,
-                                       @AuthenticationPrincipal UserDetails userDetails) {
+    public Result<Void> putHouseOnline(@PathVariable Long id) {
         House house = houseMapper.selectById(id);
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -467,7 +437,6 @@ public class AdminController {
         house.setStatus("ONLINE");
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
-        recordHouseOperationLog(house.getId(), HOUSE_ACTION_ONLINE, userDetails, "管理员在房源管理页执行上架");
         sendHouseManagementNotificationToOwner(house, HOUSE_ACTION_ONLINE, OWNER_HOUSE_ONLINE_MESSAGE);
         return Result.success();
     }
@@ -480,8 +449,7 @@ public class AdminController {
      */
     @Operation(summary = "Put house offline by admin")
     @PutMapping("/houses/{id}/offline")
-    public Result<Void> putHouseOffline(@PathVariable Long id,
-                                        @AuthenticationPrincipal UserDetails userDetails) {
+    public Result<Void> putHouseOffline(@PathVariable Long id) {
         House house = houseMapper.selectById(id);
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -489,38 +457,10 @@ public class AdminController {
         house.setStatus("OFFLINE");
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
-        recordHouseOperationLog(house.getId(), HOUSE_ACTION_OFFLINE, userDetails, "管理员在房源管理页执行下架");
         sendHouseManagementNotificationToOwner(house, HOUSE_ACTION_OFFLINE, OWNER_HOUSE_OFFLINE_MESSAGE);
         // 对该房源产生过订单的租客推送提醒，避免租客继续对不可用房源发起意向
         notifyTenantsOfHouseOffline(house, String.format(TENANT_HOUSE_OFFLINE_MESSAGE_TEMPLATE, safeHouseTitle(house)));
         return Result.success();
-    }
-
-    /**
-     * 记录管理员房源操作日志，形成可追踪的后台时间线。
-     */
-    private void recordHouseOperationLog(Long houseId, String action, UserDetails userDetails, String remark) {
-        if (houseId == null || !StringUtils.hasText(action)) {
-            return;
-        }
-        AdminHouseOperationLog logRecord = new AdminHouseOperationLog();
-        logRecord.setHouseId(houseId);
-        logRecord.setAction(action);
-        logRecord.setRemark(remark);
-        if (userDetails != null && StringUtils.hasText(userDetails.getUsername())) {
-            User operator = userMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
-                    .eq(User::getUsername, userDetails.getUsername())
-                    .last("LIMIT 1"));
-            if (operator != null) {
-                logRecord.setOperatorId(operator.getId());
-                logRecord.setOperatorName(operator.getUsername());
-            } else {
-                logRecord.setOperatorName(userDetails.getUsername());
-            }
-        } else {
-            logRecord.setOperatorName("SYSTEM");
-        }
-        adminHouseOperationLogMapper.insert(logRecord);
     }
 
     /**
