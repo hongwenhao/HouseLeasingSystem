@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#fef2f2"/>
+  <rect x="40" y="40" width="1200" height="640" rx="30" fill="white" stroke="#dc2626" stroke-width="8"/>
+  <circle cx="180" cy="140" r="36" fill="#dc2626" opacity="0.18"/>
+  <circle cx="1120" cy="580" r="60" fill="#dc2626" opacity="0.12"/>
+  <text x="640" y="330" text-anchor="middle" font-size="120" font-weight="700" fill="#dc2626" font-family="Arial, PingFang SC, Microsoft YaHei">HOUSE-13</text>
+  <text x="640" y="420" text-anchor="middle" font-size="48" fill="#475569" font-family="Arial, PingFang SC, Microsoft YaHei">House Leasing Demo Image</text>
+</svg>
