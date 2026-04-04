@@ -83,18 +83,32 @@
                 </span>
                 <div class="row-actions">
                   <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看订单</el-button>
-                  <el-dropdown trigger="click" @command="(command) => handleLandlordOrderAction(command, order)">
-                    <el-button size="small" type="primary" plain>
-                      更多操作
-                    </el-button>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item v-if="order.contractId" command="viewContract">查看合同</el-dropdown-item>
-                        <el-dropdown-item v-if="order.status === 'PENDING'" command="approve">确认预约</el-dropdown-item>
-                        <el-dropdown-item v-if="order.status === 'PENDING'" command="reject">拒绝预约</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
+                  <!-- 直接平铺可执行操作，不再收纳到“更多操作”下拉，减少点击路径并提升可见性 -->
+                  <el-button
+                    v-if="order.contractId"
+                    size="small"
+                    @click="$router.push(`/contracts/${order.contractId}`)"
+                  >
+                    查看合同
+                  </el-button>
+                  <el-button
+                    v-if="order.status === 'PENDING'"
+                    size="small"
+                    type="success"
+                    plain
+                    @click="handleConfirmOrder(order.id)"
+                  >
+                    确认预约
+                  </el-button>
+                  <el-button
+                    v-if="order.status === 'PENDING'"
+                    size="small"
+                    type="danger"
+                    plain
+                    @click="openRejectDialog(order)"
+                  >
+                    拒绝预约
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -218,7 +232,7 @@
 <script setup>
 // 说明：房东中心页逻辑，管理房东的房源列表、预约订单管理、合同管理和收益统计
 import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
@@ -229,7 +243,6 @@ import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const activeTab = ref('houses')        // 当前激活 tab
 const route = useRoute()               // 当前路由对象，用于读取 ?tab=xxx 参数
-const router = useRouter()             // 路由实例（用于命令式跳转）
 const housesLoading = ref(false)       // 我的房源加载状态
 const ordersLoading = ref(false)       // 预约订单加载状态
 const contractsLoading = ref(false)    // 合同列表加载状态
@@ -389,24 +402,6 @@ async function submitReject() {
     ElMessage.error(e.message || '操作失败')
   } finally {
     rejecting.value = false
-  }
-}
-
-/**
- * 房东预约列表“更多操作”统一入口：
- * 以命令分发替代多按钮平铺，避免操作列按钮过多导致换行混乱。
- */
-function handleLandlordOrderAction(command, order) {
-  if (command === 'viewContract' && order?.contractId) {
-    router.push(`/contracts/${order.contractId}`)
-    return
-  }
-  if (command === 'approve') {
-    handleConfirmOrder(order.id)
-    return
-  }
-  if (command === 'reject') {
-    openRejectDialog(order)
   }
 }
 
@@ -639,6 +634,13 @@ function getOrderHouseTitleWithFallback(order) {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+}
+
+/* 预约管理操作区按钮统一最小宽度，避免各行按钮长短不一导致视觉不齐 */
+.orders-table .row-actions :deep(.el-button) {
+  min-width: 88px;
+  margin-left: 0;
 }
 
 /* “操作”列标题保持居中，与按钮区域对齐 */
