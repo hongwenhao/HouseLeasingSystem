@@ -12,6 +12,8 @@
  *   - PUT  /orders/:id/pay        租客支付订单（合同双方已签后）
  *   - PUT  /orders/:id/refund     租客退款订单（已支付后）
  *   - POST /orders/:id/review     租客对已完成订单提交评价
+ *   - GET  /orders/my/reviews/tenant   租客查看自己提交的评价
+ *   - GET  /orders/my/reviews/landlord 房东查看收到的评价
  */
 
 import request from './index'
@@ -65,3 +67,9 @@ export const refundOrder = (id) => request.put(`/orders/${id}/refund`)
  * - data: { rating: 1~5, content?: string }。
  */
 export const reviewOrder = (id, data) => request.post(`/orders/${id}/review`, data)
+
+/** 租客端评价管理：查询自己提交的评价记录 */
+export const getTenantReviewRecords = (params) => request.get('/orders/my/reviews/tenant', { params })
+
+/** 房东端评价管理：查询自己收到的评价记录 */
+export const getLandlordReviewRecords = (params) => request.get('/orders/my/reviews/landlord', { params })

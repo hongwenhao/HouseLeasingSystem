@@ -173,33 +173,6 @@
                   <div class="row-actions">
                     <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看</el-button>
                     <el-button
-                      v-if="order.contractId"
-                      size="small"
-                      type="primary"
-                      plain
-                      @click="$router.push(`/contracts/${order.contractId}`)"
-                    >
-                      查看合同
-                    </el-button>
-                    <el-button
-                      size="small"
-                      type="danger"
-                      v-if="isTenant && order.status === 'PENDING'"
-                      @click="cancelMyOrder(order.id)"
-                    >取消</el-button>
-                    <el-button
-                      size="small"
-                      type="warning"
-                      v-if="canShowPayAction(order)"
-                      @click="handlePayOrder(order)"
-                    >待支付</el-button>
-                    <el-button
-                      size="small"
-                      type="danger"
-                      v-if="canShowRefundAction(order)"
-                      @click="handleRefundOrder(order)"
-                    >退款</el-button>
-                    <el-button
                       size="small"
                       type="success"
                       v-if="canShowReviewAction(order)"
@@ -207,10 +180,65 @@
                     >
                       去评价
                     </el-button>
+                    <el-dropdown trigger="click" @command="(command) => handleOrderActionCommand(command, order)">
+                      <el-button size="small" type="primary" plain>
+                        更多操作
+                      </el-button>
+                      <template #dropdown>
+                        <el-dropdown-menu>
+                          <el-dropdown-item v-if="order.contractId" command="viewContract">查看合同</el-dropdown-item>
+                          <el-dropdown-item
+                            v-if="isTenant && order.status === 'PENDING'"
+                            command="cancel"
+                          >
+                            取消预约
+                          </el-dropdown-item>
+                          <el-dropdown-item
+                            v-if="canShowPayAction(order)"
+                            command="pay"
+                          >
+                            待支付
+                          </el-dropdown-item>
+                          <el-dropdown-item
+                            v-if="canShowRefundAction(order)"
+                            command="refund"
+                          >
+                            退款
+                          </el-dropdown-item>
+                        </el-dropdown-menu>
+                      </template>
+                    </el-dropdown>
                   </div>
                 </div>
               </div>
               <el-empty v-else description="暂无预约记录" />
+            </el-tab-pane>
+
+            <!-- Review Management Tab -->
+            <el-tab-pane name="reviews">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><Star /></el-icon>
+                  <span>评价管理</span>
+                </div>
+              </template>
+              <div v-if="reviewsLoading">
+                <el-skeleton :rows="4" animated />
+              </div>
+              <div v-else-if="reviewRecords.length > 0" class="review-list">
+                <div v-for="review in reviewRecords" :key="review.id" class="review-item">
+                  <div class="review-item-head">
+                    <div class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</div>
+                    <el-rate :model-value="review.rating || 0" disabled show-score />
+                  </div>
+                  <div class="review-item-meta">
+                    <span>订单ID：{{ review.orderId }}</span>
+                    <span>{{ formatDateTime(review.createTime) }}</span>
+                  </div>
+                  <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
+                </div>
+              </div>
+              <el-empty v-else description="暂无评价记录" />
             </el-tab-pane>
 
             <!-- Favorites Tab -->
@@ -380,7 +408,7 @@ import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
-import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder, reviewOrder } from '../api/order.js'
+import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder, reviewOrder, getTenantReviewRecords } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
@@ -395,10 +423,12 @@ const submittingRealName = ref(false) // 实名认证按钮 loading 状态
 const ordersLoading = ref(false)      // 订单列表加载状态
 const contractsLoading = ref(false)   // 合同列表加载状态
 const collectionsLoading = ref(false) // 收藏列表加载状态
+const reviewsLoading = ref(false)     // 评价列表加载状态
 const myOrders = ref([])              // 当前用户的预约订单列表
 const myContracts = ref([])           // 当前用户的合同列表
 const myCollections = ref([])         // 收藏的房源列表
 const messages = ref([])              // 消息通知列表
+const reviewRecords = ref([])         // 当前用户提交的评价列表
 const reviewDialogVisible = ref(false) // 评价弹窗显隐
 const submittingReview = ref(false)    // 提交评价按钮 loading
 const reviewTargetOrder = ref(null)    // 当前正在评价的订单
@@ -435,7 +465,7 @@ const isTenant = computed(() => userInfo.value.role === 'TENANT')
  * 允许通过 URL query 指定的标签页白名单，避免无效参数污染界面状态。
  * 例如：/user-center?tab=orders 会自动切换到“预约管理”。
  */
-const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'credit']
+const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'reviews', 'credit']
 
 // 资料编辑表单（初始值从 store 取）
 const profileForm = reactive({
@@ -501,6 +531,7 @@ onMounted(async () => {
   loadContracts()
   loadMessages()
   loadCollections()
+  loadReviewRecords()
 })
 
 /**
@@ -597,6 +628,23 @@ async function loadMessages() {
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     messages.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
+}
+
+/**
+ * 加载当前租客提交的评价记录：
+ * 用户中心只对租客展示评价管理，非租客时直接清空，避免无效请求。
+ */
+async function loadReviewRecords() {
+  reviewsLoading.value = true
+  try {
+    if (!isTenant.value) {
+      reviewRecords.value = []
+      return
+    }
+    const res = await getTenantReviewRecords({ page: 1, size: 50 })
+    reviewRecords.value = Array.isArray(res) ? res : (res?.records || [])
+  } catch (e) { /* ignore */ }
+  finally { reviewsLoading.value = false }
 }
 
 /** 保存用户资料修改 */
@@ -791,10 +839,33 @@ async function submitOrderReview() {
     ElMessage.success('评价提交成功')
     reviewDialogVisible.value = false
     await loadOrders()
+    await loadReviewRecords()
   } catch (e) {
     ElMessage.error(e.message || '评价提交失败')
   } finally {
     submittingReview.value = false
+  }
+}
+
+/**
+ * 预约订单“更多操作”统一分发：
+ * 按命令路由到对应业务，降低按钮数量，避免操作列拥挤导致布局错乱。
+ */
+function handleOrderActionCommand(command, order) {
+  if (command === 'viewContract' && order?.contractId) {
+    router.push(`/contracts/${order.contractId}`)
+    return
+  }
+  if (command === 'cancel') {
+    cancelMyOrder(order.id)
+    return
+  }
+  if (command === 'pay') {
+    handlePayOrder(order)
+    return
+  }
+  if (command === 'refund') {
+    handleRefundOrder(order)
   }
 }
 
@@ -1064,6 +1135,7 @@ function getOrderHouseTitleWithFallback(order) {
   display: flex;
   justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* “操作”列表头与按钮区域保持视觉居中，便于快速定位操作入口 */
@@ -1137,6 +1209,43 @@ function getOrderHouseTitleWithFallback(order) {
   color: #606266;
   padding-left: 20px;
   line-height: 2;
+}
+
+.review-list {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.review-item {
+  border: 1px solid #edf0f7;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.review-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-item-meta {
+  margin-top: 8px;
+  color: #8a94a6;
+  font-size: 12px;
+  display: flex;
+  gap: 14px;
+}
+
+.review-item-content {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #2b3445;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 @media (max-width: 900px) {

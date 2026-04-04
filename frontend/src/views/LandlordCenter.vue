@@ -83,31 +83,18 @@
                 </span>
                 <div class="row-actions">
                   <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看订单</el-button>
-                  <el-button
-                    v-if="order.contractId"
-                    size="small"
-                    type="primary"
-                    plain
-                    @click="$router.push(`/contracts/${order.contractId}`)"
-                  >
-                    查看合同
-                  </el-button>
-                  <el-button
-                    v-if="order.status === 'PENDING'"
-                    size="small"
-                    type="success"
-                    @click="handleConfirmOrder(order.id)"
-                  >
-                    确认预约
-                  </el-button>
-                  <el-button
-                    v-if="order.status === 'PENDING'"
-                    size="small"
-                    type="danger"
-                    @click="openRejectDialog(order)"
-                  >
-                    拒绝
-                  </el-button>
+                  <el-dropdown trigger="click" @command="(command) => handleLandlordOrderAction(command, order)">
+                    <el-button size="small" type="primary" plain>
+                      更多操作
+                    </el-button>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item v-if="order.contractId" command="viewContract">查看合同</el-dropdown-item>
+                        <el-dropdown-item v-if="order.status === 'PENDING'" command="approve">确认预约</el-dropdown-item>
+                        <el-dropdown-item v-if="order.status === 'PENDING'" command="reject">拒绝预约</el-dropdown-item>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
                 </div>
               </div>
             </div>
@@ -180,6 +167,28 @@
               </el-card>
             </div>
           </el-tab-pane>
+
+          <!-- Reviews Tab -->
+          <el-tab-pane label="评价管理" name="reviews">
+            <div v-if="reviewsLoading">
+              <el-skeleton :rows="4" animated />
+            </div>
+            <div v-else-if="reviewRecords.length > 0" class="review-list">
+              <div v-for="review in reviewRecords" :key="review.id" class="review-item">
+                <div class="review-item-head">
+                  <div class="title-cell">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</div>
+                  <el-rate :model-value="review.rating || 0" disabled show-score />
+                </div>
+                <div class="review-item-meta">
+                  <span>租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
+                  <span>订单ID：{{ review.orderId }}</span>
+                  <span>{{ formatDateTime(review.createTime) }}</span>
+                </div>
+                <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
+              </div>
+            </div>
+            <el-empty v-else description="暂无收到的评价" />
+          </el-tab-pane>
         </el-tabs>
       </div>
     </div>
@@ -209,23 +218,26 @@
 <script setup>
 // 说明：房东中心页逻辑，管理房东的房源列表、预约订单管理、合同管理和收益统计
 import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import { getMyHouses, deleteHouse } from '../api/house.js'
-import { getLandlordOrders, confirmOrder, rejectOrder } from '../api/order.js'
+import { getLandlordOrders, confirmOrder, rejectOrder, getLandlordReviewRecords } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { normalizeHouseImages } from '../utils/houseImages.js'
 
 const activeTab = ref('houses')        // 当前激活 tab
 const route = useRoute()               // 当前路由对象，用于读取 ?tab=xxx 参数
+const router = useRouter()             // 路由实例（用于命令式跳转）
 const housesLoading = ref(false)       // 我的房源加载状态
 const ordersLoading = ref(false)       // 预约订单加载状态
 const contractsLoading = ref(false)    // 合同列表加载状态
+const reviewsLoading = ref(false)      // 评价列表加载状态
 const myHouses = ref([])               // 当前房东发布的所有房源
 const landlordOrders = ref([])         // 收到的预约订单列表
 const contracts = ref([])              // 参与的合同列表
+const reviewRecords = ref([])          // 收到的评价列表
 const stats = ref({})                  // 统计数据（累计收益、在租数等）
 const rejectDialogVisible = ref(false) // 拒绝预约对话框显隐
 const rejectReason = ref('')           // 拒绝原因输入内容
@@ -233,13 +245,14 @@ const rejecting = ref(false)           // 拒绝按钮 loading 状态
 const currentRejectOrder = ref(null)   // 当前正在被拒绝的订单
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 // 允许通过 query 切换的标签页白名单（仅接受已有标签，避免无效参数）
-const allowedTabs = ['houses', 'orders', 'contracts', 'stats']
+const allowedTabs = ['houses', 'orders', 'contracts', 'stats', 'reviews']
 
 onMounted(() => {
   // 房源和合同数据加载完成后再计算统计信息（computeStats 依赖这两项数据）
   Promise.all([loadHouses(), loadContracts()]).then(() => computeStats())
   // 预约订单独立加载（统计信息不依赖订单数据，两者互不阻塞）
   loadOrders()
+  loadReviewRecords()
 })
 
 /**
@@ -289,6 +302,16 @@ async function loadContracts() {
     contracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
   finally { contractsLoading.value = false }
+}
+
+/** 加载房东收到的评价记录（评价管理） */
+async function loadReviewRecords() {
+  reviewsLoading.value = true
+  try {
+    const res = await getLandlordReviewRecords({ page: 1, size: 50 })
+    reviewRecords.value = Array.isArray(res) ? res : (res?.records || [])
+  } catch (e) { /* ignore */ }
+  finally { reviewsLoading.value = false }
 }
 
 /**
@@ -366,6 +389,24 @@ async function submitReject() {
     ElMessage.error(e.message || '操作失败')
   } finally {
     rejecting.value = false
+  }
+}
+
+/**
+ * 房东预约列表“更多操作”统一入口：
+ * 以命令分发替代多按钮平铺，避免操作列按钮过多导致换行混乱。
+ */
+function handleLandlordOrderAction(command, order) {
+  if (command === 'viewContract' && order?.contractId) {
+    router.push(`/contracts/${order.contractId}`)
+    return
+  }
+  if (command === 'approve') {
+    handleConfirmOrder(order.id)
+    return
+  }
+  if (command === 'reject') {
+    openRejectDialog(order)
   }
 }
 
@@ -640,6 +681,43 @@ function getOrderHouseTitleWithFallback(order) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
+}
+
+.review-list {
+  display: grid;
+  gap: 12px;
+}
+
+.review-item {
+  border: 1px solid #edf0f5;
+  border-radius: 10px;
+  background: #fff;
+  padding: 12px 14px;
+}
+
+.review-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-item-meta {
+  margin-top: 8px;
+  color: #8a94a6;
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.review-item-content {
+  margin-top: 8px;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .stat-card {

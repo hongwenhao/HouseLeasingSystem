@@ -5,6 +5,7 @@ import com.houseleasing.common.Result;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.OrderCreateRequest;
 import com.houseleasing.dto.OrderReviewRequest;
+import com.houseleasing.dto.ReviewRecordResponse;
 import com.houseleasing.entity.Order;
 import com.houseleasing.entity.User;
 import com.houseleasing.mapper.UserMapper;
@@ -216,6 +217,42 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size) {
         User user = resolveUser(userDetails.getUsername());
         return Result.success(orderService.listLandlordOrders(user.getId(), page, size));
+    }
+
+    /**
+     * 查询当前租客提交过的评价记录（评价管理-租客端）
+     *
+     * @param userDetails 当前登录用户信息
+     * @param page 当前页码
+     * @param size 每页大小
+     * @return 租客评价记录分页列表
+     */
+    @Operation(summary = "List my reviews as tenant")
+    @GetMapping("/my/reviews/tenant")
+    public Result<PageResult<ReviewRecordResponse>> listTenantReviews(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        User user = resolveUser(userDetails.getUsername());
+        return Result.success(orderService.listTenantReviewRecords(user.getId(), page, size));
+    }
+
+    /**
+     * 查询当前房东收到的评价记录（评价管理-房东端）
+     *
+     * @param userDetails 当前登录用户信息
+     * @param page 当前页码
+     * @param size 每页大小
+     * @return 房东评价记录分页列表
+     */
+    @Operation(summary = "List my reviews as landlord")
+    @GetMapping("/my/reviews/landlord")
+    public Result<PageResult<ReviewRecordResponse>> listLandlordReviews(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        User user = resolveUser(userDetails.getUsername());
+        return Result.success(orderService.listLandlordReviewRecords(user.getId(), page, size));
     }
 
     /**
