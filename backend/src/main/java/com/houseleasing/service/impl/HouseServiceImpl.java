@@ -51,7 +51,7 @@ public class HouseServiceImpl implements HouseService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String BEHAVIOR_COLLECT = "COLLECT";
-    private static final int MIN_CREDIT_SCORE_FOR_PUBLISHING = 0;
+    private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0;
 
     /**
      * 发布新房源，设置初始状态为已上架，清除热门房源缓存
@@ -68,7 +68,7 @@ public class HouseServiceImpl implements HouseService {
         if (owner == null) {
             throw new BusinessException(404, "用户不存在");
         }
-        if (owner.getCreditScore() != null && owner.getCreditScore() < MIN_CREDIT_SCORE_FOR_PUBLISHING) {
+        if (owner.getCreditScore() != null && owner.getCreditScore() < CREDIT_SCORE_PUBLISHING_THRESHOLD) {
             throw new BusinessException(403, "当前信用分过低，暂不可发布房源");
         }
         house.setOwnerId(ownerId);

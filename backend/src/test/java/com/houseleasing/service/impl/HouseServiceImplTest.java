@@ -2,6 +2,7 @@ package com.houseleasing.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.activiti.WorkflowService;
+import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
@@ -17,6 +18,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
@@ -116,5 +118,37 @@ class HouseServiceImplTest {
         assertEquals(9L, inserted.getHouseId());
         assertEquals("/api/uploads/new.jpg", inserted.getImageUrl());
         assertEquals(0, inserted.getSort());
+    }
+
+    @Test
+    void addHouse_shouldRejectWhenOwnerCreditScoreBelowThreshold() {
+        User owner = new User();
+        owner.setId(1L);
+        owner.setCreditScore(-1);
+        when(userMapper.selectById(1L)).thenReturn(owner);
+
+        House house = new House();
+        house.setImages("[]");
+
+        assertThrows(BusinessException.class, () -> houseService.addHouse(house, 1L));
+    }
+
+    @Test
+    void addHouse_shouldAllowWhenOwnerCreditScoreIsNull() {
+        User owner = new User();
+        owner.setId(1L);
+        owner.setCreditScore(null);
+        when(userMapper.selectById(1L)).thenReturn(owner);
+
+        House house = new House();
+        house.setImages("[\"/api/uploads/a.jpg\"]");
+        doAnswer(invocation -> {
+            House arg = invocation.getArgument(0);
+            arg.setId(101L);
+            return 1;
+        }).when(houseMapper).insert(any(House.class));
+
+        houseService.addHouse(house, 1L);
+        verify(houseMapper, times(1)).insert(any(House.class));
     }
 }

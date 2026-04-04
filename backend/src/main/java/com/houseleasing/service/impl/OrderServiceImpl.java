@@ -67,6 +67,7 @@ public class OrderServiceImpl implements OrderService {
     private static final int CREDIT_DELTA_THREE_STARS = 3;
     private static final int CREDIT_DELTA_FOUR_STARS = 4;
     private static final int CREDIT_DELTA_FIVE_STARS = 5;
+    private static final int DEFAULT_CREDIT_SCORE = 100;
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -465,7 +466,7 @@ public class OrderServiceImpl implements OrderService {
 
         User landlord = userMapper.selectById(order.getLandlordId());
         if (landlord != null) {
-            int currentScore = landlord.getCreditScore() == null ? 0 : landlord.getCreditScore();
+            int currentScore = landlord.getCreditScore() == null ? DEFAULT_CREDIT_SCORE : landlord.getCreditScore();
             int delta;
             if (rating < REVIEW_MIDDLE_RATING) {
                 delta = CREDIT_DELTA_LOW_RATING;
