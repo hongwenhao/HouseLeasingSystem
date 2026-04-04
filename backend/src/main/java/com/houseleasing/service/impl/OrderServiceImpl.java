@@ -305,8 +305,12 @@ public class OrderServiceImpl implements OrderService {
         wrapper.eq(Order::getTenantId, tenantId);
         wrapper.orderByDesc(Order::getCreateTime);
         Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
-        // 批量回填合同状态与可支付标记，避免前端为每条订单额外请求详情接口。
-        result.getRecords().forEach(this::fillContractPaymentAbility);
+        // 批量回填合同状态、房源信息与评价标记，避免前端为每条订单额外请求详情接口。
+        result.getRecords().forEach(order -> {
+            fillContractPaymentAbility(order);
+            fillOrderHouse(order);
+            fillOrderReviewFlag(order);
+        });
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 
@@ -334,9 +338,9 @@ public class OrderServiceImpl implements OrderService {
                     order.setTenant(tenant);
                 }
             }
-            if (order.getHouseId() != null) {
-                order.setHouse(houseMapper.selectById(order.getHouseId()));
-            }
+            fillOrderHouse(order);
+            // 房东列表也回填 reviewed 字段，保持订单返回结构一致，避免前端空字段分支判断。
+            fillOrderReviewFlag(order);
         });
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
@@ -508,6 +512,32 @@ public class OrderServiceImpl implements OrderService {
         wrapper.orderByDesc(Contract::getCreateTime);
         wrapper.last("LIMIT 1");
         return contractMapper.selectOne(wrapper);
+    }
+
+    /**
+     * 回填订单房源对象，保证订单列表可以直接展示“房源标题”而不是仅显示房源 ID。
+     */
+    private void fillOrderHouse(Order order) {
+        if (order.getHouseId() == null) {
+            return;
+        }
+        order.setHouse(houseMapper.selectById(order.getHouseId()));
+    }
+
+    /**
+     * 回填订单评价标记：
+     * - 仅当订单已完成且当前订单租客已提交评价时标记为 true；
+     * - 其他状态统一为 false，前端据此决定是否展示“去评价”按钮。
+     */
+    private void fillOrderReviewFlag(Order order) {
+        if (!"COMPLETED".equals(order.getStatus()) || order.getTenantId() == null) {
+            order.setReviewed(false);
+            return;
+        }
+        LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Review::getOrderId, order.getId()).eq(Review::getUserId, order.getTenantId());
+        wrapper.last("LIMIT 1");
+        order.setReviewed(reviewMapper.selectOne(wrapper) != null);
     }
 
     /**

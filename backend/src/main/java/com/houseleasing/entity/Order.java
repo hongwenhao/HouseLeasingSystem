@@ -73,4 +73,7 @@ public class Order {
     /** 房东用户信息（非数据库字段，通过查询关联填充） */
     @TableField(exist = false)
     private User landlord;
+    /** 当前租客是否已对该订单完成评价（非数据库字段，用于前端控制“去评价”入口展示） */
+    @TableField(exist = false)
+    private Boolean reviewed;
 }
