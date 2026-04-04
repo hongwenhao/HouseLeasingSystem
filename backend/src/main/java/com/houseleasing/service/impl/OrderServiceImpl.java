@@ -31,9 +31,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 /**
  * 订单服务实现类
@@ -70,7 +74,7 @@ public class OrderServiceImpl implements OrderService {
     private static final int CREDIT_DELTA_FOUR_STARS = 4;
     private static final int CREDIT_DELTA_FIVE_STARS = 5;
     private static final int DEFAULT_CREDIT_SCORE = 100;
-    private static final String REVIEW_NOTIFY_TO_LANDLORD_PREFIX = "租客已完成评价：";
+    private static final String REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE = "租客已完成评价：%d星";
     private static final String REVIEW_NOTIFY_TO_TENANT = "您的评价已提交，感谢反馈";
 
     /**
@@ -490,7 +494,7 @@ public class OrderServiceImpl implements OrderService {
             userMapper.updateById(landlord);
         }
         // 评价属于关键闭环事件：通知房东“收到评价”、通知租客“提交成功”，便于双方在消息中心追踪。
-        messageProducer.sendOrderStatusChange(order.getLandlordId(), REVIEW_NOTIFY_TO_LANDLORD_PREFIX + rating + "星");
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), String.format(REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE, rating));
         messageProducer.sendOrderStatusChange(order.getTenantId(), REVIEW_NOTIFY_TO_TENANT);
     }
 
@@ -504,9 +508,7 @@ public class OrderServiceImpl implements OrderService {
         wrapper.eq(Review::getUserId, tenantId);
         wrapper.orderByDesc(Review::getCreateTime);
         Page<Review> result = reviewMapper.selectPage(pageObj, wrapper);
-        List<ReviewRecordResponse> records = result.getRecords().stream()
-                .map(this::toReviewRecordResponse)
-                .toList();
+        List<ReviewRecordResponse> records = toReviewRecordResponses(result.getRecords());
         return PageResult.of(result.getTotal(), records, page, size);
     }
 
@@ -529,9 +531,7 @@ public class OrderServiceImpl implements OrderService {
         wrapper.in(Review::getHouseId, houseIds);
         wrapper.orderByDesc(Review::getCreateTime);
         Page<Review> result = reviewMapper.selectPage(pageObj, wrapper);
-        List<ReviewRecordResponse> records = result.getRecords().stream()
-                .map(this::toReviewRecordResponse)
-                .toList();
+        List<ReviewRecordResponse> records = toReviewRecordResponses(result.getRecords());
         return PageResult.of(result.getTotal(), records, page, size);
     }
 
@@ -592,33 +592,67 @@ public class OrderServiceImpl implements OrderService {
      * Review -> ReviewRecordResponse 组装：
      * 补齐房源标题、租客名、房东名，前端可直接渲染“评价管理”列表。
      */
-    private ReviewRecordResponse toReviewRecordResponse(Review review) {
-        ReviewRecordResponse response = new ReviewRecordResponse();
-        response.setId(review.getId());
-        response.setOrderId(review.getOrderId());
-        response.setHouseId(review.getHouseId());
-        response.setTenantId(review.getUserId());
-        response.setRating(review.getRating());
-        response.setContent(review.getContent());
-        response.setCreateTime(review.getCreateTime());
-        if (review.getHouseId() != null) {
-            House house = houseMapper.selectById(review.getHouseId());
+    private List<ReviewRecordResponse> toReviewRecordResponses(List<Review> reviews) {
+        if (reviews == null || reviews.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> houseIds = reviews.stream()
+                .map(Review::getHouseId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, House> houseMap = new HashMap<>();
+        if (!houseIds.isEmpty()) {
+            houseMap = houseMapper.selectBatchIds(houseIds).stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(House::getId, house -> house));
+        }
+
+        Set<Long> tenantIds = reviews.stream()
+                .map(Review::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<Long> landlordIds = houseMap.values().stream()
+                .map(House::getOwnerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<Long> userIds = java.util.stream.Stream.concat(tenantIds.stream(), landlordIds.stream())
+                .collect(Collectors.toSet());
+        Map<Long, User> userMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            userMap = userMapper.selectBatchIds(userIds).stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(User::getId, user -> user));
+        }
+
+        Map<Long, House> finalHouseMap = houseMap;
+        Map<Long, User> finalUserMap = userMap;
+        return reviews.stream().map(review -> {
+            ReviewRecordResponse response = new ReviewRecordResponse();
+            response.setId(review.getId());
+            response.setOrderId(review.getOrderId());
+            response.setHouseId(review.getHouseId());
+            response.setTenantId(review.getUserId());
+            response.setRating(review.getRating());
+            response.setContent(review.getContent());
+            response.setCreateTime(review.getCreateTime());
+
+            House house = review.getHouseId() != null ? finalHouseMap.get(review.getHouseId()) : null;
             if (house != null) {
                 response.setHouseTitle(house.getTitle());
                 response.setLandlordId(house.getOwnerId());
-                User landlord = userMapper.selectById(house.getOwnerId());
+                User landlord = finalUserMap.get(house.getOwnerId());
                 if (landlord != null) {
                     response.setLandlordName(landlord.getRealName() != null ? landlord.getRealName() : landlord.getUsername());
                 }
             }
-        }
-        if (review.getUserId() != null) {
-            User tenant = userMapper.selectById(review.getUserId());
+
+            User tenant = review.getUserId() != null ? finalUserMap.get(review.getUserId()) : null;
             if (tenant != null) {
                 response.setTenantName(tenant.getRealName() != null ? tenant.getRealName() : tenant.getUsername());
             }
-        }
-        return response;
+            return response;
+        }).toList();
     }
 
     /**

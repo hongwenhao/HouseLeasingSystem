@@ -228,7 +228,7 @@
               <div v-else-if="reviewRecords.length > 0" class="review-list">
                 <div v-for="review in reviewRecords" :key="review.id" class="review-item">
                   <div class="review-item-head">
-                    <div class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</div>
+                  <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
                     <el-rate :model-value="review.rating || 0" disabled show-score />
                   </div>
                   <div class="review-item-meta">
@@ -635,12 +635,13 @@ async function loadMessages() {
  * 用户中心只对租客展示评价管理，非租客时直接清空，避免无效请求。
  */
 async function loadReviewRecords() {
+  if (!isTenant.value) {
+    reviewRecords.value = []
+    reviewsLoading.value = false
+    return
+  }
   reviewsLoading.value = true
   try {
-    if (!isTenant.value) {
-      reviewRecords.value = []
-      return
-    }
     const res = await getTenantReviewRecords({ page: 1, size: 50 })
     reviewRecords.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) { /* ignore */ }
