@@ -172,6 +172,15 @@
                   <div class="row-actions">
                     <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看</el-button>
                     <el-button
+                      v-if="order.contractId"
+                      size="small"
+                      type="primary"
+                      plain
+                      @click="$router.push(`/contracts/${order.contractId}`)"
+                    >
+                      查看合同
+                    </el-button>
+                    <el-button
                       size="small"
                       type="danger"
                       v-if="isTenant && order.status === 'PENDING'"
@@ -250,6 +259,15 @@
                   </span>
                   <div class="row-actions">
                     <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看</el-button>
+                    <el-button
+                      v-if="contract.orderId"
+                      size="small"
+                      type="primary"
+                      plain
+                      @click="$router.push(`/orders/${contract.orderId}`)"
+                    >
+                      查看订单
+                    </el-button>
                   </div>
                 </div>
               </div>

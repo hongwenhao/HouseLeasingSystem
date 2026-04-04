@@ -36,4 +36,11 @@ public interface OrderMapper extends BaseMapper<Order> {
             """)
     Page<Order> selectLandlordOrdersPage(Page<Order> page, @Param("landlordId") Long landlordId);
 
+    /**
+     * 统计交易成功次数：仅统计订单状态为 COMPLETED 的记录。
+     * 与产品口径保持一致，避免将仅签约未完成支付/履约的记录计入成交。
+     */
+    @Select("SELECT COUNT(*) FROM orders WHERE status = 'COMPLETED'")
+    long countCompletedOrders();
+
 }

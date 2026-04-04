@@ -31,6 +31,10 @@
                 <strong>{{ contract.landlord?.phone || '-' }}</strong>
               </div>
               <div class="party-row">
+                <span>身份证号</span>
+                <strong>{{ contract.landlord?.idCard || '-' }}</strong>
+              </div>
+              <div class="party-row">
                 <span>房东类型</span>
                 <strong>{{ ownerTypeLabel(contract.house?.ownerType) }}</strong>
               </div>
@@ -48,6 +52,10 @@
               <div class="party-row">
                 <span>手机号</span>
                 <strong>{{ contract.tenant?.phone || '-' }}</strong>
+              </div>
+              <div class="party-row">
+                <span>身份证号</span>
+                <strong>{{ contract.tenant?.idCard || '-' }}</strong>
               </div>
               <div class="party-row">
                 <span>信用分</span>
@@ -68,7 +76,21 @@
                 <span class="rent-highlight">¥{{ contract.monthlyRent ?? contract.rent }}/月</span>
               </el-descriptions-item>
               <el-descriptions-item label="押金">¥{{ contract.deposit }}</el-descriptions-item>
+              <el-descriptions-item label="关联订单编号">
+                {{ contract.orderNo || contract.orderId || '-' }}
+              </el-descriptions-item>
             </el-descriptions>
+            <div class="section-actions">
+              <el-button
+                v-if="contract.orderId"
+                size="small"
+                type="primary"
+                plain
+                @click="$router.push(`/orders/${contract.orderId}`)"
+              >
+                查看对应订单
+              </el-button>
+            </div>
           </div>
 
           <div class="section-block" v-if="clauseList.length">
@@ -448,6 +470,10 @@ async function handleDownloadPdf() {
   font-size: 20px;
   font-weight: 700;
   color: #1f2937;
+}
+
+.section-actions {
+  margin-top: 10px;
 }
 
 .rent-highlight {
