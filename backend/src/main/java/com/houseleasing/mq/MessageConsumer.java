@@ -97,7 +97,7 @@ public class MessageConsumer {
             String title = (String) message.getOrDefault("title", "登录提醒");
             String content = (String) message.getOrDefault("content", "");
             if (userId != null) {
-                messageService.sendMessage(userId, title, content, "LOGIN");
+                messageService.sendMessage(userId, title, content, "SYSTEM");
             }
         } catch (Exception e) {
             log.error("Error handling login message: {}", e.getMessage(), e);
