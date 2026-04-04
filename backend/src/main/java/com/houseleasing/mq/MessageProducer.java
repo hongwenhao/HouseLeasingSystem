@@ -121,6 +121,29 @@ public class MessageProducer {
     }
 
     /**
+     * 发送管理员房源管理通知（上架/下架/恢复等）
+     *
+     * @param userId      接收通知的用户 ID（通常为房东，也可扩展给租客）
+     * @param actionLabel 管理动作标签（如：上架、下架）
+     * @param content     具体通知正文
+     */
+    public void sendAdminHouseManagementNotification(Long userId, String actionLabel, String content) {
+        String title = "房源" + actionLabel + "通知";
+        try {
+            if (rabbitTemplate != null) {
+                rabbitTemplate.convertAndSend("house.exchange", "house.admin.manage",
+                        buildMessage(userId, title, content));
+                log.debug("Sent admin house management message to queue for user {}", userId);
+            } else {
+                saveMessageDirectly(userId, title, content, "SYSTEM");
+            }
+        } catch (Exception e) {
+            log.warn("RabbitMQ unavailable, saving admin house management message directly: {}", e.getMessage());
+            saveMessageDirectly(userId, title, content, "SYSTEM");
+        }
+    }
+
+    /**
      * 降级处理：直接调用消息服务将消息保存到数据库
      *
      * @param userId  接收用户 ID

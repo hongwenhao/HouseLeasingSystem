@@ -181,6 +181,24 @@ CREATE TABLE IF NOT EXISTS `messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
+-- 管理员房源操作日志表（admin_house_operation_logs）
+-- 记录管理员在房源管理中执行的上架/下架等动作，供详情页时间线展示
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `admin_house_operation_logs` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+  `house_id` BIGINT NOT NULL COMMENT '关联房源ID',
+  `action` VARCHAR(30) NOT NULL COMMENT '操作动作，如上架/下架',
+  `operator_id` BIGINT COMMENT '操作人用户ID（管理员）',
+  `operator_name` VARCHAR(100) COMMENT '操作人用户名（冗余）',
+  `remark` VARCHAR(255) COMMENT '操作备注',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  INDEX `idx_admin_house_log_house_id` (`house_id`),
+  INDEX `idx_admin_house_log_operator_id` (`operator_id`),
+  CONSTRAINT `fk_admin_house_log_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_admin_house_log_operator` FOREIGN KEY (`operator_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
 -- 用户行为记录表（user_behaviors）
 -- 记录用户浏览、收藏、下单等行为，用于个性化推荐算法
 -- score 字段：VIEW=1分, COLLECT=3分, ORDER=5分（行为权重）
