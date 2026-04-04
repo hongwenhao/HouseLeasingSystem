@@ -35,23 +35,6 @@
             </el-descriptions>
           </el-card>
 
-          <el-card class="timeline-card">
-            <template #header>管理员操作日志时间线</template>
-            <el-timeline v-if="operationLogs.length">
-              <el-timeline-item
-                v-for="item in operationLogs"
-                :key="item.id"
-                :timestamp="formatDateTime(item.createTime)"
-                :type="operationActionTagType(item.action)"
-              >
-                <div class="timeline-content">
-                  <div class="timeline-title">管理员 {{ item.operatorName || '未知' }} 执行了“{{ item.action }}”</div>
-                  <div class="timeline-remark">{{ item.remark || '无备注' }}</div>
-                </div>
-              </el-timeline-item>
-            </el-timeline>
-            <el-empty v-else description="暂无操作日志" />
-          </el-card>
         </div>
       </div>
     </div>
@@ -66,29 +49,23 @@ import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
-import { getHouseManagementDetail, getHouseOperationLogsByAdmin } from '../api/admin.js'
+import { getHouseManagementDetail } from '../api/admin.js'
 
 const route = useRoute()
 const houseId = route.params.id
 
 const loading = ref(false)
 const house = ref(null)
-const operationLogs = ref([])
 
 onMounted(() => {
   loadDetail()
 })
 
-/** 加载管理员房源详情与操作日志时间线 */
+/** 加载管理员房源详情 */
 async function loadDetail() {
   loading.value = true
   try {
-    const [houseRes, logsRes] = await Promise.all([
-      getHouseManagementDetail(houseId),
-      getHouseOperationLogsByAdmin(houseId)
-    ])
-    house.value = houseRes || null
-    operationLogs.value = Array.isArray(logsRes) ? logsRes : []
+    house.value = (await getHouseManagementDetail(houseId)) || null
   } catch (e) {
     ElMessage.error(e.message || '加载房源详情失败')
   } finally {
@@ -106,12 +83,6 @@ function houseStatusLabel(status) {
 function houseStatusTagType(status) {
   const map = { ONLINE: 'success', OFFLINE: 'info', REJECTED: 'danger' }
   return map[status] || 'info'
-}
-
-/** 操作动作到时间线颜色映射，便于后续扩展更多动作类型 */
-function operationActionTagType(action) {
-  const map = { 上架: 'success', 下架: 'warning' }
-  return map[action] || 'info'
 }
 
 /** 日期时间格式化 */

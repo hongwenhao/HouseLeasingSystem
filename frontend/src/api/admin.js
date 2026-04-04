@@ -6,7 +6,6 @@
  *   - GET /admin/users               分页获取用户列表（支持搜索）
  *   - GET /admin/houses              获取房源管理列表（支持关键词）
  *   - GET /admin/houses/:id          获取房源管理详情
- *   - GET /admin/houses/:id/operation-logs 获取房源管理操作日志时间线
  *   - PUT /admin/houses/:id/online   管理员上架房源
  *   - PUT /admin/houses/:id/offline  管理员下架房源
  *   - GET /admin/houses/pending      获取待审核的房源列表（兼容接口）
@@ -37,9 +36,6 @@ export const getHouseManagementList = (params) => request.get('/admin/houses', {
 
 /** 获取管理员房源管理详情 */
 export const getHouseManagementDetail = (id) => request.get(`/admin/houses/${id}`)
-
-/** 获取管理员房源管理操作日志时间线 */
-export const getHouseOperationLogsByAdmin = (id) => request.get(`/admin/houses/${id}/operation-logs`)
 
 /** 管理员上架房源 */
 export const putHouseOnlineByAdmin = (id) => request.put(`/admin/houses/${id}/online`)
