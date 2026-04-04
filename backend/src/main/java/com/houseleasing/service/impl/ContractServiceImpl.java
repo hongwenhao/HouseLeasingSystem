@@ -543,23 +543,27 @@ public class ContractServiceImpl implements ContractService {
     private BaseFont resolvePdfBaseFont() {
         for (String candidate : CJK_FONT_CANDIDATES) {
             String fontPath = candidate;
-            int ttcIndex = -1;
-            int commaIndex = candidate.lastIndexOf(',');
-            if (commaIndex > 0) {
-                fontPath = candidate.substring(0, commaIndex);
-                try {
-                    ttcIndex = Integer.parseInt(candidate.substring(commaIndex + 1));
-                } catch (NumberFormatException ignored) {
-                    ttcIndex = -1;
+            int ttcIndex;
+            int suffixCommaIndex = candidate.length() - 2;
+            if (suffixCommaIndex >= 0 && candidate.charAt(suffixCommaIndex) == ',') {
+                fontPath = candidate.substring(0, suffixCommaIndex);
+                char indexChar = candidate.charAt(candidate.length() - 1);
+                if (!Character.isDigit(indexChar)) {
+                    log.warn("字体索引解析失败，跳过该候选字体：{}", candidate);
+                    continue;
                 }
+                ttcIndex = indexChar - '0';
+            } else {
+                ttcIndex = -1;
             }
             if (!new File(fontPath).exists()) {
                 continue;
             }
             try {
-                String source = ttcIndex >= 0 ? candidate : fontPath;
-                BaseFont baseFont = BaseFont.createFont(source, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-                log.info("PDF 导出使用系统中文字体：{}", source);
+                // TTC 字体需要“文件路径,索引”格式，TTF/OTF 直接使用文件路径即可。
+                String effectiveFontPath = ttcIndex >= 0 ? candidate : fontPath;
+                BaseFont baseFont = BaseFont.createFont(effectiveFontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+                log.info("PDF 导出使用系统中文字体：{}", effectiveFontPath);
                 return baseFont;
             } catch (Exception ex) {
                 log.warn("系统字体加载失败，尝试下一个：{}，原因：{}", candidate, ex.getMessage());
