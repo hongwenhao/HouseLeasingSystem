@@ -80,13 +80,24 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="户型" prop="rooms">
-                  <div style="display:flex;gap:4px;align-items:center">
-                    <el-input-number v-model="form.rooms" :min="1" :max="20" controls-position="right" style="width:80px" />
-                    <span>室</span>
-                    <el-input-number v-model="form.halls" :min="0" :max="10" controls-position="right" style="width:80px" />
-                    <span>厅</span>
-                    <el-input-number v-model="form.bathrooms" :min="0" :max="10" controls-position="right" style="width:80px" />
-                    <span>卫</span>
+                  <!--
+                    户型输入改为可换行布局：
+                    1) 避免在中等分辨率下第三组“卫”被遮挡；
+                    2) 通过统一的 item 容器保持“室/厅/卫”对齐一致。
+                  -->
+                  <div class="room-layout-row">
+                    <div class="room-layout-item">
+                      <el-input-number v-model="form.rooms" :min="1" :max="20" controls-position="right" class="room-layout-input" />
+                      <span>室</span>
+                    </div>
+                    <div class="room-layout-item">
+                      <el-input-number v-model="form.halls" :min="0" :max="10" controls-position="right" class="room-layout-input" />
+                      <span>厅</span>
+                    </div>
+                    <div class="room-layout-item">
+                      <el-input-number v-model="form.bathrooms" :min="0" :max="10" controls-position="right" class="room-layout-input" />
+                      <span>卫</span>
+                    </div>
                   </div>
                 </el-form-item>
               </el-col>
@@ -124,7 +135,8 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="可入住日期">
+            <!-- 可入住日期改为必填：补充 prop 后接入 rules 校验 -->
+            <el-form-item label="可入住日期" prop="availableDate">
               <el-date-picker v-model="form.availableDate" type="date" placeholder="选择日期" style="width:100%" />
             </el-form-item>
           </el-card>
@@ -270,7 +282,27 @@ const isEdit = computed(() => !!route.params.id)
 const GROUPING_NODE_LABELS = ['市辖区', '县', '省直辖县级行政区划']
 const EXCLUDED_REGIONS = ['香港特别行政区', '澳门特别行政区', '台湾省']
 
-// 构建省市区三级联动数据
+/**
+ * 将“区域候选节点”转为真正可选的区县列表。
+ * 说明：
+ * - 行政区划库中经常存在“市辖区/县/省直辖县级行政区划”等分组占位节点；
+ * - 这些分组节点不应直接展示给用户，需要展开其 children 作为最终可选区域；
+ * - 普通区县节点则直接保留。
+ */
+function normalizeDistricts(districtCandidates = []) {
+  return districtCandidates.flatMap((districtNode) => {
+    // 防御式处理：容错空节点，避免读取 label 时触发运行时异常
+    if (!districtNode || !districtNode.label) return []
+    if (GROUPING_NODE_LABELS.includes(districtNode.label)) {
+      return (districtNode.children || [])
+        .filter((child) => child && child.label)
+        .map((child) => ({ label: child.label, value: child.label }))
+    }
+    return [{ label: districtNode.label, value: districtNode.label }]
+  })
+}
+
+// 构建省市区三级联动数据（过滤分组占位节点，避免出现“市辖区”等选项）
 const allProvinceData = regionData
   .filter((p) => !EXCLUDED_REGIONS.includes(p.label))
   .map((province) => {
@@ -281,10 +313,10 @@ const allProvinceData = regionData
       cities = realCities.map((city) => ({
         label: city.label,
         value: city.label,
-        districts: (city.children || []).map((d) => ({ label: d.label, value: d.label }))
+        districts: normalizeDistricts(city.children || [])
       }))
     } else {
-      const districts = groupingNodes.flatMap((g) => g.children || []).map((d) => ({ label: d.label, value: d.label }))
+      const districts = normalizeDistricts(groupingNodes)
       cities = [{ label: province.label, value: province.label, districts }]
     }
     return { label: province.label, value: province.label, cities }
@@ -374,6 +406,7 @@ const rules = {
   floor: [{ required: true, message: '请输入楼层', trigger: 'blur' }],
   decoration: [{ required: true, message: '请选择装修情况', trigger: 'change' }],
   ownerType: [{ required: true, message: '请选择房东类型', trigger: 'change' }],
+  availableDate: [{ required: true, message: '请选择可入住日期', trigger: 'change' }],
   price: [{ required: true, message: '请输入月租金', trigger: 'blur' }]
 }
 
@@ -517,6 +550,7 @@ async function handleLocalImageChange(uploadFile) {
 
 <style scoped>
 .publish-house-page {
+  --room-layout-input-width: 88px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -575,6 +609,15 @@ async function handleLocalImageChange(uploadFile) {
   padding: 12px 16px;
 }
 
+.owner-type-group :deep(.el-radio) {
+  align-items: flex-start;
+}
+
+.owner-type-group :deep(.el-radio__label) {
+  width: 100%;
+  white-space: normal;
+}
+
 .radio-content {
   display: flex;
   flex-direction: column;
@@ -590,6 +633,24 @@ async function handleLocalImageChange(uploadFile) {
 .radio-content span {
   font-size: 12px;
   color: #909399;
+}
+
+/* 户型输入：统一项布局并允许换行，防止“卫”字在窄宽度被遮挡 */
+.room-layout-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.room-layout-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room-layout-input {
+  /* 88px 可完整容纳 el-input-number（含控制按钮） 与单位文字，避免“卫”被压缩遮挡 */
+  width: var(--room-layout-input-width);
 }
 
 .fee-config-row {
