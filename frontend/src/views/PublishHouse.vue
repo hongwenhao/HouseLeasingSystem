@@ -142,7 +142,7 @@
                 type="date"
                 placeholder="选择日期"
                 style="width:100%"
-                :disabled-date="disablePastDate"
+                :disabled-date="isBeforeToday"
               />
             </el-form-item>
           </el-card>
@@ -357,7 +357,7 @@ function onCityChange() {
 }
 
 /** 可入住日期禁用规则：不可选择今天之前的日期 */
-function disablePastDate(date) {
+function isBeforeToday(date) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return date.getTime() < today.getTime()
