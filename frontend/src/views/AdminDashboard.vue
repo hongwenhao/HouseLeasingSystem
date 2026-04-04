@@ -108,19 +108,19 @@
             </el-table>
           </el-tab-pane>
 
-          <!-- House Audit Tab -->
-          <el-tab-pane label="房源审核" name="houseAudit">
+          <!-- House Management Tab -->
+          <el-tab-pane label="房源管理" name="houseMgmt">
             <div class="tab-toolbar toolbar-row">
               <el-input
-                v-model="pendingHouseKeyword"
+                v-model="houseMgmtKeyword"
                 placeholder="搜索标题/城市/地址"
                 clearable
                 style="width:280px"
-                @keyup.enter="loadPendingHouses"
+                @keyup.enter="loadHouseManagementList"
               />
-              <el-button type="primary" @click="loadPendingHouses">查询</el-button>
+              <el-button type="primary" @click="loadHouseManagementList">查询</el-button>
             </div>
-            <el-table :data="pendingHouses" v-loading="pendingHousesLoading" stripe border class="data-table">
+            <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="title" label="房源标题" min-width="220" />
               <el-table-column prop="city" label="城市" width="110" />
@@ -131,10 +131,21 @@
                   <el-tag :type="houseStatusTagType(row.status)" size="small">{{ houseStatusLabel(row.status) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="220" fixed="right">
+              <el-table-column label="操作" width="280" fixed="right">
                 <template #default="{ row }">
-                  <el-button size="small" type="success" @click="handleAuditHouse(row, 'APPROVED')">通过</el-button>
-                  <el-button size="small" type="danger" @click="handleAuditHouse(row, 'REJECTED')">拒绝</el-button>
+                  <el-button
+                    v-if="row.status !== 'ONLINE'"
+                    size="small"
+                    type="success"
+                    @click="handlePutHouseOnline(row)"
+                  >上架</el-button>
+                  <el-button
+                    v-if="row.status === 'ONLINE'"
+                    size="small"
+                    type="warning"
+                    @click="handlePutHouseOffline(row)"
+                  >下架</el-button>
+                  <el-button size="small" @click="handleViewHouseDetail(row)">查看详情</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -191,11 +202,40 @@
     </div>
 
     <Footer />
+
+    <!-- 房源详情弹窗：管理员在“房源管理”中点击“查看详情”后展示 -->
+    <el-dialog
+      v-model="houseDetailDialogVisible"
+      title="房源详情"
+      width="680px"
+      destroy-on-close
+    >
+      <el-descriptions v-if="currentHouseDetail" :column="2" border>
+        <el-descriptions-item label="标题">{{ currentHouseDetail.title || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ houseStatusLabel(currentHouseDetail.status) }}</el-descriptions-item>
+        <el-descriptions-item label="省市区">
+          {{ currentHouseDetail.province || '-' }} {{ currentHouseDetail.city || '-' }} {{ currentHouseDetail.district || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="详细地址">{{ currentHouseDetail.address || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="租金(元/月)">{{ currentHouseDetail.price ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="面积(㎡)">{{ currentHouseDetail.area ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="户型">
+          {{ currentHouseDetail.rooms ?? 0 }}室{{ currentHouseDetail.halls ?? 0 }}厅{{ currentHouseDetail.bathrooms ?? 0 }}卫
+        </el-descriptions-item>
+        <el-descriptions-item label="楼层">
+          {{ currentHouseDetail.floor ?? '-' }}/{{ currentHouseDetail.totalFloor ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="描述" :span="2">{{ currentHouseDetail.description || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="houseDetailDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源审核、订单、合同管理功能
+// 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源管理、订单、合同管理功能
 import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
@@ -207,8 +247,10 @@ import {
   getAreaStats,
   getPriceTrends,
   getCreditDistribution,
-  getPendingHouses,
-  auditHouseAdmin,
+  getHouseManagementList,
+  getHouseManagementDetail,
+  putHouseOnlineByAdmin,
+  putHouseOfflineByAdmin,
   getOrderList,
   getContractList,
   banUser,
@@ -216,22 +258,25 @@ import {
 } from '../api/admin.js'
 
 const activeTab = ref('overview')        // 当前激活 tab
-const ADMIN_LIST_PAGE_SIZE = 100          // 后台管理列表默认一次拉取数量
+const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
 const usersLoading = ref(false)          // 用户列表加载状态
 const userSearch = ref('')               // 用户搜索关键词
 
-const pendingHouses = ref([])            // 待审核房源列表
-const pendingHousesLoading = ref(false)  // 待审核房源加载状态
-const pendingHouseKeyword = ref('')      // 待审核房源关键词
+const houseManagementList = ref([])       // 房源管理列表
+const houseManagementLoading = ref(false) // 房源管理加载状态
+const houseMgmtKeyword = ref('')          // 房源管理关键词
 
 const orders = ref([])                   // 管理员订单列表
 const ordersLoading = ref(false)         // 订单列表加载状态
 
 const contracts = ref([])                // 管理员合同列表
 const contractsLoading = ref(false)      // 合同列表加载状态
+
+const houseDetailDialogVisible = ref(false) // 房源详情弹窗显示状态
+const currentHouseDetail = ref(null)        // 当前查看的房源详情
 
 // ECharts 图表 DOM 引用
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
@@ -242,7 +287,7 @@ onMounted(async () => {
   // 并发加载统计数据、用户列表
   loadStats()
   loadUsers()
-  loadPendingHouses()
+  loadHouseManagementList()
   loadOrders()
   loadContracts()
   // 等待 DOM 渲染完成后再初始化 ECharts 图表（避免容器尺寸为 0）
@@ -264,7 +309,7 @@ async function loadStats() {
 async function loadUsers() {
   usersLoading.value = true
   try {
-    const res = await getUserList({ page: 1, pageSize: ADMIN_LIST_PAGE_SIZE })
+    const res = await getUserList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     users.value = Array.isArray(res) ? res : (res?.records || [])
     filteredUsers.value = [...users.value]  // 初始不过滤
@@ -272,20 +317,20 @@ async function loadUsers() {
   finally { usersLoading.value = false }
 }
 
-/** 加载待审核房源（当前实现口径为 OFFLINE/未上线房源） */
-async function loadPendingHouses() {
-  pendingHousesLoading.value = true
+/** 加载房源管理列表（支持关键词，覆盖上架/下架/查看详情场景） */
+async function loadHouseManagementList() {
+  houseManagementLoading.value = true
   try {
-    const res = await getPendingHouses({
+    const res = await getHouseManagementList({
       page: 1,
-      size: ADMIN_LIST_PAGE_SIZE,
-      keyword: pendingHouseKeyword.value || undefined
+      size: DEFAULT_ADMIN_PAGE_SIZE,
+      keyword: houseMgmtKeyword.value || undefined
     })
-    pendingHouses.value = Array.isArray(res) ? res : (res?.records || [])
+    houseManagementList.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
-    ElMessage.error(e.message || '加载待审核房源失败')
+    ElMessage.error(e.message || '加载房源管理列表失败')
   } finally {
-    pendingHousesLoading.value = false
+    houseManagementLoading.value = false
   }
 }
 
@@ -293,7 +338,7 @@ async function loadPendingHouses() {
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const res = await getOrderList({ page: 1, size: ADMIN_LIST_PAGE_SIZE })
+    const res = await getOrderList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
     orders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
     ElMessage.error(e.message || '加载订单失败')
@@ -306,7 +351,7 @@ async function loadOrders() {
 async function loadContracts() {
   contractsLoading.value = true
   try {
-    const res = await getContractList({ page: 1, size: ADMIN_LIST_PAGE_SIZE })
+    const res = await getContractList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
     contracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
     ElMessage.error(e.message || '加载合同失败')
@@ -449,18 +494,36 @@ async function handleUnbanUser(user) {
   }
 }
 
-/**
- * 管理员审核房源
- * @param {Object} house - 房源对象
- * @param {'APPROVED'|'REJECTED'} status - 审核结果
- */
-async function handleAuditHouse(house, status) {
+/** 管理员上架房源 */
+async function handlePutHouseOnline(house) {
   try {
-    await auditHouseAdmin(house.id, { status })
-    ElMessage.success(status === 'APPROVED' ? '房源审核通过' : '房源已拒绝')
-    loadPendingHouses()
+    await putHouseOnlineByAdmin(house.id)
+    ElMessage.success('房源已上架，系统将通知相关用户')
+    loadHouseManagementList()
   } catch (e) {
-    ElMessage.error(e.message || '审核失败')
+    ElMessage.error(e.message || '上架失败')
+  }
+}
+
+/** 管理员下架房源 */
+async function handlePutHouseOffline(house) {
+  try {
+    await putHouseOfflineByAdmin(house.id)
+    ElMessage.success('房源已下架，系统将通知相关用户')
+    loadHouseManagementList()
+  } catch (e) {
+    ElMessage.error(e.message || '下架失败')
+  }
+}
+
+/** 查看管理员房源管理详情（弹窗展示关键字段） */
+async function handleViewHouseDetail(house) {
+  try {
+    const detail = await getHouseManagementDetail(house.id)
+    currentHouseDetail.value = detail || null
+    houseDetailDialogVisible.value = true
+  } catch (e) {
+    ElMessage.error(e.message || '获取房源详情失败')
   }
 }
 
@@ -478,13 +541,13 @@ function roleTagType(role) {
 
 /** 房源状态枚举转中文 */
 function houseStatusLabel(status) {
-  const map = { ONLINE: '已上架', OFFLINE: '待审核', REJECTED: '已拒绝' }
+  const map = { ONLINE: '已上架', OFFLINE: '已下架', REJECTED: '已拒绝' }
   return map[status] || status
 }
 
 /** 房源状态对应的 Tag 类型 */
 function houseStatusTagType(status) {
-  const map = { ONLINE: 'success', OFFLINE: 'warning', REJECTED: 'danger' }
+  const map = { ONLINE: 'success', OFFLINE: 'info', REJECTED: 'danger' }
   return map[status] || 'info'
 }
 

@@ -11,6 +11,7 @@ import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
 import com.houseleasing.mapper.UserMapper;
+import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -52,6 +53,11 @@ public class AdminController {
     private static final int AREA_STATS_LIMIT = 12;
     private static final int PRICE_TRENDS_LIMIT = 6;
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
+    private static final String HOUSE_ACTION_ONLINE = "上架";
+    private static final String HOUSE_ACTION_OFFLINE = "下架";
+    private static final String OWNER_HOUSE_ONLINE_MESSAGE = "管理员已将您的房源上架，可正常展示给租客。";
+    private static final String OWNER_HOUSE_OFFLINE_MESSAGE = "管理员已将您的房源下架，暂不可展示给租客。";
+    private static final String TENANT_HOUSE_OFFLINE_MESSAGE_TEMPLATE = "管理员已将您关注/下单的房源《%s》下架。";
 
     private static final String CREDIT_RANGE_EXCELLENT = "90-100(优秀)";
     private static final String CREDIT_RANGE_GOOD = "70-89(良好)";
@@ -70,6 +76,7 @@ public class AdminController {
     private final HouseMapper houseMapper;
     private final OrderMapper orderMapper;
     private final ContractMapper contractMapper;
+    private final MessageProducer messageProducer;
 
     /**
      * 查询系统所有用户列表（支持关键词搜索）
@@ -83,11 +90,9 @@ public class AdminController {
     @GetMapping("/users")
     public Result<PageResult<User>> listUsers(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String keyword) {
-        int finalSize = size != null ? size : (pageSize != null ? pageSize : 10);
-        return Result.success(userService.listUsers(page, finalSize, keyword));
+        return Result.success(userService.listUsers(page, size, keyword));
     }
 
     /**
@@ -343,6 +348,50 @@ public class AdminController {
     }
 
     /**
+     * 管理员房源管理：分页查询全部房源（支持关键词），用于“房源管理”页。
+     *
+     * @param page    当前页码
+     * @param size    每页条数
+     * @param keyword 关键词（可匹配标题、城市、地址）
+     * @return 全量房源分页列表
+     */
+    @Operation(summary = "List all houses for admin management")
+    @GetMapping("/houses")
+    public Result<PageResult<House>> listAllHouses(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> pageObj =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<House> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(House::getTitle, keyword)
+                    .or().like(House::getCity, keyword)
+                    .or().like(House::getAddress, keyword));
+        }
+        wrapper.orderByDesc(House::getCreateTime);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> result = houseMapper.selectPage(pageObj, wrapper);
+        return Result.success(PageResult.of(result.getTotal(), result.getRecords(), page, size));
+    }
+
+    /**
+     * 管理员房源管理：查询单个房源详情。
+     *
+     * @param id 房源 ID
+     * @return 房源详情
+     */
+    @Operation(summary = "Get house detail for admin management")
+    @GetMapping("/houses/{id}")
+    public Result<House> getHouseDetailForAdmin(@PathVariable Long id) {
+        House house = houseMapper.selectById(id);
+        if (house == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        return Result.success(house);
+    }
+
+    /**
      * 管理员审核房源上线状态：
      * status=APPROVED/ONLINE 视为通过并上线；status=REJECTED/OFFLINE 视为驳回并保持下线。
      *
@@ -365,6 +414,51 @@ public class AdminController {
         house.setStatus(approved ? "ONLINE" : "OFFLINE");
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
+        // 审核动作后通知房东，便于房东及时感知房源状态变化
+        sendHouseManagementNotificationToOwner(house, approved ? HOUSE_ACTION_ONLINE : HOUSE_ACTION_OFFLINE,
+                approved ? OWNER_HOUSE_ONLINE_MESSAGE : OWNER_HOUSE_OFFLINE_MESSAGE);
+        return Result.success();
+    }
+
+    /**
+     * 管理员房源管理：上架房源（将状态置为 ONLINE），并推送通知给房东与相关租客。
+     *
+     * @param id 房源 ID
+     * @return 操作成功
+     */
+    @Operation(summary = "Put house online by admin")
+    @PutMapping("/houses/{id}/online")
+    public Result<Void> putHouseOnline(@PathVariable Long id) {
+        House house = houseMapper.selectById(id);
+        if (house == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        house.setStatus("ONLINE");
+        house.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(house);
+        sendHouseManagementNotificationToOwner(house, HOUSE_ACTION_ONLINE, OWNER_HOUSE_ONLINE_MESSAGE);
+        return Result.success();
+    }
+
+    /**
+     * 管理员房源管理：下架房源（将状态置为 OFFLINE），并推送通知给房东与已关联租客。
+     *
+     * @param id 房源 ID
+     * @return 操作成功
+     */
+    @Operation(summary = "Put house offline by admin")
+    @PutMapping("/houses/{id}/offline")
+    public Result<Void> putHouseOffline(@PathVariable Long id) {
+        House house = houseMapper.selectById(id);
+        if (house == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        house.setStatus("OFFLINE");
+        house.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(house);
+        sendHouseManagementNotificationToOwner(house, HOUSE_ACTION_OFFLINE, OWNER_HOUSE_OFFLINE_MESSAGE);
+        // 对该房源产生过订单的租客推送提醒，避免租客继续对不可用房源发起意向
+        notifyTenantsOfHouseOffline(house, String.format(TENANT_HOUSE_OFFLINE_MESSAGE_TEMPLATE, safeHouseTitle(house)));
         return Result.success();
     }
 
@@ -430,5 +524,47 @@ public class AdminController {
         return list.stream()
                 .filter(item -> item != null && idGetter.apply(item) != null)
                 .collect(Collectors.toMap(idGetter, Function.identity(), (a, b) -> a));
+    }
+
+    /**
+     * 给房源所属房东发送“管理员房源管理”通知。
+     */
+    private void sendHouseManagementNotificationToOwner(House house, String actionLabel, String actionMessage) {
+        if (house == null || house.getOwnerId() == null) {
+            return;
+        }
+        String content = String.format("您的房源《%s》%s", safeHouseTitle(house), actionMessage);
+        messageProducer.sendAdminHouseManagementNotification(house.getOwnerId(), actionLabel, content);
+    }
+
+    /**
+     * 根据房源关联订单，通知历史租客房源状态变化。
+     * 这里只对存在订单关系的租客推送，避免给全站租客广播造成干扰。
+     */
+    private void notifyTenantsOfHouseOffline(House house, String content) {
+        if (house == null || house.getId() == null) {
+            return;
+        }
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        wrapper.eq(Order::getHouseId, house.getId())
+                .select(Order::getTenantId);
+        List<Order> orders = orderMapper.selectList(wrapper);
+        Set<Long> tenantIds = orders.stream()
+                .map(Order::getTenantId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        tenantIds.forEach(tenantId ->
+                messageProducer.sendAdminHouseManagementNotification(tenantId, HOUSE_ACTION_OFFLINE, "房源状态变更提醒：" + content));
+    }
+
+    /**
+     * 安全返回房源标题，避免空值拼接时出现“null”字样。
+     */
+    private String safeHouseTitle(House house) {
+        if (house == null || !StringUtils.hasText(house.getTitle())) {
+            return "未命名房源";
+        }
+        return house.getTitle();
     }
 }
