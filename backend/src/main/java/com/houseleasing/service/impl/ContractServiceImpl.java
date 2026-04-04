@@ -45,6 +45,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ContractServiceImpl implements ContractService {
 
+    /** 固定正文条款数量（不含补充条款） */
+    private static final int BASE_ARTICLE_COUNT = 13;
     /** 租金逾期违约金比例（千分比，0.5%/日） */
     private static final BigDecimal DAILY_LATE_FEE_RATE_PERCENT = new BigDecimal("0.5");
     /** 租金逾期达到该天数后，出租方可按约解除合同 */
@@ -298,9 +300,9 @@ public class ContractServiceImpl implements ContractService {
         sb.append("13.2 本合同一式两份，甲乙双方各执一份，具有同等法律效力。\n");
         sb.append("13.3 本合同未尽事宜，由双方另行协商并以书面补充协议确定；补充协议与本合同具有同等法律效力。\n");
 
-        // 如果有补充条款，作为“第十四条”追加在正文末尾，确保编号连续清晰
+        // 如果有补充条款，自动按固定正文条款数 + 1 生成条款编号，降低后续维护成本
         if (StringUtils.hasText(additionalClauses)) {
-            sb.append("\n第十四条 补充条款\n");
+            sb.append("\n第").append(BASE_ARTICLE_COUNT + 1).append("条 补充条款\n");
             sb.append(additionalClauses).append("\n");
         }
 
