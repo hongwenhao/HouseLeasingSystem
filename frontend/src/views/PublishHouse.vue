@@ -137,7 +137,13 @@
             </el-row>
             <!-- 可入住日期改为必填：补充 prop 后接入 rules 校验 -->
             <el-form-item label="可入住日期" prop="availableDate">
-              <el-date-picker v-model="form.availableDate" type="date" placeholder="选择日期" style="width:100%" />
+              <el-date-picker
+                v-model="form.availableDate"
+                type="date"
+                placeholder="选择日期"
+                style="width:100%"
+                :disabled-date="isBeforeToday"
+              />
             </el-form-item>
           </el-card>
 
@@ -146,19 +152,19 @@
             <template #header>房东类型</template>
             <el-form-item label="房东身份" prop="ownerType">
               <el-radio-group v-model="form.ownerType" class="owner-type-group">
-                <el-radio value="OWNER" border>
+                <el-radio value="OWNER" border class="owner-type-option">
                   <div class="radio-content">
                     <strong>一手房东</strong>
                     <span>直接出租自有房产，无中间商</span>
                   </div>
                 </el-radio>
-                <el-radio value="SUBLEASE" border>
+                <el-radio value="SUBLEASE" border class="owner-type-option">
                   <div class="radio-content">
                     <strong>二手房东</strong>
                     <span>转租房产，需支付给上级房东</span>
                   </div>
                 </el-radio>
-                <el-radio value="AGENT" border>
+                <el-radio value="AGENT" border class="owner-type-option">
                   <div class="radio-content">
                     <strong>持牌中介</strong>
                     <span>持有中介执照，提供专业服务</span>
@@ -348,6 +354,13 @@ function onProvinceChange() {
 // 城市变化时清空下级区域
 function onCityChange() {
   form.district = ''
+}
+
+/** 可入住日期禁用规则：不可选择今天之前的日期 */
+function isBeforeToday(date) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return date.getTime() < today.getTime()
 }
 
 /** 五项费用字段的中文标签映射 */
@@ -609,12 +622,16 @@ async function handleLocalImageChange(uploadFile) {
   padding: 12px 16px;
 }
 
+.owner-type-option {
+  display: flex;
+}
+
 .owner-type-group :deep(.el-radio) {
   align-items: flex-start;
 }
 
 .owner-type-group :deep(.el-radio__label) {
-  width: 100%;
+  flex: 1;
   white-space: normal;
 }
 
