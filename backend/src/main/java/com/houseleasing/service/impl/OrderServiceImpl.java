@@ -338,9 +338,7 @@ public class OrderServiceImpl implements OrderService {
                     order.setTenant(tenant);
                 }
             }
-            if (order.getHouseId() != null) {
-                order.setHouse(houseMapper.selectById(order.getHouseId()));
-            }
+            fillOrderHouse(order);
             // 房东列表也回填 reviewed 字段，保持订单返回结构一致，避免前端空字段分支判断。
             fillOrderReviewFlag(order);
         });
