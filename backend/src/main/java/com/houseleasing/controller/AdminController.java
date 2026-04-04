@@ -19,6 +19,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
@@ -53,6 +55,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer Authentication")
 @PreAuthorize("hasRole('ADMIN')") // 仅允许管理员角色访问此控制器的所有接口
+@Slf4j
 public class AdminController {
     private static final int AREA_STATS_LIMIT = 12;
     private static final int PRICE_TRENDS_LIMIT = 6;
@@ -414,7 +417,15 @@ public class AdminController {
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         wrapper.eq(AdminHouseOperationLog::getHouseId, id)
                 .orderByDesc(AdminHouseOperationLog::getCreateTime);
-        return Result.success(adminHouseOperationLogMapper.selectList(wrapper));
+        try {
+            return Result.success(adminHouseOperationLogMapper.selectList(wrapper));
+        } catch (BadSqlGrammarException ex) {
+            if (isMissingAdminHouseOperationLogsTable(ex)) {
+                log.warn("admin_house_operation_logs table is missing, return empty operation logs for houseId={}", id);
+                return Result.success(new ArrayList<>());
+            }
+            throw ex;
+        }
     }
 
     /**
@@ -520,7 +531,23 @@ public class AdminController {
         } else {
             logRecord.setOperatorName("SYSTEM");
         }
-        adminHouseOperationLogMapper.insert(logRecord);
+        try {
+            adminHouseOperationLogMapper.insert(logRecord);
+        } catch (BadSqlGrammarException ex) {
+            if (isMissingAdminHouseOperationLogsTable(ex)) {
+                log.warn("admin_house_operation_logs table is missing, skip writing operation log for houseId={}", houseId);
+                return;
+            }
+            throw ex;
+        }
+    }
+
+    private boolean isMissingAdminHouseOperationLogsTable(BadSqlGrammarException ex) {
+        if (ex == null || ex.getMessage() == null) {
+            return false;
+        }
+        String message = ex.getMessage().toLowerCase();
+        return message.contains("admin_house_operation_logs") && message.contains("doesn't exist");
     }
 
     /**
