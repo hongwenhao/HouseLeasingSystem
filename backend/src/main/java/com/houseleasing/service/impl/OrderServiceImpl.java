@@ -514,14 +514,13 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 查询房东收到的评价记录（分页）：
-     * 按“订单归属房东”作为主口径查询，确保与订单业务权限一致。
+     * 按“房源归属房东”作为主口径查询，确保房东能看到自己房源上的评价。
      *
      * 背景说明：
      * - 评价数据本身只存了 houseId / orderId / tenantId；
-     * - 如果仅按 houses.owner_id 过滤，房源发生转手或历史数据归属变更时，
-     *   老订单对应的评价会被错误排除，导致房东端“查不到自己房源评价”；
-     * - 因此这里统一委托 Mapper 走“orders.landlord_id 主口径 + houses.owner_id 兼容口径”查询，
-     *   既保证当前业务正确性，也兼容历史数据。
+     * - 本次业务要求明确为“根据房源 id 关联房源表再查房东 id”，
+     *   因此 Mapper 中将 houses.owner_id 设为主过滤条件；
+     * - 同时保留 orders.landlord_id 兼容口径，防止历史数据字段差异导致漏数。
      */
     @Override
     public PageResult<ReviewRecordResponse> listLandlordReviewRecords(Long landlordId, int page, int size) {
