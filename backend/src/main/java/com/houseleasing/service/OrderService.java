@@ -3,6 +3,7 @@ package com.houseleasing.service;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.dto.OrderCreateRequest;
 import com.houseleasing.dto.OrderReviewRequest;
+import com.houseleasing.dto.ReviewRecordResponse;
 import com.houseleasing.entity.Order;
 
 /**
@@ -112,4 +113,24 @@ public interface OrderService {
      * @param request 评价请求
      */
     void reviewOrder(Long orderId, Long tenantId, OrderReviewRequest request);
+
+    /**
+     * 查询当前租客提交的评价记录（分页，按时间倒序）
+     *
+     * @param tenantId 当前租客 ID
+     * @param page 当前页码
+     * @param size 每页大小
+     * @return 评价记录分页结果
+     */
+    PageResult<ReviewRecordResponse> listTenantReviewRecords(Long tenantId, int page, int size);
+
+    /**
+     * 查询当前房东收到的评价记录（分页，按时间倒序）
+     *
+     * @param landlordId 当前房东 ID
+     * @param page 当前页码
+     * @param size 每页大小
+     * @return 评价记录分页结果
+     */
+    PageResult<ReviewRecordResponse> listLandlordReviewRecords(Long landlordId, int page, int size);
 }
