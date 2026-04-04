@@ -18,21 +18,27 @@
         <router-link
           v-if="isLoggedIn"
           :to="ordersNavTarget"
-          class="nav-link"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isOrdersActive }]"
           @click="menuOpen = false"
         >预约订单管理</router-link>
         <!-- 已登录用户可见：合同管理，按角色跳转到对应页面并定位到 contracts 标签页 -->
         <router-link
           v-if="isLoggedIn"
           :to="contractsNavTarget"
-          class="nav-link"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isContractsActive }]"
           @click="menuOpen = false"
         >合同管理</router-link>
         <!-- 已登录用户可见：消息中心（目前统一在个人中心 messages 标签页展示） -->
         <router-link
           v-if="isLoggedIn"
           :to="messagesNavTarget"
-          class="nav-link"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isMessagesActive }]"
           @click="menuOpen = false"
         >消息中心</router-link>
         <!-- 仅房东角色可见：房东中心入口 -->
@@ -109,12 +115,13 @@
 <script setup>
 // 说明：顶部导航栏逻辑，负责获取登录状态、未读消息数，以及处理用户下拉菜单命令
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
 import { getUnreadCount } from '../api/message.js'
 import { UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 // 控制移动端汉堡菜单的展开/收起状态
 const menuOpen = ref(false)
@@ -140,6 +147,11 @@ const contractsNavTarget = computed(() => (
 ))
 // 顶栏“消息中心”目标路由：消息目前统一在个人中心 messages 标签页
 const messagesNavTarget = computed(() => ({ path: '/user-center', query: { tab: 'messages' } }))
+
+const isCenterRoute = computed(() => route.path === '/user-center' || route.path === '/landlord-center')
+const isOrdersActive = computed(() => isCenterRoute.value && route.query.tab === 'orders')
+const isContractsActive = computed(() => isCenterRoute.value && route.query.tab === 'contracts')
+const isMessagesActive = computed(() => isCenterRoute.value && route.query.tab === 'messages')
 
 onMounted(async () => {
   // 已登录时，异步拉取未读消息数量，展示在消息角标上
@@ -239,6 +251,12 @@ async function handleCommand(cmd) {
 }
 
 .nav-link.router-link-active {
+  color: #409eff;
+  background: #ecf5ff;
+  font-weight: 500;
+}
+
+.nav-link.tab-active {
   color: #409eff;
   background: #ecf5ff;
   font-weight: 500;

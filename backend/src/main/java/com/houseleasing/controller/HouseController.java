@@ -7,6 +7,8 @@ import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
+import com.houseleasing.mapper.ContractMapper;
+import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.service.HouseService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +19,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 房源管理控制器
@@ -33,6 +37,8 @@ public class HouseController {
 
     private final HouseService houseService;
     private final UserMapper userMapper;
+    private final HouseMapper houseMapper;
+    private final ContractMapper contractMapper;
 
     /**
      * 按条件搜索房源（公开接口，无需认证）
@@ -97,6 +103,22 @@ public class HouseController {
     @GetMapping("/hot")
     public Result<List<House>> getHotHouses() {
         return Result.success(houseService.getHotHouses());
+    }
+
+    /**
+     * 获取首页公开统计数据（在租房源、注册用户、成交数量、覆盖城市）
+     *
+     * @return 首页统计数据
+     */
+    @Operation(summary = "Get home statistics (public)")
+    @GetMapping("/home-stats")
+    public Result<Map<String, Long>> getHomeStats() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("houses", houseMapper.countOnlineHouses());
+        stats.put("users", userMapper.selectCount(null));
+        stats.put("deals", contractMapper.countFullySignedContracts());
+        stats.put("cities", houseMapper.countOnlineCities());
+        return Result.success(stats);
     }
 
     /**

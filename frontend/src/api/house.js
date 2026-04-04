@@ -36,6 +36,9 @@ export const getMyHouses = (params) => request.get('/houses/my', { params })
 /** 获取首页精选推荐房源（使用公开热门房源接口） */
 export const getRecommended = () => request.get('/houses/hot')
 
+/** 获取首页公开统计数据（在租房源、注册用户、成交数量、覆盖城市） */
+export const getHomeStats = () => request.get('/houses/home-stats')
+
 /** 按关键词搜索房源（匹配标题、描述、地址） */
 export const searchHouses = (params) => request.get('/houses/search', { params })
 
