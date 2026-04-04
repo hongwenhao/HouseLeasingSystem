@@ -5,12 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.OrderCreateRequest;
+import com.houseleasing.dto.OrderReviewRequest;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.Order;
+import com.houseleasing.entity.Review;
 import com.houseleasing.entity.User;
 import com.houseleasing.entity.Contract;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
+import com.houseleasing.mapper.ReviewMapper;
 import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mq.MessageProducer;
@@ -45,6 +48,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final HouseMapper houseMapper;
     private final UserMapper userMapper;
+    private final ReviewMapper reviewMapper;
     private final ContractMapper contractMapper;
     private final MessageProducer messageProducer;
     private final MessageService messageService;
@@ -55,6 +59,15 @@ public class OrderServiceImpl implements OrderService {
     private static final String TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE = "租客已取消预约订单";
     private static final String LANDLORD_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
     private static final String LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE = "房东已取消预约订单";
+    private static final int REVIEW_MIN_RATING = 1;
+    private static final int REVIEW_MAX_RATING = 5;
+    private static final int REVIEW_MIDDLE_RATING = 3;
+    private static final int REVIEW_GOOD_RATING = 4;
+    private static final int CREDIT_DELTA_LOW_RATING = -10;
+    private static final int CREDIT_DELTA_THREE_STARS = 3;
+    private static final int CREDIT_DELTA_FOUR_STARS = 4;
+    private static final int CREDIT_DELTA_FIVE_STARS = 5;
+    private static final int DEFAULT_CREDIT_SCORE = 100;
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -409,6 +422,65 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.updateById(order);
         messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消");
         messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消");
+    }
+
+    /**
+     * 租客评价已完成订单，并根据评分调整房东信用分：
+     * <3 星扣 10 分；3 星 +3；4 星 +4；5 星 +5。
+     */
+    @Override
+    @Transactional
+    public void reviewOrder(Long orderId, Long tenantId, OrderReviewRequest request) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        if (!Objects.equals(order.getTenantId(), tenantId)) {
+            throw new BusinessException(403, "没有操作权限");
+        }
+        if (!"COMPLETED".equals(order.getStatus())) {
+            throw new BusinessException(400, "仅已完成订单可评价");
+        }
+        if (request == null || request.getRating() == null) {
+            throw new BusinessException(400, "评分不能为空");
+        }
+        int rating = request.getRating();
+        if (rating < REVIEW_MIN_RATING || rating > REVIEW_MAX_RATING) {
+            throw new BusinessException(400, "评分必须在1到5之间");
+        }
+
+        LambdaQueryWrapper<Review> existsWrapper = new LambdaQueryWrapper<>();
+        existsWrapper.eq(Review::getOrderId, orderId).eq(Review::getUserId, tenantId);
+        if (reviewMapper.selectCount(existsWrapper) > 0) {
+            throw new BusinessException(400, "该订单已评价，请勿重复提交");
+        }
+
+        Review review = new Review();
+        review.setHouseId(order.getHouseId());
+        review.setOrderId(orderId);
+        review.setUserId(tenantId);
+        review.setRating(rating);
+        review.setContent(request.getContent());
+        review.setCreateTime(LocalDateTime.now());
+        reviewMapper.insert(review);
+
+        User landlord = userMapper.selectById(order.getLandlordId());
+        if (landlord != null) {
+            int currentScore = landlord.getCreditScore() == null ? DEFAULT_CREDIT_SCORE : landlord.getCreditScore();
+            int delta;
+            if (rating < REVIEW_MIDDLE_RATING) {
+                delta = CREDIT_DELTA_LOW_RATING;
+            } else if (rating == REVIEW_MIDDLE_RATING) {
+                delta = CREDIT_DELTA_THREE_STARS;
+            } else if (rating == REVIEW_GOOD_RATING) {
+                delta = CREDIT_DELTA_FOUR_STARS;
+            } else {
+                delta = CREDIT_DELTA_FIVE_STARS;
+            }
+            landlord.setCreditScore(currentScore + delta);
+            landlord.setUpdateTime(LocalDateTime.now());
+            userMapper.updateById(landlord);
+        }
     }
 
     /**
