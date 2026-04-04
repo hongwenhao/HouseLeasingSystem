@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -51,6 +52,17 @@ public class ContractServiceImpl implements ContractService {
     private static final BigDecimal DAILY_LATE_FEE_RATE_PERCENT = new BigDecimal("0.5");
     /** 租金逾期达到该天数后，出租方可按约解除合同 */
     private static final int RENT_OVERDUE_TERMINATION_DAYS = 15;
+    /** PDF 导出可选中文字体路径（按优先级降级） */
+    private static final String[] CJK_FONT_CANDIDATES = new String[] {
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc,0",
+            "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc,0",
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc,0",
+            "/usr/share/fonts/truetype/arphic/uming.ttc,0",
+            "/System/Library/Fonts/PingFang.ttc,0",
+            "/System/Library/Fonts/Hiragino Sans GB.ttc,0",
+            "C:/Windows/Fonts/msyh.ttc,0",
+            "C:/Windows/Fonts/simhei.ttf"
+    };
 
     private final WorkflowService workflowService;
     private final ContractMapper contractMapper;
@@ -493,19 +505,11 @@ public class ContractServiceImpl implements ContractService {
             PdfWriter.getInstance(document, baos);
             document.open();
 
-            Font titleFont;
-            Font bodyFont;
-            try {
-                // 尝试使用中文字体（STSong-Light）
-                BaseFont bf = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
-                titleFont = new Font(bf, 18, Font.BOLD);
-                bodyFont = new Font(bf, 12);
-            } catch (Exception fontEx) {
-                // 中文字体不可用时降级使用默认字体
-                log.warn("Chinese font not available, using default font: {}", fontEx.getMessage());
-                titleFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD);
-                bodyFont = new Font(Font.FontFamily.HELVETICA, 12);
-            }
+            // PDF 导出优先使用可嵌入中文字体，避免下载后中文显示方块或乱码。
+            // 若系统未安装中文字体，则降级到 iText 内置 CJK 字体；最终兜底为 Helvetica。
+            BaseFont baseFont = resolvePdfBaseFont();
+            Font titleFont = new Font(baseFont, 18, Font.BOLD);
+            Font bodyFont = new Font(baseFont, 12);
 
             // 添加合同标题
             Paragraph title = new Paragraph("House Lease Contract / 房屋租赁合同", titleFont);
@@ -527,6 +531,51 @@ public class ContractServiceImpl implements ContractService {
         } catch (Exception e) {
             log.error("PDF 生成失败：{}", e.getMessage(), e);
             throw new BusinessException("PDF 生成失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 解析 PDF 导出使用的基础字体：
+     * 1) 优先加载系统中文字体并嵌入（IDENTITY_H + EMBEDDED）；
+     * 2) 系统字体不可用时退回 iText 内置 CJK 字体；
+     * 3) 最终再退回 Helvetica，保证文件可下载。
+     */
+    private BaseFont resolvePdfBaseFont() {
+        for (String candidate : CJK_FONT_CANDIDATES) {
+            String fontPath = candidate;
+            int ttcIndex = -1;
+            int commaIndex = candidate.lastIndexOf(',');
+            if (commaIndex > 0) {
+                fontPath = candidate.substring(0, commaIndex);
+                try {
+                    ttcIndex = Integer.parseInt(candidate.substring(commaIndex + 1));
+                } catch (NumberFormatException ignored) {
+                    ttcIndex = -1;
+                }
+            }
+            if (!new File(fontPath).exists()) {
+                continue;
+            }
+            try {
+                String source = ttcIndex >= 0 ? candidate : fontPath;
+                BaseFont baseFont = BaseFont.createFont(source, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+                log.info("PDF 导出使用系统中文字体：{}", source);
+                return baseFont;
+            } catch (Exception ex) {
+                log.warn("系统字体加载失败，尝试下一个：{}，原因：{}", candidate, ex.getMessage());
+            }
+        }
+        try {
+            BaseFont fallback = BaseFont.createFont("STSong-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
+            log.warn("未找到系统中文字体，PDF 导出降级为 STSong-Light");
+            return fallback;
+        } catch (Exception ex) {
+            log.error("CJK 字体加载失败，PDF 导出最终降级 Helvetica：{}", ex.getMessage());
+            try {
+                return BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
+            } catch (Exception helveticaEx) {
+                throw new IllegalStateException("PDF 字体初始化失败", helveticaEx);
+            }
         }
     }
 
