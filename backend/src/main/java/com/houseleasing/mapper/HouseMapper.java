@@ -7,6 +7,7 @@ import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 /**
@@ -35,4 +36,20 @@ public interface HouseMapper extends BaseMapper<House> {
      */
     @Update("UPDATE houses SET view_count = view_count + 1 WHERE id = #{houseId}")
     void incrementViewCount(Long houseId);
+
+    /**
+     * 统计当前在线房源数量（兼容历史 APPROVED 状态）。
+     *
+     * @return 在线房源数量
+     */
+    @Select("SELECT COUNT(*) FROM houses WHERE status IN ('ONLINE', 'APPROVED')")
+    long countOnlineHouses();
+
+    /**
+     * 统计在线房源覆盖的城市数量（去重，兼容历史 APPROVED 状态）。
+     *
+     * @return 覆盖城市数量
+     */
+    @Select("SELECT COUNT(DISTINCT city) FROM houses WHERE status IN ('ONLINE', 'APPROVED') AND city IS NOT NULL AND city <> ''")
+    long countOnlineCities();
 }

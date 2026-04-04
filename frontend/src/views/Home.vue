@@ -106,7 +106,7 @@ import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import SearchBar from '../components/SearchBar.vue'
 import HouseCard from '../components/HouseCard.vue'
-import { getRecommended } from '../api/house.js'
+import { getRecommended, getHomeStats } from '../api/house.js'
 
 const router = useRouter()
 const loading = ref(false)
@@ -133,6 +133,13 @@ const animatedStats = reactive({
   cities: 0
 })
 
+const statsTarget = reactive({
+  houses: 0,
+  users: 0,
+  deals: 0,
+  cities: 0
+})
+
 /**
  * 数字计数动画：在指定时间内将某个统计字段从 0 平滑增长到目标值
  * @param {string} key      - animatedStats 中的字段名
@@ -150,20 +157,29 @@ function animateCounter(key, target, duration = 1500) {
 }
 
 onMounted(async () => {
-  // 启动四个数字的计数动画
-  animateCounter('houses', 1280)
-  animateCounter('users', 5600)
-  animateCounter('deals', 890)
-  animateCounter('cities', 32)
-
-  // 加载精选推荐房源
+  // 并行加载：首页统计与精选推荐房源
   loading.value = true
   try {
-    const res = await getRecommended()
+    const [statsRes, recommendedRes] = await Promise.all([
+      getHomeStats(),
+      getRecommended()
+    ])
+
+    statsTarget.houses = Number(statsRes?.houses || 0)
+    statsTarget.users = Number(statsRes?.users || 0)
+    statsTarget.deals = Number(statsRes?.deals || 0)
+    statsTarget.cities = Number(statsRes?.cities || 0)
+
+    // 启动四个数字的计数动画
+    animateCounter('houses', statsTarget.houses)
+    animateCounter('users', statsTarget.users)
+    animateCounter('deals', statsTarget.deals)
+    animateCounter('cities', statsTarget.cities)
+
     // 兼容后端返回数组或 { list, total } 两种格式
-    recommendedHouses.value = Array.isArray(res) ? res : (res?.list || [])
+    recommendedHouses.value = Array.isArray(recommendedRes) ? recommendedRes : (recommendedRes?.list || [])
   } catch (e) {
-    ElMessage.error('加载推荐房源失败')
+    ElMessage.error('加载首页数据失败')
   } finally {
     loading.value = false
   }
