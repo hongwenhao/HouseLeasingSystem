@@ -30,10 +30,18 @@ public interface ReviewMapper extends BaseMapper<Review> {
     @Select("""
             SELECT r.*
             FROM reviews r
-            LEFT JOIN orders o ON o.id = r.order_id
-            LEFT JOIN houses h ON h.id = r.house_id
-            WHERE h.owner_id = #{landlordId}
-               OR o.landlord_id = #{landlordId}
+            WHERE EXISTS (
+                SELECT 1
+                FROM houses h
+                WHERE h.id = r.house_id
+                  AND h.owner_id = #{landlordId}
+            )
+               OR EXISTS (
+                SELECT 1
+                FROM orders o
+                WHERE o.id = r.order_id
+                  AND o.landlord_id = #{landlordId}
+            )
             ORDER BY r.create_time DESC
             """)
     Page<Review> selectLandlordReviewPage(Page<Review> page, @Param("landlordId") Long landlordId);

@@ -180,34 +180,43 @@
                     >
                       去评价
                     </el-button>
-                    <el-dropdown trigger="click" @command="(command) => handleOrderActionCommand(command, order)">
-                      <el-button size="small" type="primary" plain>
-                        更多操作
-                      </el-button>
-                      <template #dropdown>
-                        <el-dropdown-menu>
-                          <el-dropdown-item v-if="order.contractId" command="viewContract">查看合同</el-dropdown-item>
-                          <el-dropdown-item
-                            v-if="isTenant && order.status === 'PENDING'"
-                            command="cancel"
-                          >
-                            取消预约
-                          </el-dropdown-item>
-                          <el-dropdown-item
-                            v-if="canShowPayAction(order)"
-                            command="pay"
-                          >
-                            待支付
-                          </el-dropdown-item>
-                          <el-dropdown-item
-                            v-if="canShowRefundAction(order)"
-                            command="refund"
-                          >
-                            退款
-                          </el-dropdown-item>
-                        </el-dropdown-menu>
-                      </template>
-                    </el-dropdown>
+                    <!-- 预约订单操作按条件直接显示，避免“更多操作”隐藏关键入口 -->
+                    <el-button
+                      v-if="order.contractId"
+                      size="small"
+                      type="primary"
+                      plain
+                      @click="router.push(`/contracts/${order.contractId}`)"
+                    >
+                      查看合同
+                    </el-button>
+                    <el-button
+                      v-if="isTenant && order.status === 'PENDING'"
+                      size="small"
+                      type="danger"
+                      plain
+                      @click="cancelMyOrder(order.id)"
+                    >
+                      取消预约
+                    </el-button>
+                    <el-button
+                      v-if="canShowPayAction(order)"
+                      size="small"
+                      type="warning"
+                      plain
+                      @click="handlePayOrder(order)"
+                    >
+                      待支付
+                    </el-button>
+                    <el-button
+                      v-if="canShowRefundAction(order)"
+                      size="small"
+                      type="info"
+                      plain
+                      @click="handleRefundOrder(order)"
+                    >
+                      退款
+                    </el-button>
                   </div>
                 </div>
               </div>
@@ -845,28 +854,6 @@ async function submitOrderReview() {
     ElMessage.error(e.message || '评价提交失败')
   } finally {
     submittingReview.value = false
-  }
-}
-
-/**
- * 预约订单“更多操作”统一分发：
- * 按命令路由到对应业务，降低按钮数量，避免操作列拥挤导致布局错乱。
- */
-function handleOrderActionCommand(command, order) {
-  if (command === 'viewContract' && order?.contractId) {
-    router.push(`/contracts/${order.contractId}`)
-    return
-  }
-  if (command === 'cancel') {
-    cancelMyOrder(order.id)
-    return
-  }
-  if (command === 'pay') {
-    handlePayOrder(order)
-    return
-  }
-  if (command === 'refund') {
-    handleRefundOrder(order)
   }
 }
 
