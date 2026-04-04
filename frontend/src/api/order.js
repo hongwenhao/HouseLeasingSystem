@@ -11,6 +11,7 @@
  *   - PUT  /orders/:id/complete   将订单标记为完成状态
  *   - PUT  /orders/:id/pay        租客支付订单（合同双方已签后）
  *   - PUT  /orders/:id/refund     租客退款订单（已支付后）
+ *   - POST /orders/:id/review     租客对已完成订单提交评价
  */
 
 import request from './index'
@@ -57,3 +58,10 @@ export const payOrder = (id) => request.put(`/orders/${id}/pay`)
 
 /** 租客退款订单：成功后后端会把订单改为 CANCELLED，支付状态改为 REFUNDED */
 export const refundOrder = (id) => request.put(`/orders/${id}/refund`)
+
+/**
+ * 租客评价订单：
+ * - 仅允许对“已完成(COMPLETED)”且未评价过的订单提交；
+ * - data: { rating: 1~5, content?: string }。
+ */
+export const reviewOrder = (id, data) => request.post(`/orders/${id}/review`, data)

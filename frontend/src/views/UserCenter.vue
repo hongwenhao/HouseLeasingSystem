@@ -199,6 +199,14 @@
                       v-if="canShowRefundAction(order)"
                       @click="handleRefundOrder(order)"
                     >退款</el-button>
+                    <el-button
+                      size="small"
+                      type="success"
+                      v-if="canShowReviewAction(order)"
+                      @click="openReviewDialog(order)"
+                    >
+                      去评价
+                    </el-button>
                   </div>
                 </div>
               </div>
@@ -327,6 +335,35 @@
         </div>
       </div>
     </div>
+
+    <!-- 评价弹窗：租客对已完成订单进行一次性评价 -->
+    <el-dialog v-model="reviewDialogVisible" title="订单评价" width="500px">
+      <el-form label-width="90px">
+        <el-form-item label="房源">
+          <div class="review-house-title">{{ getOrderHouseTitleWithFallback(reviewTargetOrder) }}</div>
+        </el-form-item>
+        <el-form-item label="评分" required>
+          <el-rate v-model="reviewForm.rating" :max="5" show-score />
+        </el-form-item>
+        <el-form-item label="评价内容">
+          <el-input
+            v-model="reviewForm.content"
+            type="textarea"
+            :rows="4"
+            maxlength="500"
+            show-word-limit
+            placeholder="请填写您的看房/签约体验（选填）"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="reviewDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submittingReview" @click="submitOrderReview">
+          提交评价
+        </el-button>
+      </template>
+    </el-dialog>
+
     <Footer />
   </div>
 </template>
@@ -343,7 +380,7 @@ import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
-import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder } from '../api/order.js'
+import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder, reviewOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
@@ -362,6 +399,13 @@ const myOrders = ref([])              // 当前用户的预约订单列表
 const myContracts = ref([])           // 当前用户的合同列表
 const myCollections = ref([])         // 收藏的房源列表
 const messages = ref([])              // 消息通知列表
+const reviewDialogVisible = ref(false) // 评价弹窗显隐
+const submittingReview = ref(false)    // 提交评价按钮 loading
+const reviewTargetOrder = ref(null)    // 当前正在评价的订单
+const reviewForm = reactive({
+  rating: 0,     // 星级评分（1~5）
+  content: ''    // 评价文本（可选）
+})
 const profileFormRef = ref(null)
 const pwdFormRef = ref(null)
 
@@ -708,6 +752,49 @@ function canShowPayAction(order) {
 /** 是否展示“退款”按钮：仅租客且已支付订单可见 */
 function canShowRefundAction(order) {
   return isTenant.value && order?.paymentStatus === 'PAID'
+}
+
+/**
+ * 是否展示“去评价”按钮：
+ * - 仅租客可见；
+ * - 订单状态必须是 COMPLETED；
+ * - reviewed 为 false（或未返回）时展示，避免重复评价。
+ */
+function canShowReviewAction(order) {
+  return isTenant.value &&
+    order?.status === 'COMPLETED' &&
+    order?.reviewed !== true
+}
+
+/** 打开评价弹窗并初始化表单 */
+function openReviewDialog(order) {
+  reviewTargetOrder.value = order
+  reviewForm.rating = 0
+  reviewForm.content = ''
+  reviewDialogVisible.value = true
+}
+
+/** 提交订单评价：评分必填，成功后关闭弹窗并刷新订单列表。 */
+async function submitOrderReview() {
+  if (!reviewTargetOrder.value?.id) return
+  if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
+    ElMessage.warning('请先选择1-5星评分')
+    return
+  }
+  submittingReview.value = true
+  try {
+    await reviewOrder(reviewTargetOrder.value.id, {
+      rating: reviewForm.rating,
+      content: reviewForm.content?.trim() || null
+    })
+    ElMessage.success('评价提交成功')
+    reviewDialogVisible.value = false
+    await loadOrders()
+  } catch (e) {
+    ElMessage.error(e.message || '评价提交失败')
+  } finally {
+    submittingReview.value = false
+  }
 }
 
 /** 合同状态枚举转中文 */
