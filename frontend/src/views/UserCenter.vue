@@ -141,12 +141,13 @@
               <div v-if="ordersLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-              <div v-else-if="myOrders.length > 0" class="table-card orders-table">
+                <div v-else-if="myOrders.length > 0" class="table-card orders-table">
                 <div class="table-head">
                   <span>预约房源</span>
                   <span>预约时间</span>
                   <span>创建时间</span>
-                  <span>状态</span>
+                  <span>订单状态</span>
+                  <span>支付状态</span>
                   <span>操作</span>
                 </div>
                 <div
@@ -163,6 +164,11 @@
                       {{ orderStatusLabel(order.status) }}
                     </el-tag>
                   </span>
+                  <span>
+                    <el-tag :type="paymentStatusType(order.paymentStatus)" size="small">
+                      {{ paymentStatusLabel(order.paymentStatus) }}
+                    </el-tag>
+                  </span>
                   <div class="row-actions">
                     <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看</el-button>
                     <el-button
@@ -171,6 +177,18 @@
                       v-if="isTenant && order.status === 'PENDING'"
                       @click="cancelMyOrder(order.id)"
                     >取消</el-button>
+                    <el-button
+                      size="small"
+                      type="warning"
+                      v-if="canShowPayAction(order)"
+                      @click="handlePayOrder(order)"
+                    >待支付</el-button>
+                    <el-button
+                      size="small"
+                      type="danger"
+                      v-if="canShowRefundAction(order)"
+                      @click="handleRefundOrder(order)"
+                    >退款</el-button>
                   </div>
                 </div>
               </div>
@@ -298,7 +316,7 @@
 // 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'     // 用于密码修改后跳转到登录页与读取路由参数
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled, Star } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
@@ -306,7 +324,7 @@ import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
-import { getMyOrders, getLandlordOrders, cancelOrder } from '../api/order.js'
+import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
@@ -566,6 +584,47 @@ async function cancelMyOrder(id) {
 }
 
 /**
+ * 租客支付订单：
+ * 仅在合同双方已签且订单为已批准未支付时显示“待支付”按钮。
+ * 这里以确认弹窗模拟进入支付页后的“确认支付”动作，便于与现有系统快速联通。
+ */
+async function handlePayOrder(order) {
+  try {
+    await ElMessageBox.confirm(
+      '即将进入支付界面，确认支付后订单将变为“已完成”。',
+      '支付确认',
+      { type: 'warning', confirmButtonText: '确认支付', cancelButtonText: '取消' }
+    )
+    await payOrder(order.id)
+    ElMessage.success('支付成功')
+    loadOrders()
+  } catch (e) {
+    if (e === 'cancel' || e === 'close') return
+    ElMessage.error(e.message || '支付失败')
+  }
+}
+
+/**
+ * 租客退款订单：
+ * 仅在订单已支付时显示“退款”按钮，退款成功后订单状态为已取消、支付状态为已退款。
+ */
+async function handleRefundOrder(order) {
+  try {
+    await ElMessageBox.confirm(
+      '确认发起退款？退款后订单状态将变为“已取消”。',
+      '退款确认',
+      { type: 'warning', confirmButtonText: '确认退款', cancelButtonText: '取消' }
+    )
+    await refundOrder(order.id)
+    ElMessage.success('退款成功')
+    loadOrders()
+  } catch (e) {
+    if (e === 'cancel' || e === 'close') return
+    ElMessage.error(e.message || '退款失败')
+  }
+}
+
+/**
  * 将指定消息标记为已读
  * @param {number} id - 消息 ID
  */
@@ -599,6 +658,37 @@ function orderStatusLabel(status) {
 function orderStatusType(status) {
   const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
+}
+
+/** 支付状态枚举转中文 */
+function paymentStatusLabel(status) {
+  const map = { UNPAID: '未支付', PAID: '已支付', REFUNDED: '已退款' }
+  return map[status] || status || '-'
+}
+
+/** 支付状态对应的 Element Plus Tag 类型 */
+function paymentStatusType(status) {
+  const map = { UNPAID: 'warning', PAID: 'success', REFUNDED: 'info' }
+  return map[status] || 'info'
+}
+
+/**
+ * 是否展示“待支付”按钮：
+ * - 仅租客可见；
+ * - 订单必须已批准；
+ * - 支付状态为未支付；
+ * - 合同状态已达到双方签署完成（后端通过 canPay 返回）。
+ */
+function canShowPayAction(order) {
+  return isTenant.value &&
+    order?.status === 'APPROVED' &&
+    order?.paymentStatus === 'UNPAID' &&
+    order?.canPay === true
+}
+
+/** 是否展示“退款”按钮：仅租客且已支付订单可见 */
+function canShowRefundAction(order) {
+  return isTenant.value && order?.paymentStatus === 'PAID'
 }
 
 /** 合同状态枚举转中文 */
@@ -655,7 +745,7 @@ function formatDateTime(date) {
   /* profile grid: avatar | forms (1 : 1.5 ratio, form side wider) */
   --profile-avatar-form-cols: 1fr 1.5fr;
   /* table columns */
-  --orders-table-cols: 2fr 1.2fr 1.2fr 1fr 1.2fr;       /* title | appointment | created | status | actions */
+  --orders-table-cols: 2fr 1.2fr 1.2fr 1fr 1fr 1.8fr;   /* title | appointment | created | orderStatus | payStatus | actions */
   --contracts-table-cols: 2fr 1.4fr 1.1fr 1fr 1.2fr;   /* number | lease | rent | status | actions */
   --avatar-area-inset-shadow-alpha: 0.8;
 }

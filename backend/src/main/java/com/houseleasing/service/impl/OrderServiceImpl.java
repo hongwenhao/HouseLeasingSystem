@@ -8,9 +8,11 @@ import com.houseleasing.dto.OrderCreateRequest;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.Order;
 import com.houseleasing.entity.User;
+import com.houseleasing.entity.Contract;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
 import com.houseleasing.mapper.UserMapper;
+import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.MessageService;
 import com.houseleasing.service.OrderService;
@@ -43,6 +45,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final HouseMapper houseMapper;
     private final UserMapper userMapper;
+    private final ContractMapper contractMapper;
     private final MessageProducer messageProducer;
     private final MessageService messageService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -245,6 +248,9 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
+        // 关联填充合同状态与可支付标记：
+        // 仅当存在对应合同且状态为 FULLY_SIGNED 时，前端才应展示“待支付”按钮。
+        fillContractPaymentAbility(order);
         // 关联填充房源信息
         if (order.getHouseId() != null) {
             House house = houseMapper.selectById(order.getHouseId());
@@ -286,6 +292,8 @@ public class OrderServiceImpl implements OrderService {
         wrapper.eq(Order::getTenantId, tenantId);
         wrapper.orderByDesc(Order::getCreateTime);
         Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
+        // 批量回填合同状态与可支付标记，避免前端为每条订单额外请求详情接口。
+        result.getRecords().forEach(this::fillContractPaymentAbility);
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 
@@ -304,6 +312,7 @@ public class OrderServiceImpl implements OrderService {
         // 兼容历史数据：landlord_id 直接命中，或订单房源归属当前房东（JOIN houses.owner_id）
         Page<Order> result = orderMapper.selectLandlordOrdersPage(pageObj, landlordId);
         result.getRecords().forEach(order -> {
+            fillContractPaymentAbility(order);
             if (order.getTenantId() != null) {
                 User tenant = userMapper.selectById(order.getTenantId());
                 if (tenant != null) {
@@ -334,6 +343,96 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("COMPLETED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+    }
+
+    /**
+     * 租客支付订单：
+     * 1) 校验订单存在与租客身份；
+     * 2) 校验订单必须处于 APPROVED 且未支付；
+     * 3) 校验合同必须双方已签（FULLY_SIGNED）；
+     * 4) 更新订单状态与支付状态，并通知双方。
+     */
+    @Override
+    @Transactional
+    public void payOrder(Long orderId, Long tenantId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        if (!Objects.equals(order.getTenantId(), tenantId)) {
+            throw new BusinessException(403, "没有操作权限");
+        }
+        if (!"APPROVED".equals(order.getStatus())) {
+            throw new BusinessException(400, "仅已批准订单可支付");
+        }
+        if ("PAID".equals(order.getPaymentStatus())) {
+            throw new BusinessException(400, "订单已支付，请勿重复支付");
+        }
+        if ("REFUNDED".equals(order.getPaymentStatus())) {
+            throw new BusinessException(400, "订单已退款，无法再次支付");
+        }
+        Contract contract = findLatestContractByOrderId(order.getId());
+        if (contract == null || !"FULLY_SIGNED".equals(contract.getStatus())) {
+            throw new BusinessException(400, "合同双方签署完成后方可支付");
+        }
+        order.setPaymentStatus("PAID");
+        order.setStatus("COMPLETED");
+        order.setUpdateTime(LocalDateTime.now());
+        orderMapper.updateById(order);
+        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单支付成功，订单已完成");
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已完成支付，订单已完成");
+    }
+
+    /**
+     * 租客退款订单：
+     * 1) 校验订单存在与租客身份；
+     * 2) 仅允许对已支付订单发起退款；
+     * 3) 退款后订单状态标记为已取消，支付状态标记为已退款；
+     * 4) 同步发送双方消息通知。
+     */
+    @Override
+    @Transactional
+    public void refundOrder(Long orderId, Long tenantId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        if (!Objects.equals(order.getTenantId(), tenantId)) {
+            throw new BusinessException(403, "没有操作权限");
+        }
+        if (!"PAID".equals(order.getPaymentStatus())) {
+            throw new BusinessException(400, "仅已支付订单可退款");
+        }
+        order.setPaymentStatus("REFUNDED");
+        order.setStatus("CANCELLED");
+        order.setUpdateTime(LocalDateTime.now());
+        orderMapper.updateById(order);
+        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消");
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消");
+    }
+
+    /**
+     * 回填订单的合同状态与可支付标记，供前端“待支付/退款”按钮与支付状态展示使用。
+     */
+    private void fillContractPaymentAbility(Order order) {
+        Contract contract = findLatestContractByOrderId(order.getId());
+        String contractStatus = contract != null ? contract.getStatus() : null;
+        order.setContractStatus(contractStatus);
+        order.setCanPay("FULLY_SIGNED".equals(contractStatus));
+    }
+
+    /**
+     * 按订单 ID 查询用于支付判断的合同：
+     * 正常业务下同一订单只应存在一份合同；若历史上出现多份合同，
+     * 统一按 create_time 最新的一份作为“当前有效合同”参与支付资格判断，
+     * 以保证前后端状态判断口径一致并避免读取过期合同状态。
+     */
+    private Contract findLatestContractByOrderId(Long orderId) {
+        LambdaQueryWrapper<Contract> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Contract::getOrderId, orderId);
+        wrapper.orderByDesc(Contract::getCreateTime);
+        wrapper.last("LIMIT 1");
+        return contractMapper.selectOne(wrapper);
     }
 
     /**

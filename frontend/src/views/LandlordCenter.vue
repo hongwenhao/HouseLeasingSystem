@@ -70,6 +70,8 @@
                 </div>
                 <div class="order-meta">
                   <span>预约时间：{{ formatDateTime(order.appointmentTime) }}</span>
+                  <span>订单状态：{{ orderStatusLabel(order.status) }}</span>
+                  <span>支付状态：{{ paymentStatusLabel(order.paymentStatus) }}</span>
                   <span>押金：¥{{ order.deposit ?? '-' }}</span>
                   <span v-if="order.remark || order.message">留言：{{ order.remark || order.message }}</span>
                 </div>
@@ -345,6 +347,12 @@ function orderStatusLabel(status) {
 function orderStatusType(status) {
   const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
+}
+
+/** 支付状态枚举转中文（房东端用于查看租客支付进度） */
+function paymentStatusLabel(status) {
+  const map = { UNPAID: '未支付', PAID: '已支付', REFUNDED: '已退款' }
+  return map[status] || status || '-'
 }
 
 /** 合同状态枚举转中文 */
