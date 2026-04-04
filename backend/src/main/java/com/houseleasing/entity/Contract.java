@@ -39,6 +39,9 @@ public class Contract {
     /** 关联合同房源信息（非数据库字段，通过查询关联填充） */
     @TableField(exist = false)
     private House house;
+    /** 关联订单编号（非数据库字段，用于前端展示“查看对应订单”场景） */
+    @TableField(exist = false)
+    private String orderNo;
     /** 合同正文内容（LONGVARCHAR 类型存储大文本） */
     @TableField(value = "content", jdbcType = org.apache.ibatis.type.JdbcType.LONGVARCHAR)
     private String content;

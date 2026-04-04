@@ -7,8 +7,8 @@ import com.houseleasing.dto.HouseSearchRequest;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
-import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
+import com.houseleasing.mapper.OrderMapper;
 import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.service.HouseService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,7 +38,7 @@ public class HouseController {
     private final HouseService houseService;
     private final UserMapper userMapper;
     private final HouseMapper houseMapper;
-    private final ContractMapper contractMapper;
+    private final OrderMapper orderMapper;
 
     /**
      * 按条件搜索房源（公开接口，无需认证）
@@ -116,7 +116,8 @@ public class HouseController {
         Map<String, Long> stats = new HashMap<>();
         stats.put("houses", houseMapper.countOnlineHouses());
         stats.put("users", userMapper.selectCount(null));
-        stats.put("deals", contractMapper.countFullySignedContracts());
+        // 成交口径统一为“订单已完成”，仅 COMPLETED 才计入交易成功次数。
+        stats.put("deals", orderMapper.countCompletedOrders());
         stats.put("cities", houseMapper.countOnlineCities());
         return Result.success(stats);
     }

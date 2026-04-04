@@ -419,6 +419,9 @@ public class OrderServiceImpl implements OrderService {
         String contractStatus = contract != null ? contract.getStatus() : null;
         order.setContractStatus(contractStatus);
         order.setCanPay("FULLY_SIGNED".equals(contractStatus));
+        // 同步回填合同主键信息，前端可在订单列表/详情直接跳转到对应合同，避免额外查询。
+        order.setContractId(contract != null ? contract.getId() : null);
+        order.setContractNo(contract != null ? contract.getContractNo() : null);
     }
 
     /**

@@ -50,6 +50,12 @@ public class Order {
     /** 是否达到可支付条件（非数据库字段：仅当合同双方都签署时为 true） */
     @TableField(exist = false)
     private Boolean canPay;
+    /** 关联的最新合同 ID（非数据库字段，用于前端快速跳转合同详情） */
+    @TableField(exist = false)
+    private Long contractId;
+    /** 关联的最新合同编号（非数据库字段，用于前端展示） */
+    @TableField(exist = false)
+    private String contractNo;
     /** 订单备注信息 */
     private String remark;
     /** 创建时间，插入时自动填充 */

@@ -173,6 +173,13 @@ public class ContractServiceImpl implements ContractService {
         String startDate = order.getStartDate() != null ? order.getStartDate().toString() : "";
         String endDate = order.getEndDate() != null ? order.getEndDate().toString() : "";
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
+        String landlordIdCard = maskIdCard(landlord != null ? landlord.getIdCard() : null);
+        String tenantIdCard = maskIdCard(tenant != null ? tenant.getIdCard() : null);
+        String waterRule = buildFeeRule(house != null ? house.getWaterFeeType() : null, house != null ? house.getWaterFee() : null, "元/吨");
+        String electricRule = buildFeeRule(house != null ? house.getElectricFeeType() : null, house != null ? house.getElectricFee() : null, "元/度");
+        String gasRule = buildFeeRule(house != null ? house.getGasFeeType() : null, house != null ? house.getGasFee() : null, "元/方");
+        String propertyRule = buildFeeRule(house != null ? house.getPropertyFeeType() : null, house != null ? house.getPropertyFee() : null, "元/月");
+        String internetRule = buildFeeRule(house != null ? house.getInternetFeeType() : null, house != null ? house.getInternetFee() : null, "元/月");
 
         StringBuilder sb = new StringBuilder();
         sb.append("房屋租赁合同\n\n");
@@ -180,16 +187,16 @@ public class ContractServiceImpl implements ContractService {
         sb.append("签署日期：").append(now).append("\n\n");
 
         sb.append("甲方（出租方/房东）：").append(landlordName).append("\n");
-        if (landlord != null && StringUtils.hasText(landlord.getIdCard())) {
-            sb.append("身份证号：").append(landlord.getIdCard()).append("\n");
+        if (StringUtils.hasText(landlordIdCard)) {
+            sb.append("身份证号：").append(landlordIdCard).append("\n");
         }
         if (landlord != null && StringUtils.hasText(landlord.getPhone())) {
             sb.append("联系电话：").append(landlord.getPhone()).append("\n");
         }
         sb.append("\n");
         sb.append("乙方（承租方/租客）：").append(tenantName).append("\n");
-        if (tenant != null && StringUtils.hasText(tenant.getIdCard())) {
-            sb.append("身份证号：").append(tenant.getIdCard()).append("\n");
+        if (StringUtils.hasText(tenantIdCard)) {
+            sb.append("身份证号：").append(tenantIdCard).append("\n");
         }
         if (tenant != null && StringUtils.hasText(tenant.getPhone())) {
             sb.append("联系电话：").append(tenant.getPhone()).append("\n");
@@ -225,29 +232,37 @@ public class ContractServiceImpl implements ContractService {
         sb.append("5.3 乙方在租赁期间发现房屋设施损坏，应及时通知甲方进行维修。\n\n");
 
         sb.append("第六条 水电费标准\n");
-        sb.append("6.1 水费：按实际用量计费，依据水表读数结算。\n");
-        sb.append("6.2 电费：按实际用量计费，依据电表读数结算。\n");
-        sb.append("6.3 网络费用：由乙方自行负担。\n\n");
+        sb.append("6.1 水费：").append(waterRule).append("。\n");
+        sb.append("6.2 电费：").append(electricRule).append("。\n");
+        sb.append("6.3 燃气费：").append(gasRule).append("。\n");
+        sb.append("6.4 物业费：").append(propertyRule).append("。\n");
+        sb.append("6.5 网络费：").append(internetRule).append("。\n");
+        sb.append("6.6 乙方应于每个结算周期结束后3个自然日内结清本条约定费用。\n\n");
 
-        sb.append("第七条 提前解约条款\n");
-        sb.append("7.1 乙方提前解约须提前30日书面通知甲方。\n");
-        sb.append("7.2 甲方提前终止合同须提前60日书面通知乙方。\n");
-        sb.append("7.3 因不可抗力导致合同无法继续履行，双方可协商解约。\n\n");
+        sb.append("第七条 交付与返还\n");
+        sb.append("7.1 甲方应于租赁起始日前完成房屋及附属设施交付，并与乙方共同确认交接清单。\n");
+        sb.append("7.2 租赁期满或合同解除时，乙方应保持房屋及设施完好并按约返还。\n");
+        sb.append("7.3 房屋返还后，双方应在现场完成水电气及物业费用结算确认。\n\n");
 
-        sb.append("第八条 违约责任\n");
-        sb.append("8.1 乙方未按时支付租金，每逾期一日按月租金的0.5%支付违约金。\n");
-        sb.append("8.2 乙方擅自转租房屋，甲方有权解除合同并要求赔偿损失。\n");
-        sb.append("8.3 甲方在租赁期间无故收回房屋，应赔偿乙方相当于一个月租金的违约金。\n\n");
+        sb.append("第八条 提前解约条款\n");
+        sb.append("8.1 乙方提前解约须提前30日书面通知甲方。\n");
+        sb.append("8.2 甲方提前终止合同须提前60日书面通知乙方。\n");
+        sb.append("8.3 因不可抗力导致合同无法继续履行，双方可协商解约。\n\n");
 
-        sb.append("第九条 其他约定\n");
-        sb.append("9.1 乙方不得擅自改变房屋结构或用途。\n");
-        sb.append("9.2 乙方应遵守物业管理规定及小区相关规定。\n");
-        sb.append("9.3 本合同一式两份，甲乙双方各执一份，具有同等法律效力。\n");
-        sb.append("9.4 本合同未尽事宜，双方协商解决；协商不成的，提交有管辖权的法院裁决。\n");
+        sb.append("第九条 违约责任\n");
+        sb.append("9.1 乙方未按时支付租金，每逾期一日按月租金的0.5%支付违约金。\n");
+        sb.append("9.2 乙方擅自转租房屋，甲方有权解除合同并要求赔偿损失。\n");
+        sb.append("9.3 甲方在租赁期间无故收回房屋，应赔偿乙方相当于一个月租金的违约金。\n\n");
 
-        // 如果有补充条款，添加第十条
+        sb.append("第十条 争议解决与其他约定\n");
+        sb.append("10.1 乙方不得擅自改变房屋结构或用途。\n");
+        sb.append("10.2 乙方应遵守物业管理规定及小区相关规定。\n");
+        sb.append("10.3 本合同一式两份，甲乙双方各执一份，具有同等法律效力。\n");
+        sb.append("10.4 本合同未尽事宜，双方协商解决；协商不成的，提交有管辖权的法院裁决。\n");
+
+        // 如果有补充条款，添加第十一条
         if (StringUtils.hasText(additionalClauses)) {
-            sb.append("\n第十条 补充条款\n");
+            sb.append("\n第十一条 补充条款\n");
             sb.append(additionalClauses).append("\n");
         }
 
@@ -255,6 +270,45 @@ public class ContractServiceImpl implements ContractService {
         sb.append("\n乙方签字：_______________    日期：_______________\n");
 
         return sb.toString();
+    }
+
+    /**
+     * 构建费用规则文本，兼容“计量收费/固定收费/房租已含”三种类型。
+     */
+    private String buildFeeRule(String feeType, BigDecimal amount, String unit) {
+        if ("INCLUDED".equalsIgnoreCase(feeType)) {
+            return "房租已包含";
+        }
+        if ("FIXED".equalsIgnoreCase(feeType)) {
+            if (amount != null) {
+                return "固定费用" + amount + unit;
+            }
+            return "固定费用，具体金额按双方确认清单执行";
+        }
+        if ("METERED".equalsIgnoreCase(feeType)) {
+            if (amount != null) {
+                return "按表计量，单价" + amount + unit;
+            }
+            return "按表计量，据实结算";
+        }
+        if (amount != null) {
+            return "按双方约定执行（参考金额" + amount + unit + "）";
+        }
+        return "按双方约定执行";
+    }
+
+    /**
+     * 身份证号脱敏展示：保留前 6 位与后 4 位，降低敏感信息泄露风险。
+     */
+    private String maskIdCard(String idCard) {
+        if (!StringUtils.hasText(idCard)) {
+            return "";
+        }
+        String trimmed = idCard.trim();
+        if (trimmed.length() <= 8) {
+            return trimmed;
+        }
+        return trimmed.substring(0, 6) + "********" + trimmed.substring(trimmed.length() - 4);
     }
 
     /**
@@ -329,7 +383,8 @@ public class ContractServiceImpl implements ContractService {
             User tenant = userMapper.selectById(contract.getTenantId());
             if (tenant != null) {
                 tenant.setPassword(null);
-                tenant.setIdCard(null);
+                // 合同详情仅返回脱敏身份证号，既满足合同展示诉求，也避免泄露敏感信息。
+                tenant.setIdCard(maskIdCard(tenant.getIdCard()));
                 contract.setTenant(tenant);
             }
         }
@@ -337,12 +392,18 @@ public class ContractServiceImpl implements ContractService {
             User landlord = userMapper.selectById(contract.getLandlordId());
             if (landlord != null) {
                 landlord.setPassword(null);
-                landlord.setIdCard(null);
+                landlord.setIdCard(maskIdCard(landlord.getIdCard()));
                 contract.setLandlord(landlord);
             }
         }
         if (contract.getHouseId() != null) {
             contract.setHouse(houseMapper.selectById(contract.getHouseId()));
+        }
+        if (contract.getOrderId() != null) {
+            Order order = orderMapper.selectById(contract.getOrderId());
+            if (order != null) {
+                contract.setOrderNo(order.getOrderNo());
+            }
         }
         return contract;
     }

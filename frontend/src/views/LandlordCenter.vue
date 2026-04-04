@@ -53,34 +53,60 @@
             <div v-if="ordersLoading">
               <el-skeleton :rows="4" animated />
             </div>
-            <div v-else-if="landlordOrders.length > 0">
+            <div v-else-if="landlordOrders.length > 0" class="table-card orders-table">
+              <div class="table-head">
+                <span>预约房源</span>
+                <span>租客</span>
+                <span>预约时间</span>
+                <span>订单状态</span>
+                <span>支付状态</span>
+                <span>操作</span>
+              </div>
               <div
                 v-for="order in landlordOrders"
                 :key="order.id"
-                class="order-item"
+                class="table-row"
               >
-                <div class="order-info">
-                  <div>
-                    <span class="order-title">{{ order.house?.title || order.houseTitle || `房源#${order.houseId}` }}</span>
-                    <span class="tenant-name"> — 租客：{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
-                  </div>
+                <span class="title-cell">{{ order.house?.title || order.houseTitle || `房源#${order.houseId}` }}</span>
+                <span>{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
+                <span>{{ formatDateTime(order.appointmentTime) }}</span>
+                <span>
                   <el-tag :type="orderStatusType(order.status)" size="small">
                     {{ orderStatusLabel(order.status) }}
                   </el-tag>
-                </div>
-                <div class="order-meta">
-                  <span>预约时间：{{ formatDateTime(order.appointmentTime) }}</span>
-                  <span>订单状态：{{ orderStatusLabel(order.status) }}</span>
-                  <span>支付状态：{{ paymentStatusLabel(order.paymentStatus) }}</span>
-                  <span>押金：¥{{ order.deposit ?? '-' }}</span>
-                  <span v-if="order.remark || order.message">留言：{{ order.remark || order.message }}</span>
-                </div>
-                <div class="order-actions" v-if="order.status === 'PENDING'">
-                  <el-button size="small" type="success" @click="handleConfirmOrder(order.id)">确认预约</el-button>
-                  <el-button size="small" type="danger" @click="openRejectDialog(order)">拒绝</el-button>
-                </div>
-                <div class="order-actions" v-else>
-                  <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看详情</el-button>
+                </span>
+                <span>
+                  <el-tag :type="paymentStatusType(order.paymentStatus)" size="small">
+                    {{ paymentStatusLabel(order.paymentStatus) }}
+                  </el-tag>
+                </span>
+                <div class="row-actions">
+                  <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看订单</el-button>
+                  <el-button
+                    v-if="order.contractId"
+                    size="small"
+                    type="primary"
+                    plain
+                    @click="$router.push(`/contracts/${order.contractId}`)"
+                  >
+                    查看合同
+                  </el-button>
+                  <el-button
+                    v-if="order.status === 'PENDING'"
+                    size="small"
+                    type="success"
+                    @click="handleConfirmOrder(order.id)"
+                  >
+                    确认预约
+                  </el-button>
+                  <el-button
+                    v-if="order.status === 'PENDING'"
+                    size="small"
+                    type="danger"
+                    @click="openRejectDialog(order)"
+                  >
+                    拒绝
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -92,24 +118,41 @@
             <div v-if="contractsLoading">
               <el-skeleton :rows="4" animated />
             </div>
-            <div v-else-if="contracts.length > 0">
+            <div v-else-if="contracts.length > 0" class="table-card contracts-table">
+              <div class="table-head">
+                <span>合同编号</span>
+                <span>租客</span>
+                <span>租期</span>
+                <span>月租</span>
+                <span>状态</span>
+                <span>操作</span>
+              </div>
               <div
                 v-for="contract in contracts"
                 :key="contract.id"
-                class="contract-item"
+                class="table-row"
               >
-                <div class="contract-info">
-                  <span class="contract-no">合同编号：{{ contract.contractNo || contract.id }}</span>
+                <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
+                <span>{{ contract.tenantName || contract.tenant?.realName || contract.tenant?.username || contract.tenantId }}</span>
+                <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
+                <span>¥{{ contract.monthlyRent ?? contract.rent }}</span>
+                <span>
                   <el-tag :type="contractStatusType(contract.status)" size="small">
                     {{ contractStatusLabel(contract.status) }}
                   </el-tag>
+                </span>
+                <div class="row-actions">
+                  <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
+                  <el-button
+                    v-if="contract.orderId"
+                    size="small"
+                    type="primary"
+                    plain
+                    @click="$router.push(`/orders/${contract.orderId}`)"
+                  >
+                    查看订单
+                  </el-button>
                 </div>
-                <div class="contract-meta">
-                  <span>租客：{{ contract.tenantName || contract.tenantId }}</span>
-                  <span>租期：{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                  <span>月租：¥{{ contract.monthlyRent ?? contract.rent }}</span>
-                </div>
-                <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
               </div>
             </div>
             <el-empty v-else description="暂无合同记录" />
@@ -385,6 +428,8 @@ function formatDateTime(date) {
   display: flex;
   flex-direction: column;
   background: #f0f2f5;
+  --orders-table-cols: 2fr 1.1fr 1.4fr 1fr 1fr 2.2fr; /* title | tenant | appointment | orderStatus | paymentStatus | actions */
+  --contracts-table-cols: 1.6fr 1.1fr 1.5fr 1fr 1fr 1.6fr; /* number | tenant | lease | rent | status | actions */
 }
 
 .page-content {
@@ -486,43 +531,88 @@ function formatDateTime(date) {
   flex-shrink: 0;
 }
 
-.order-item, .contract-item {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  border: 1px solid #ebeef5;
+.table-card {
+  border: 1px solid #edf0f5;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.order-info, .contract-info {
-  display: flex;
+.orders-table .table-head,
+.orders-table .table-row {
+  display: grid;
+  grid-template-columns: var(--orders-table-cols);
+  gap: 12px;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
 }
 
-.order-title, .contract-no {
+.contracts-table .table-head,
+.contracts-table .table-row {
+  display: grid;
+  grid-template-columns: var(--contracts-table-cols);
+  gap: 12px;
+  align-items: center;
+}
+
+.table-head {
+  background: #f8f9fc;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.table-row {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f3f8;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.title-cell {
+  color: #1f2937;
   font-weight: 600;
-  color: #303133;
 }
 
-.tenant-name {
-  font-size: 13px;
-  color: #909399;
-}
-
-.order-meta, .contract-meta {
+.row-actions {
   display: flex;
-  gap: 20px;
-  font-size: 13px;
-  color: #909399;
-  margin-bottom: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .order-actions {
   display: flex;
   gap: 8px;
+}
+
+.orders-table :deep(.el-tag),
+.contracts-table :deep(.el-tag) {
+  width: fit-content;
+}
+
+@media (max-width: 1100px) {
+  .orders-table .table-head,
+  .orders-table .table-row,
+  .contracts-table .table-head,
+  .contracts-table .table-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .table-row {
+    background: #fff;
+    margin-bottom: 8px;
+    border: 1px solid #edf0f5;
+    border-radius: 10px;
+  }
 }
 
 .stats-cards {
