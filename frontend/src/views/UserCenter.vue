@@ -228,7 +228,7 @@
               <template #label>
                 <div class="tab-label">
                   <el-icon><Star /></el-icon>
-                  <span>评价管理</span>
+                  <span>{{ isLandlord ? '收到的评价' : '评价管理' }}</span>
                 </div>
               </template>
               <div v-if="reviewsLoading">
@@ -241,13 +241,14 @@
                     <el-rate :model-value="review.rating || 0" disabled show-score />
                   </div>
                   <div class="review-item-meta">
+                    <span v-if="isLandlord">租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
                     <span>订单ID：{{ review.orderId }}</span>
                     <span>{{ formatDateTime(review.createTime) }}</span>
                   </div>
                   <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
                 </div>
               </div>
-              <el-empty v-else description="暂无评价记录" />
+              <el-empty v-else :description="isLandlord ? '暂无收到的评价' : '暂无评价记录'" />
             </el-tab-pane>
 
             <!-- Favorites Tab -->
@@ -417,7 +418,7 @@ import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
-import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder, reviewOrder, getTenantReviewRecords } from '../api/order.js'
+import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder, reviewOrder, getTenantReviewRecords, getLandlordReviewRecords } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
@@ -437,7 +438,10 @@ const myOrders = ref([])              // 当前用户的预约订单列表
 const myContracts = ref([])           // 当前用户的合同列表
 const myCollections = ref([])         // 收藏的房源列表
 const messages = ref([])              // 消息通知列表
-const reviewRecords = ref([])         // 当前用户提交的评价列表
+// 评价管理列表数据：
+// - 租客：展示“我提交的评价”
+// - 房东：展示“我收到的评价”
+const reviewRecords = ref([])
 const reviewDialogVisible = ref(false) // 评价弹窗显隐
 const submittingReview = ref(false)    // 提交评价按钮 loading
 const reviewTargetOrder = ref(null)    // 当前正在评价的订单
@@ -470,6 +474,7 @@ const roleLabel = computed(() => {
   return map[userInfo.value.role] || userInfo.value.role || '用户'
 })
 const isTenant = computed(() => userInfo.value.role === 'TENANT')
+const isLandlord = computed(() => userInfo.value.role === 'LANDLORD')
 /**
  * 允许通过 URL query 指定的标签页白名单，避免无效参数污染界面状态。
  * 例如：/user-center?tab=orders 会自动切换到“预约管理”。
@@ -640,20 +645,30 @@ async function loadMessages() {
 }
 
 /**
- * 加载当前租客提交的评价记录：
- * 用户中心只对租客展示评价管理，非租客时直接清空，避免无效请求。
+ * 加载评价管理数据（按角色分流）：
+ * 1) TENANT：调用“我提交的评价”接口；
+ * 2) LANDLORD：调用“我收到的评价”接口；
+ * 3) 其他角色（如 ADMIN）：不发起请求，直接置空列表。
+ *
+ * 这样可避免房东在个人中心进入“评价管理”时仍走租客接口，
+ * 导致页面错误显示“暂无评价记录”。
  */
 async function loadReviewRecords() {
-  if (!isTenant.value) {
+  if (!isTenant.value && !isLandlord.value) {
     reviewRecords.value = []
     reviewsLoading.value = false
     return
   }
   reviewsLoading.value = true
   try {
-    const res = await getTenantReviewRecords({ page: 1, size: 50 })
+    const res = isLandlord.value
+      ? await getLandlordReviewRecords({ page: 1, size: 50 })
+      : await getTenantReviewRecords({ page: 1, size: 50 })
     reviewRecords.value = Array.isArray(res) ? res : (res?.records || [])
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    // 失败时清空列表，避免保留旧数据误导用户
+    reviewRecords.value = []
+  }
   finally { reviewsLoading.value = false }
 }
 
