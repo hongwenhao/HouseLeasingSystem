@@ -63,6 +63,13 @@ public class HouseServiceImpl implements HouseService {
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 发布并立即上线房源时清除热门房源缓存
     public House addHouse(House house, Long ownerId) {
+        User owner = userMapper.selectById(ownerId);
+        if (owner == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (owner.getCreditScore() != null && owner.getCreditScore() < 0) {
+            throw new BusinessException(403, "当前信用分过低，暂不可发布房源");
+        }
         house.setOwnerId(ownerId);
         house.setStatus("ONLINE"); // 新房源默认状态为已上线
         house.setViewCount(0);

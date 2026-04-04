@@ -4,6 +4,7 @@ import com.houseleasing.common.PageResult;
 import com.houseleasing.common.Result;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.OrderCreateRequest;
+import com.houseleasing.dto.OrderReviewRequest;
 import com.houseleasing.entity.Order;
 import com.houseleasing.entity.User;
 import com.houseleasing.mapper.UserMapper;
@@ -160,6 +161,24 @@ public class OrderController {
                                     @AuthenticationPrincipal UserDetails userDetails) {
         User user = resolveUser(userDetails.getUsername());
         orderService.refundOrder(id, user.getId());
+        return Result.success();
+    }
+
+    /**
+     * 租客对已完成订单进行评价
+     *
+     * @param id 订单 ID
+     * @param request 评价请求
+     * @param userDetails 当前登录租客
+     * @return 操作成功响应
+     */
+    @Operation(summary = "Review completed order (tenant)")
+    @PostMapping("/{id}/review")
+    public Result<Void> reviewOrder(@PathVariable Long id,
+                                    @RequestBody OrderReviewRequest request,
+                                    @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        orderService.reviewOrder(id, user.getId(), request);
         return Result.success();
     }
 

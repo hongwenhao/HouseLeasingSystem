@@ -2,6 +2,7 @@ package com.houseleasing.service;
 
 import com.houseleasing.common.PageResult;
 import com.houseleasing.dto.OrderCreateRequest;
+import com.houseleasing.dto.OrderReviewRequest;
 import com.houseleasing.entity.Order;
 
 /**
@@ -102,4 +103,13 @@ public interface OrderService {
      * @param tenantId  当前租客用户 ID（用于权限校验）
      */
     void refundOrder(Long orderId, Long tenantId);
+
+    /**
+     * 租客对已完成订单进行评价，并按评分调整房东信用分
+     *
+     * @param orderId 订单 ID
+     * @param tenantId 当前租客用户 ID
+     * @param request 评价请求
+     */
+    void reviewOrder(Long orderId, Long tenantId, OrderReviewRequest request);
 }
