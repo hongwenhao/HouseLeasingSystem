@@ -112,11 +112,11 @@ public class MessageProducer {
                         buildMessage(userId, "登录提醒", content));
                 log.debug("Sent login notification to queue for user {}", userId);
             } else {
-                saveMessageDirectly(userId, "登录提醒", content, "LOGIN");
+                saveMessageDirectly(userId, "登录提醒", content, "SYSTEM");
             }
         } catch (Exception e) {
             log.warn("RabbitMQ unavailable, saving login message directly: {}", e.getMessage());
-            saveMessageDirectly(userId, "登录提醒", content, "LOGIN");
+            saveMessageDirectly(userId, "登录提醒", content, "SYSTEM");
         }
     }
 
