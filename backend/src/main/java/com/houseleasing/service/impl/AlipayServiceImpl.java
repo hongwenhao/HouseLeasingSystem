@@ -145,7 +145,7 @@ public class AlipayServiceImpl implements AlipayService {
         String tradeStatus = resolveTradeStatus(params, outTradeNo);
         // 若回跳缺参且主动查询也失败，此时无法可靠确认支付结果，需明确告知用户稍后重试。
         if (!StringUtils.hasText(tradeStatus)) {
-            throw new BusinessException(400, "暂时无法确认支付状态，请稍后在订单列表刷新重试");
+            throw new BusinessException(400, "暂时无法确认支付状态，请在1-3分钟后到订单列表刷新查看；若仍未更新请联系管理员处理");
         }
         if (!TRADE_SUCCESS.equals(tradeStatus) && !TRADE_FINISHED.equals(tradeStatus)) {
             throw new BusinessException(400, "支付未成功（当前状态：" + mapTradeStatusLabel(tradeStatus) + "），请完成支付后重试");
@@ -196,6 +196,7 @@ public class AlipayServiceImpl implements AlipayService {
         request.setBizModel(model);
         try {
             AlipayTradeQueryResponse response = alipayClient.execute(request);
+            // 防御式编程：SDK 正常应返回对象，但若出现底层网络/反序列化边界异常导致空响应，这里避免空指针并给出可观测日志。
             if (response == null) {
                 log.warn("支付宝交易查询返回空响应，outTradeNo={}", outTradeNo);
                 return null;
