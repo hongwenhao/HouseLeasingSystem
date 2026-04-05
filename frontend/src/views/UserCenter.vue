@@ -138,12 +138,21 @@
                   <span>我的收藏</span>
                 </div>
               </template>
+              <div class="table-toolbar">
+                <!-- 收藏搜索栏：按房源标题、地址、租金等关键字进行前端筛选 -->
+                <el-input
+                  v-model.trim="collectionSearchKeyword"
+                  class="search-input"
+                  clearable
+                  placeholder="搜索收藏（标题/地址/租金）"
+                />
+              </div>
               <div v-if="collectionsLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-              <div v-else-if="myCollections.length > 0" class="favorites-grid">
+              <div v-else-if="filteredMyCollections.length > 0" class="favorites-grid">
                 <HouseCard
-                  v-for="house in myCollections"
+                  v-for="house in filteredMyCollections"
                   :key="house.id"
                   :house="house"
                 />
@@ -159,10 +168,19 @@
                   <span>预约订单管理</span>
                 </div>
               </template>
+              <div class="table-toolbar">
+                <!-- 预约订单搜索栏：按房源、状态、支付、时间等信息快速过滤 -->
+                <el-input
+                  v-model.trim="orderSearchKeyword"
+                  class="search-input"
+                  clearable
+                  placeholder="搜索预约订单（房源/状态/支付/时间）"
+                />
+              </div>
               <div v-if="ordersLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-                <div v-else-if="myOrders.length > 0" class="table-card orders-table">
+                <div v-else-if="filteredMyOrders.length > 0" class="table-card orders-table">
                 <div class="table-head">
                   <span>预约房源</span>
                   <span>预约时间</span>
@@ -172,7 +190,7 @@
                   <span class="action-head">操作</span>
                 </div>
                 <div
-                  v-for="order in myOrders"
+                  v-for="order in filteredMyOrders"
                   :key="order.id"
                   class="table-row"
                 >
@@ -252,10 +270,19 @@
                   <span>合同管理</span>
                 </div>
               </template>
+              <div class="table-toolbar">
+                <!-- 合同搜索栏：按合同编号、租期、状态、租金等字段筛选 -->
+                <el-input
+                  v-model.trim="contractSearchKeyword"
+                  class="search-input"
+                  clearable
+                  placeholder="搜索合同（编号/租期/状态/租金）"
+                />
+              </div>
               <div v-if="contractsLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-              <div v-else-if="myContracts.length > 0" class="table-card contracts-table">
+              <div v-else-if="filteredMyContracts.length > 0" class="table-card contracts-table">
                 <div class="table-head">
                   <span>合同编号</span>
                   <span>租期</span>
@@ -264,7 +291,7 @@
                   <span class="action-head">操作</span>
                 </div>
                 <div
-                  v-for="contract in myContracts"
+                  v-for="contract in filteredMyContracts"
                   :key="contract.id"
                   class="table-row"
                 >
@@ -438,6 +465,9 @@ const reviewsLoading = ref(false)     // 评价列表加载状态
 const myOrders = ref([])              // 当前用户的预约订单列表
 const myContracts = ref([])           // 当前用户的合同列表
 const myCollections = ref([])         // 收藏的房源列表
+const collectionSearchKeyword = ref('') // 收藏搜索关键字（仅前端过滤，避免额外接口开销）
+const orderSearchKeyword = ref('')      // 预约订单搜索关键字（仅前端过滤，避免额外接口开销）
+const contractSearchKeyword = ref('')   // 合同搜索关键字（仅前端过滤，避免额外接口开销）
 const messages = ref([])              // 消息通知列表
 // 评价管理列表数据：
 // - 租客：展示“我提交的评价”
@@ -481,6 +511,66 @@ const isLandlord = computed(() => userInfo.value.role === 'LANDLORD')
  * 例如：/user-center?tab=orders 会自动切换到“预约管理”。
  */
 const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'reviews', 'credit']
+
+/**
+ * 统一搜索文本归一化函数：
+ * 1) 将 null/undefined 安全转换为空串；
+ * 2) 去除首尾空格；
+ * 3) 小写化，保证匹配不区分大小写。
+ */
+function normalizeSearchText(value) {
+  return String(value ?? '').trim().toLowerCase()
+}
+
+/**
+ * 判断关键字是否命中候选字段：
+ * - 关键字为空时，默认返回 true（展示全部数据）；
+ * - 关键字非空时，只要任一候选字段包含关键字即命中。
+ */
+function containsKeyword(keyword, candidates) {
+  const normalizedKeyword = normalizeSearchText(keyword)
+  if (!normalizedKeyword) return true
+  return candidates.some(item => normalizeSearchText(item).includes(normalizedKeyword))
+}
+
+/**
+ * 收藏列表前端搜索结果：
+ * 支持标题、城市、区县、地址、租金、面积字段，便于租客在收藏中快速定位房源。
+ */
+const filteredMyCollections = computed(() => myCollections.value.filter(house => containsKeyword(collectionSearchKeyword.value, [
+  house.title,
+  house.city,
+  house.district,
+  house.address,
+  house.price,
+  house.area
+])))
+
+/**
+ * 预约订单前端搜索结果：
+ * 支持房源名、状态、支付状态、预约时间、创建时间等常用字段。
+ */
+const filteredMyOrders = computed(() => myOrders.value.filter(order => containsKeyword(orderSearchKeyword.value, [
+  getOrderHouseTitleWithFallback(order),
+  orderStatusLabel(order.status),
+  paymentStatusLabel(order.paymentStatus),
+  formatDateTime(order.appointmentTime),
+  formatDate(order.createTime || order.createdAt)
+])))
+
+/**
+ * 合同列表前端搜索结果：
+ * 支持合同编号、状态、租期时间、租金字段，适配租客与房东两侧的合同查询场景。
+ */
+const filteredMyContracts = computed(() => myContracts.value.filter(contract => containsKeyword(contractSearchKeyword.value, [
+  contract.contractNo,
+  contract.id,
+  contractStatusLabel(contract.status),
+  formatDate(contract.startDate),
+  formatDate(contract.endDate),
+  contract.monthlyRent,
+  contract.rent
+])))
 
 // 资料编辑表单（初始值从 store 取）
 const profileForm = reactive({
@@ -1082,6 +1172,15 @@ function getOrderHouseTitleWithFallback(order) {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
   padding: 16px 0;
+}
+
+.table-toolbar {
+  margin: 16px 0 12px;
+}
+
+.search-input {
+  width: 320px;
+  max-width: 100%;
 }
 
 .tab-label {
