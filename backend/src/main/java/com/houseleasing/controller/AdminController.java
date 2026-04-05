@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -63,6 +64,13 @@ public class AdminController {
     private static final String CREDIT_RANGE_GOOD = "70-89(良好)";
     private static final String CREDIT_RANGE_NORMAL = "60-69(一般)";
     private static final String CREDIT_RANGE_LOW = "60以下(较低)";
+    /**
+     * 后台订单状态白名单（统一使用大写枚举值）：
+     * 当 keyword 命中该集合时，按状态精确过滤；否则按订单号模糊过滤。
+     */
+    private static final Set<String> ORDER_STATUS_KEYWORDS = Set.of(
+            "PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"
+    );
 
     private static final String CREDIT_RANGE_CASE_SQL =
             "CASE " +
@@ -140,12 +148,17 @@ public class AdminController {
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         // 管理员订单检索增强：
-        // 1) 支持按订单号（order_no）模糊匹配，覆盖客服/工单按编号定位场景；
-        // 2) 同时保留按订单状态检索能力，兼容原有管理筛选习惯；
+        // 1) 若 keyword 命中状态枚举，则按状态精确匹配（大小写不敏感）；
+        // 2) 否则按订单号模糊匹配，覆盖客服/工单按编号定位场景；
         // 3) 关键词为空时不加筛选条件，保持历史行为不变。
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(Order::getOrderNo, keyword)
-                    .or().like(Order::getStatus, keyword));
+            String trimmedKeyword = keyword.trim();
+            String normalizedStatusKeyword = trimmedKeyword.toUpperCase(Locale.ROOT);
+            if (ORDER_STATUS_KEYWORDS.contains(normalizedStatusKeyword)) {
+                wrapper.eq(Order::getStatus, normalizedStatusKeyword);
+            } else {
+                wrapper.like(Order::getOrderNo, trimmedKeyword);
+            }
         }
         wrapper.orderByDesc(Order::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
