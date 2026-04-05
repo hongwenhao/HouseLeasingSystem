@@ -30,6 +30,12 @@ export const updateHouse = (id, data) => request.put(`/houses/${id}`, data)
 /** 删除指定房源 */
 export const deleteHouse = (id) => request.delete(`/houses/${id}`)
 
+/** 房东上架自己的房源 */
+export const putMyHouseOnline = (id) => request.put(`/houses/${id}/online`)
+
+/** 房东下架自己的房源 */
+export const putMyHouseOffline = (id) => request.put(`/houses/${id}/offline`)
+
 /** 获取当前登录房东发布的房源列表 */
 export const getMyHouses = (params) => request.get('/houses/my', { params })
 

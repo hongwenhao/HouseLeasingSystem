@@ -231,6 +231,40 @@ public class HouseController {
     }
 
     /**
+     * 房东主动上架自己的房源（需要认证，且只能操作自己的房源）。
+     *
+     * @param id          房源 ID
+     * @param userDetails 当前登录用户信息
+     * @return 操作成功响应
+     */
+    @Operation(summary = "Put own house online")
+    @PutMapping("/{id}/online")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public Result<Void> putMyHouseOnline(@PathVariable Long id,
+                                         @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        houseService.putHouseOnline(id, user.getId());
+        return Result.success();
+    }
+
+    /**
+     * 房东主动下架自己的房源（需要认证，且只能操作自己的房源）。
+     *
+     * @param id          房源 ID
+     * @param userDetails 当前登录用户信息
+     * @return 操作成功响应
+     */
+    @Operation(summary = "Put own house offline")
+    @PutMapping("/{id}/offline")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public Result<Void> putMyHouseOffline(@PathVariable Long id,
+                                          @AuthenticationPrincipal UserDetails userDetails) {
+        User user = resolveUser(userDetails.getUsername());
+        houseService.putHouseOffline(id, user.getId());
+        return Result.success();
+    }
+
+    /**
      * 取消收藏指定房源（需要认证）
      *
      * @param id          要取消收藏的房源 ID

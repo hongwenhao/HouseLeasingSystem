@@ -120,7 +120,7 @@
               </div>
 
               <!-- 操作按钮 -->
-              <div class="action-btns">
+              <div v-if="shouldShowBookingActions" class="action-btns">
                 <el-button
                   type="primary"
                   size="large"
@@ -251,6 +251,9 @@ const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
+const isLandlord = computed(() => userStore.userInfo.role === 'LANDLORD')
+// 仅租客或未登录访客显示预约/收藏入口: 访客点击后会被引导登录
+const shouldShowBookingActions = computed(() => !isLandlord.value)
 const normalizedImages = computed(() => {
   const images = normalizeHouseImages(house.value?.images)
   return images.length > 0 ? images : [placeholder]
@@ -379,6 +382,11 @@ function handleBook() {
   if (!token) {
     ElMessage.warning('请先登录')
     router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  // 防御式校验：即使被非常规方式触发（如控制台调用），也阻止房东/管理员预约
+  if (!isTenant.value) {
+    ElMessage.warning('仅租客可以预约看房')
     return
   }
   appointmentVisible.value = true

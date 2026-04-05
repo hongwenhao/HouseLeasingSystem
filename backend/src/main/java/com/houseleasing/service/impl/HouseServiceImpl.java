@@ -51,6 +51,8 @@ public class HouseServiceImpl implements HouseService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String BEHAVIOR_COLLECT = "COLLECT";
+    private static final String HOUSE_STATUS_ONLINE = "ONLINE";
+    private static final String HOUSE_STATUS_OFFLINE = "OFFLINE";
     private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0;
 
     /**
@@ -72,7 +74,7 @@ public class HouseServiceImpl implements HouseService {
             throw new BusinessException(403, "当前信用分过低，暂不可发布房源");
         }
         house.setOwnerId(ownerId);
-        house.setStatus("ONLINE"); // 新房源默认状态为已上线
+        house.setStatus(HOUSE_STATUS_ONLINE); // 新房源默认状态为已上线
         house.setViewCount(0);
         house.setCreateTime(LocalDateTime.now());
         house.setUpdateTime(LocalDateTime.now());
@@ -210,6 +212,62 @@ public class HouseServiceImpl implements HouseService {
     }
 
     /**
+     * 房东主动上架自己的房源。
+     * <p>安全约束：</p>
+     * <ul>
+     *   <li>房源必须存在，否则返回 404。</li>
+     *   <li>仅房源所有者可操作，否则返回 403。</li>
+     * </ul>
+     * <p>业务效果：将 status 设置为 ONLINE，并刷新更新时间。</p>
+     *
+     * @param id      房源 ID
+     * @param ownerId 当前操作房东 ID
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "hotHouses", allEntries = true)
+    public void putHouseOnline(Long id, Long ownerId) {
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限操作该房源");
+        }
+        existing.setStatus(HOUSE_STATUS_ONLINE);
+        existing.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(existing);
+    }
+
+    /**
+     * 房东主动下架自己的房源。
+     * <p>安全约束：</p>
+     * <ul>
+     *   <li>房源必须存在，否则返回 404。</li>
+     *   <li>仅房源所有者可操作，否则返回 403。</li>
+     * </ul>
+     * <p>业务效果：将 status 设置为 OFFLINE，并刷新更新时间。</p>
+     *
+     * @param id      房源 ID
+     * @param ownerId 当前操作房东 ID
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "hotHouses", allEntries = true)
+    public void putHouseOffline(Long id, Long ownerId) {
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限操作该房源");
+        }
+        existing.setStatus(HOUSE_STATUS_OFFLINE);
+        existing.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(existing);
+    }
+
+    /**
      * 查询房源详情，同时尝试增加浏览量（失败不影响主流程）。
      * 图片列表优先从 house_images 明细表读取并重建 images JSON 字段，
      * 确保 house_images 表中的排序信息得到实际使用。
@@ -342,7 +400,7 @@ public class HouseServiceImpl implements HouseService {
         Map<Long, House> houseMap = houses.stream().collect(Collectors.toMap(House::getId, h -> h, (a, b) -> a));
         List<House> ordered = houseIds.stream()
                 .map(houseMap::get)
-                .filter(h -> h != null && "ONLINE".equals(h.getStatus()))
+                .filter(h -> h != null && HOUSE_STATUS_ONLINE.equals(h.getStatus()))
                 .toList();
         return PageResult.of(behaviorPage.getTotal(), ordered, (int) behaviorPage.getCurrent(), (int) behaviorPage.getSize());
     }
@@ -399,7 +457,7 @@ public class HouseServiceImpl implements HouseService {
     public List<House> getHotHouses() {
         try {
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(House::getStatus, "ONLINE");
+            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE);
             wrapper.orderByDesc(House::getViewCount);
             Page<House> page = new Page<>(1, 10);
             return houseMapper.selectPage(page, wrapper).getRecords();
