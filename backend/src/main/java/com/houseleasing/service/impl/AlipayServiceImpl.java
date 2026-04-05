@@ -4,8 +4,11 @@ import cn.hutool.json.JSONUtil;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.domain.AlipayTradePagePayModel;
+import com.alipay.api.domain.AlipayTradeQueryModel;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
+import com.alipay.api.request.AlipayTradeQueryRequest;
+import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.config.AlipayProperties;
@@ -107,7 +110,6 @@ public class AlipayServiceImpl implements AlipayService {
         }
         String outTradeNo = params.get("out_trade_no");
         String appId = params.get("app_id");
-        String tradeStatus = params.get("trade_status");
         String totalAmountStr = params.get("total_amount");
 
         if (!StringUtils.hasText(outTradeNo)) {
@@ -135,6 +137,16 @@ public class AlipayServiceImpl implements AlipayService {
             throw new BusinessException(400, "订单已退款，支付结果不可重复确认");
         }
 
+        // 兼容说明：
+        // 支付宝页面同步回跳（return_url）在部分场景下不会携带 trade_status，
+        // 例如用户浏览器重定向参数被裁剪、网关只返回最小参数集合等。
+        // 此时若直接按空状态判失败，会出现“明明已支付却提示未知状态”的误判。
+        // 因此这里先尝试使用回跳参数中的 trade_status；若缺失则主动调“交易查询”接口兜底确认。
+        String tradeStatus = resolveTradeStatus(params, outTradeNo);
+        // 若回跳缺参且主动查询也失败，此时无法可靠确认支付结果，需明确告知用户稍后重试。
+        if (!StringUtils.hasText(tradeStatus)) {
+            throw new BusinessException(400, "暂时无法确认支付状态, 请在1-3分钟后到订单列表刷新查看. 若仍未更新请联系管理员处理");
+        }
         if (!TRADE_SUCCESS.equals(tradeStatus) && !TRADE_FINISHED.equals(tradeStatus)) {
             throw new BusinessException(400, "支付未成功（当前状态：" + mapTradeStatusLabel(tradeStatus) + "），请完成支付后重试");
         }
@@ -149,6 +161,62 @@ public class AlipayServiceImpl implements AlipayService {
         orderService.payOrder(order.getId(), order.getTenantId());
         Order latest = orderMapper.selectById(order.getId());
         return new AlipaySyncVerifyResponse(true, "支付成功", latest.getId(), latest.getPaymentStatus());
+    }
+
+    /**
+     * 解析可用于业务判定的交易状态
+     *
+     * <p>优先使用同步回跳参数中的 trade_status；若缺失则主动查询支付宝交易状态。</p>
+     *
+     * @param params     回跳参数
+     * @param outTradeNo 商户订单号
+     * @return 交易状态码（可能为 null）
+     */
+    private String resolveTradeStatus(Map<String, String> params, String outTradeNo) {
+        String callbackTradeStatus = params.get("trade_status");
+        if (StringUtils.hasText(callbackTradeStatus)) {
+            return callbackTradeStatus;
+        }
+        log.warn("支付宝同步回跳缺少trade_status，开始主动查询交易状态，outTradeNo={}", outTradeNo);
+        return queryTradeStatusByOutTradeNo(outTradeNo);
+    }
+
+    /**
+     * 调用支付宝交易查询接口获取最新交易状态
+     *
+     * <p>该方法仅作为同步回跳缺少 trade_status 时的兜底，不替代验签逻辑。</p>
+     *
+     * @param outTradeNo 商户订单号
+     * @return 支付宝交易状态码；查询失败时返回 null
+     */
+    private String queryTradeStatusByOutTradeNo(String outTradeNo) {
+        AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
+        AlipayTradeQueryModel model = new AlipayTradeQueryModel();
+        model.setOutTradeNo(outTradeNo);
+        request.setBizModel(model);
+        try {
+            AlipayTradeQueryResponse response = alipayClient.execute(request);
+            // 防御式编程：SDK 正常应返回对象，但若出现底层网络/反序列化边界异常导致空响应，这里避免空指针并给出可观测日志。
+            if (response == null) {
+                log.warn("支付宝交易查询返回空响应，outTradeNo={}", outTradeNo);
+                return null;
+            }
+            if (!response.isSuccess()) {
+                log.warn(
+                        "支付宝交易查询失败，outTradeNo={}, code={}, subCode={}, msg={}, subMsg={}",
+                        outTradeNo,
+                        response.getCode(),
+                        response.getSubCode(),
+                        response.getMsg(),
+                        response.getSubMsg()
+                );
+                return null;
+            }
+            return response.getTradeStatus();
+        } catch (AlipayApiException e) {
+            log.error("支付宝交易查询异常, 将返回null状态并触发支付确认失败, outTradeNo={}", outTradeNo, e);
+            return null;
+        }
     }
 
     /**
