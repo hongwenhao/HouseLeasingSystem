@@ -307,7 +307,7 @@
               <div v-else-if="reviewRecords.length > 0" class="review-list">
                 <div v-for="review in reviewRecords" :key="review.id" class="review-item">
                   <div class="review-item-head">
-                  <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
+                    <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
                     <el-rate :model-value="review.rating || 0" disabled show-score />
                   </div>
                   <div class="review-item-meta">
