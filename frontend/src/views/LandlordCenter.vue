@@ -11,12 +11,19 @@
               <el-button type="primary" @click="router.push('/publish-house')">
                 <el-icon><Plus /></el-icon> 发布新房源
               </el-button>
+              <!-- 我的房源搜索栏：按标题、城市、区县、状态关键字进行前端过滤 -->
+              <el-input
+                v-model.trim="houseSearchKeyword"
+                class="search-input"
+                clearable
+                placeholder="搜索房源（标题/城市/区县/状态）"
+              />
             </div>
             <div v-if="housesLoading">
               <el-skeleton :rows="4" animated />
             </div>
             <!-- 我的房源：采用“表头 + 行内容”结构，明确展示房源信息、上下架状态与操作 -->
-            <div v-else-if="myHouses.length > 0" class="house-table">
+            <div v-else-if="filteredMyHouses.length > 0" class="house-table">
               <!-- 表头：新增“房源信息”导航标识，并将“上下架状态”与“操作”并列展示 -->
               <div class="house-table-head">
                 <span>房源信息</span>
@@ -24,7 +31,7 @@
                 <span class="action-col-head">操作</span>
               </div>
               <div
-                v-for="house in myHouses"
+                v-for="house in filteredMyHouses"
                 :key="house.id"
                 class="house-table-row"
               >
@@ -82,10 +89,19 @@
 
           <!-- Orders Tab -->
           <el-tab-pane label="预约管理" name="orders">
+            <div class="table-toolbar">
+              <!-- 预约订单搜索栏：按房源、租客、状态、时间等信息模糊匹配 -->
+              <el-input
+                v-model.trim="orderSearchKeyword"
+                class="search-input"
+                clearable
+                placeholder="搜索预约订单（房源/租客/状态/时间）"
+              />
+            </div>
             <div v-if="ordersLoading">
               <el-skeleton :rows="4" animated />
             </div>
-            <div v-else-if="landlordOrders.length > 0" class="table-card orders-table">
+            <div v-else-if="filteredLandlordOrders.length > 0" class="table-card orders-table">
               <div class="table-head">
                 <span>预约房源</span>
                 <span>租客</span>
@@ -95,7 +111,7 @@
                 <span class="action-head">操作</span>
               </div>
               <div
-                v-for="order in landlordOrders"
+                v-for="order in filteredLandlordOrders"
                 :key="order.id"
                 class="table-row"
               >
@@ -149,10 +165,19 @@
 
           <!-- Contracts Tab -->
           <el-tab-pane label="合同管理" name="contracts">
+            <div class="table-toolbar">
+              <!-- 合同搜索栏：按合同编号、租客、租期、状态做本地筛选 -->
+              <el-input
+                v-model.trim="contractSearchKeyword"
+                class="search-input"
+                clearable
+                placeholder="搜索合同（编号/租客/租期/状态）"
+              />
+            </div>
             <div v-if="contractsLoading">
               <el-skeleton :rows="4" animated />
             </div>
-            <div v-else-if="contracts.length > 0" class="table-card contracts-table">
+            <div v-else-if="filteredContracts.length > 0" class="table-card contracts-table">
               <div class="table-head">
                 <span>合同编号</span>
                 <span>租客</span>
@@ -162,7 +187,7 @@
                 <span class="action-head">操作</span>
               </div>
               <div
-                v-for="contract in contracts"
+                v-for="contract in filteredContracts"
                 :key="contract.id"
                 class="table-row"
               >
@@ -263,7 +288,7 @@
 
 <script setup>
 // 说明：房东中心页逻辑，管理房东的房源列表、预约订单管理、合同管理和收益统计
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
@@ -283,6 +308,9 @@ const reviewsLoading = ref(false)      // 评价列表加载状态
 const myHouses = ref([])               // 当前房东发布的所有房源
 const landlordOrders = ref([])         // 收到的预约订单列表
 const contracts = ref([])              // 参与的合同列表
+const houseSearchKeyword = ref('')     // 我的房源搜索关键字（前端本地过滤，不触发额外请求）
+const orderSearchKeyword = ref('')     // 预约订单搜索关键字（前端本地过滤，不触发额外请求）
+const contractSearchKeyword = ref('')  // 合同搜索关键字（前端本地过滤，不触发额外请求）
 const reviewRecords = ref([])          // 收到的评价列表
 const stats = ref({})                  // 统计数据（累计收益、在租数等）
 const rejectDialogVisible = ref(false) // 拒绝预约对话框显隐
@@ -292,6 +320,73 @@ const currentRejectOrder = ref(null)   // 当前正在被拒绝的订单
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 // 允许通过 query 切换的标签页白名单（仅接受已有标签，避免无效参数）
 const allowedTabs = ['houses', 'orders', 'contracts', 'stats', 'reviews']
+
+/**
+ * 将任意值统一转换为可用于搜索比较的字符串。
+ * - null/undefined 转为空串，避免出现 "undefined" 等无意义文本；
+ * - 统一转小写，保证搜索不区分大小写；
+ * - trim 去除首尾空白，减少用户输入空格造成的误差。
+ */
+function normalizeSearchText(value) {
+  return String(value ?? '').trim().toLowerCase()
+}
+
+/**
+ * 通用关键字匹配函数：只要候选字段任意一个包含关键字，即视为命中。
+ * @param {string} keyword - 用户输入的搜索关键字
+ * @param {Array<string|number|null|undefined>} candidates - 待匹配字段集合
+ */
+function containsKeyword(keyword, candidates) {
+  const normalizedKeyword = normalizeSearchText(keyword)
+  if (!normalizedKeyword) return true
+  return candidates.some(item => normalizeSearchText(item).includes(normalizedKeyword))
+}
+
+/**
+ * 我的房源搜索结果：
+ * 支持标题、城市、区县、价格、面积和状态文本过滤，方便房东快速定位目标房源。
+ */
+const filteredMyHouses = computed(() => myHouses.value.filter(house => containsKeyword(houseSearchKeyword.value, [
+  house.title,
+  house.city,
+  house.district,
+  house.price,
+  house.area,
+  houseStatusLabel(house.status)
+])))
+
+/**
+ * 预约订单搜索结果：
+ * 支持房源名、租客名、订单状态、支付状态、预约时间等字段过滤。
+ */
+const filteredLandlordOrders = computed(() => landlordOrders.value.filter(order => containsKeyword(orderSearchKeyword.value, [
+  getOrderHouseTitleWithFallback(order),
+  order.tenant?.realName,
+  order.tenant?.username,
+  order.tenantName,
+  order.tenantId,
+  orderStatusLabel(order.status),
+  paymentStatusLabel(order.paymentStatus),
+  formatDateTime(order.appointmentTime)
+])))
+
+/**
+ * 合同搜索结果：
+ * 支持合同编号、租客、状态、租期时间等字段过滤，便于查找历史合同。
+ */
+const filteredContracts = computed(() => contracts.value.filter(contract => containsKeyword(contractSearchKeyword.value, [
+  contract.contractNo,
+  contract.id,
+  contract.tenantName,
+  contract.tenant?.realName,
+  contract.tenant?.username,
+  contract.tenantId,
+  contractStatusLabel(contract.status),
+  formatDate(contract.startDate),
+  formatDate(contract.endDate),
+  contract.monthlyRent,
+  contract.rent
+])))
 
 onMounted(() => {
   // 房源和合同数据加载完成后再计算统计信息（computeStats 依赖这两项数据）
@@ -594,6 +689,19 @@ function getOrderHouseTitleWithFallback(order) {
 
 .tab-toolbar {
   margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.table-toolbar {
+  margin-bottom: 16px;
+}
+
+.search-input {
+  width: 320px;
+  max-width: 100%;
 }
 
 /* 我的房源表格容器：使用三列网格布局（房源信息 / 上下架状态 / 操作） */
