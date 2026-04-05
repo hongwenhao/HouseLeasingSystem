@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -63,6 +64,13 @@ public class AdminController {
     private static final String CREDIT_RANGE_GOOD = "70-89(良好)";
     private static final String CREDIT_RANGE_NORMAL = "60-69(一般)";
     private static final String CREDIT_RANGE_LOW = "60以下(较低)";
+    /**
+     * 后台订单状态白名单（统一使用大写枚举值）：
+     * 当 keyword 命中该集合时，按状态精确过滤；否则按订单号模糊过滤。
+     */
+    private static final Set<String> ORDER_STATUS_KEYWORDS = Set.of(
+            "PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"
+    );
 
     private static final String CREDIT_RANGE_CASE_SQL =
             "CASE " +
@@ -126,17 +134,32 @@ public class AdminController {
      *
      * @param page 当前页码
      * @param size 每页大小
+     * @param keyword 搜索关键词（可选，支持订单号与订单状态）
      * @return 所有订单的分页列表
      */
     @Operation(summary = "List all orders")
     @GetMapping("/orders")
     public Result<PageResult<Order>> listAllOrders(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        // 管理员订单检索增强：
+        // 1) 若 keyword 命中状态枚举，则按状态精确匹配（大小写不敏感）；
+        // 2) 否则按订单号模糊匹配，覆盖客服/工单按编号定位场景；
+        // 3) 关键词为空时不加筛选条件，保持历史行为不变。
+        if (StringUtils.hasText(keyword)) {
+            String trimmedKeyword = keyword.trim();
+            String normalizedStatusKeyword = trimmedKeyword.toUpperCase(Locale.ROOT);
+            if (ORDER_STATUS_KEYWORDS.contains(normalizedStatusKeyword)) {
+                wrapper.eq(Order::getStatus, normalizedStatusKeyword);
+            } else {
+                wrapper.like(Order::getOrderNo, trimmedKeyword);
+            }
+        }
         wrapper.orderByDesc(Order::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
         List<Order> records = result.getRecords();

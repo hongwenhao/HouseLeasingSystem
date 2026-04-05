@@ -153,6 +153,23 @@
 
           <!-- Order Management Tab -->
           <el-tab-pane label="订单管理" name="orders">
+            <!-- 管理员订单搜索：支持按订单号快速检索，并兼容状态关键字筛选 -->
+            <div class="tab-toolbar">
+              <div class="toolbar-row">
+                <el-input
+                  v-model.trim="orderKeyword"
+                  clearable
+                  placeholder="搜索订单（订单号/状态）"
+                  style="max-width: 360px"
+                  @keyup.enter="loadOrders"
+                  @clear="loadOrders"
+                >
+                  <template #append>
+                    <el-button @click="loadOrders">搜索</el-button>
+                  </template>
+                </el-input>
+              </div>
+            </div>
             <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="orderNo" label="订单编号" min-width="160" />
@@ -244,6 +261,7 @@ const houseMgmtKeyword = ref('')          // 房源管理关键词
 
 const orders = ref([])                   // 管理员订单列表
 const ordersLoading = ref(false)         // 订单列表加载状态
+const orderKeyword = ref('')             // 管理员订单搜索关键字（订单号/状态）
 
 const contracts = ref([])                // 管理员合同列表
 const contractsLoading = ref(false)      // 合同列表加载状态
@@ -304,11 +322,19 @@ async function loadHouseManagementList() {
   }
 }
 
-/** 加载管理员订单列表 */
+/**
+ * 加载管理员订单列表（支持关键词）：
+ * - keyword 为空：按创建时间倒序返回订单；
+ * - keyword 非空：后端按订单号与状态做筛选，便于管理员快速定位目标订单。
+ */
 async function loadOrders() {
   ordersLoading.value = true
   try {
-    const res = await getOrderList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
+    const res = await getOrderList({
+      page: 1,
+      size: DEFAULT_ADMIN_PAGE_SIZE,
+      keyword: orderKeyword.value || undefined
+    })
     orders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
     ElMessage.error(e.message || '加载订单失败')

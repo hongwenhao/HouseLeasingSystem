@@ -169,12 +169,12 @@
                 </div>
               </template>
               <div class="table-toolbar">
-                <!-- 预约订单搜索栏：按房源、状态、支付、时间等信息快速过滤 -->
+                <!-- 预约订单搜索栏：按订单号、房源、状态、支付、时间等信息快速过滤 -->
                 <el-input
                   v-model.trim="orderSearchKeyword"
                   class="search-input"
                   clearable
-                  placeholder="搜索预约订单（房源/状态/支付/时间）"
+                  placeholder="搜索预约订单（订单号/房源/状态/支付/时间）"
                 />
               </div>
               <div v-if="ordersLoading">
@@ -548,9 +548,13 @@ const filteredMyCollections = computed(() => myCollections.value.filter(house =>
 
 /**
  * 预约订单前端搜索结果：
- * 支持房源名、状态、支付状态、预约时间、创建时间等常用字段。
+ * 支持订单号、房源名、状态、支付状态、预约时间、创建时间等常用字段。
+ * 说明：
+ * - 订单号(orderNo)是用户在客服沟通、线下核对时最常使用的唯一标识；
+ * - 这里将 orderNo 加入候选字段后，租客/房东可直接输入订单号快速定位目标预约。
  */
 const filteredMyOrders = computed(() => myOrders.value.filter(order => containsKeyword(orderSearchKeyword.value, [
+  order.orderNo,
   getOrderHouseTitleWithFallback(order),
   orderStatusLabel(order.status),
   paymentStatusLabel(order.paymentStatus),
