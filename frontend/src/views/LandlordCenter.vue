@@ -200,7 +200,7 @@
             <div v-else-if="reviewRecords.length > 0" class="review-list">
               <div v-for="review in reviewRecords" :key="review.id" class="review-item">
                 <div class="review-item-head">
-                  <h4 class="title-cell">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
+                  <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
                   <el-rate :model-value="review.rating || 0" disabled show-score />
                 </div>
                 <div class="review-item-meta">
@@ -550,7 +550,7 @@ function getOrderHouseTitleWithFallback(order) {
   display: flex;
   flex-direction: column;
   background: #f0f2f5;
-  --house-table-cols: minmax(0, 1fr) 140px 300px; /* info | status | actions */
+  --house-table-cols: minmax(0, 1fr) minmax(120px, 160px) minmax(220px, 320px); /* info | status | actions */
   --orders-table-cols: 2fr 1.1fr 1.4fr 1fr 1fr 2.2fr; /* title | tenant | appointment | orderStatus | paymentStatus | actions */
   --contracts-table-cols: 1.6fr 1.1fr 1.5fr 1fr 1fr 1.6fr; /* number | tenant | lease | rent | status | actions */
 }
@@ -705,7 +705,7 @@ function getOrderHouseTitleWithFallback(order) {
 /* 中屏适配：缩小“状态/操作”列宽，避免平板尺寸出现拥挤 */
 @media (max-width: 1280px) {
   .landlord-center-page {
-    --house-table-cols: minmax(0, 1fr) 128px 260px;
+    --house-table-cols: minmax(0, 1fr) minmax(116px, 144px) minmax(210px, 280px);
   }
 }
 
@@ -786,7 +786,6 @@ function getOrderHouseTitleWithFallback(order) {
 }
 
 @media (max-width: 1100px) {
-  .house-table-head,
   .house-table-row,
   .orders-table .table-head,
   .orders-table .table-row,
@@ -861,6 +860,11 @@ function getOrderHouseTitleWithFallback(order) {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.review-house-title {
+  color: #1f2937;
+  font-weight: 600;
 }
 
 .review-item-meta {
