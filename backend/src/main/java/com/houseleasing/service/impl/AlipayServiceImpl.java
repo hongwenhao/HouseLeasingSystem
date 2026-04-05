@@ -143,6 +143,10 @@ public class AlipayServiceImpl implements AlipayService {
         // 此时若直接按空状态判失败，会出现“明明已支付却提示未知状态”的误判。
         // 因此这里先尝试使用回跳参数中的 trade_status；若缺失则主动调“交易查询”接口兜底确认。
         String tradeStatus = resolveTradeStatus(params, outTradeNo);
+        // 若回跳缺参且主动查询也失败，此时无法可靠确认支付结果，需明确告知用户稍后重试。
+        if (!StringUtils.hasText(tradeStatus)) {
+            throw new BusinessException(400, "暂时无法确认支付状态，请稍后在订单列表刷新重试");
+        }
         if (!TRADE_SUCCESS.equals(tradeStatus) && !TRADE_FINISHED.equals(tradeStatus)) {
             throw new BusinessException(400, "支付未成功（当前状态：" + mapTradeStatusLabel(tradeStatus) + "），请完成支付后重试");
         }
@@ -209,7 +213,7 @@ public class AlipayServiceImpl implements AlipayService {
             }
             return response.getTradeStatus();
         } catch (AlipayApiException e) {
-            log.error("支付宝交易查询异常，outTradeNo={}", outTradeNo, e);
+            log.error("支付宝交易查询异常，将返回null状态并触发支付确认失败，outTradeNo={}", outTradeNo, e);
             return null;
         }
     }
