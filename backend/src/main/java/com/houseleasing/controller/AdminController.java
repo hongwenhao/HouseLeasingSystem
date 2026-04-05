@@ -126,17 +126,27 @@ public class AdminController {
      *
      * @param page 当前页码
      * @param size 每页大小
+     * @param keyword 搜索关键词（可选，支持订单号与订单状态）
      * @return 所有订单的分页列表
      */
     @Operation(summary = "List all orders")
     @GetMapping("/orders")
     public Result<PageResult<Order>> listAllOrders(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        // 管理员订单检索增强：
+        // 1) 支持按订单号（order_no）模糊匹配，覆盖客服/工单按编号定位场景；
+        // 2) 同时保留按订单状态检索能力，兼容原有管理筛选习惯；
+        // 3) 关键词为空时不加筛选条件，保持历史行为不变。
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(Order::getOrderNo, keyword)
+                    .or().like(Order::getStatus, keyword));
+        }
         wrapper.orderByDesc(Order::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
         List<Order> records = result.getRecords();

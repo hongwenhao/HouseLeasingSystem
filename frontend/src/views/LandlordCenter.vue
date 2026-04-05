@@ -90,12 +90,12 @@
           <!-- Orders Tab -->
           <el-tab-pane label="预约订单管理" name="orders">
             <div class="table-toolbar">
-              <!-- 预约订单搜索栏：按房源、租客、状态、时间等信息模糊匹配 -->
+              <!-- 预约订单搜索栏：按订单号、房源、租客、状态、时间等信息模糊匹配 -->
               <el-input
                 v-model.trim="orderSearchKeyword"
                 class="search-input"
                 clearable
-                placeholder="搜索预约订单（房源/租客/状态/时间）"
+                placeholder="搜索预约订单（订单号/房源/租客/状态/时间）"
               />
             </div>
             <div v-if="ordersLoading">
@@ -357,9 +357,13 @@ const filteredMyHouses = computed(() => myHouses.value.filter(house => containsK
 
 /**
  * 预约订单搜索结果：
- * 支持房源名、租客名、订单状态、支付状态、预约时间等字段过滤。
+ * 支持订单号、房源名、租客名、订单状态、支付状态、预约时间等字段过滤。
+ * 说明：
+ * - 房东在处理大量预约时，常通过订单号进行工单/聊天核对；
+ * - 将 orderNo 纳入本地过滤字段，可减少人工逐条翻找成本。
  */
 const filteredLandlordOrders = computed(() => landlordOrders.value.filter(order => containsKeyword(orderSearchKeyword.value, [
+  order.orderNo,
   getOrderHouseTitleWithFallback(order),
   order.tenant?.realName,
   order.tenant?.username,
