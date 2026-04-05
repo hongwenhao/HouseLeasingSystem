@@ -153,6 +153,13 @@
             </exclusions>
         </dependency>
 
+        <!-- 支付宝开放平台 SDK（用于接入支付宝沙箱同步支付） -->
+        <dependency>
+            <groupId>com.alipay.sdk</groupId>
+            <artifactId>alipay-sdk-java</artifactId>
+            <version>4.38.182.ALL</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
