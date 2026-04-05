@@ -32,6 +32,15 @@
           :class="['nav-link', { 'tab-active': isContractsActive }]"
           @click="menuOpen = false"
         >合同管理</router-link>
+        <!-- 已登录用户可见：评价入口，租客显示“评价管理”，房东显示“收到的评价”，并放在合同管理后面 -->
+        <router-link
+          v-if="isLoggedIn"
+          :to="reviewsNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isReviewsActive }]"
+          @click="menuOpen = false"
+        >{{ role === 'LANDLORD' ? '收到的评价' : '评价管理' }}</router-link>
         <!-- 已登录用户可见：消息中心（目前统一在个人中心 messages 标签页展示） -->
         <router-link
           v-if="isLoggedIn"
@@ -145,12 +154,19 @@ const contractsNavTarget = computed(() => (
     ? { path: '/landlord-center', query: { tab: 'contracts' } }
     : { path: '/user-center', query: { tab: 'contracts' } }
 ))
+// 顶栏“评价管理/收到的评价”目标路由：房东进入房东中心 reviews 标签，其他角色进入个人中心 reviews 标签
+const reviewsNavTarget = computed(() => (
+  role.value === 'LANDLORD'
+    ? { path: '/landlord-center', query: { tab: 'reviews' } }
+    : { path: '/user-center', query: { tab: 'reviews' } }
+))
 // 顶栏“消息中心”目标路由：消息目前统一在个人中心 messages 标签页
 const messagesNavTarget = computed(() => ({ path: '/user-center', query: { tab: 'messages' } }))
 
 const isCenterRoute = computed(() => route.path === '/user-center' || route.path === '/landlord-center')
 const isOrdersActive = computed(() => isCenterRoute.value && route.query.tab === 'orders')
 const isContractsActive = computed(() => isCenterRoute.value && route.query.tab === 'contracts')
+const isReviewsActive = computed(() => isCenterRoute.value && route.query.tab === 'reviews')
 const isMessagesActive = computed(() => isCenterRoute.value && route.query.tab === 'messages')
 
 onMounted(async () => {

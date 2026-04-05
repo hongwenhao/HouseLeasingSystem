@@ -15,30 +15,44 @@
             <div v-if="housesLoading">
               <el-skeleton :rows="4" animated />
             </div>
-            <div v-else-if="myHouses.length > 0">
+            <!-- 我的房源：采用“表头 + 行内容”结构，明确展示房源信息、上下架状态与操作 -->
+            <div v-else-if="myHouses.length > 0" class="house-table">
+              <!-- 表头：新增“房源信息”导航标识，并将“上下架状态”与“操作”并列展示 -->
+              <div class="house-table-head">
+                <span>房源信息</span>
+                <span class="status-col-head">上下架状态</span>
+                <span class="action-col-head">操作</span>
+              </div>
               <div
                 v-for="house in myHouses"
                 :key="house.id"
-                class="house-item"
+                class="house-table-row"
               >
-                <img
-                  :src="getHouseCover(house)"
-                  class="house-thumb"
-                  :alt="house.title"
-                />
-                <div class="house-item-info">
-                  <div class="house-item-header">
-                    <span class="house-item-title">{{ house.title }}</span>
-                    <el-tag :type="houseStatusType(house.status)" size="small">
-                      {{ houseStatusLabel(house.status) }}
-                    </el-tag>
-                  </div>
-                  <div class="house-item-meta">
-                    <span>{{ house.city }} {{ house.district }}</span>
-                    <span>¥{{ house.price }}/月</span>
-                    <span>{{ house.area }}㎡</span>
+                <!-- 第一列：房源信息（缩略图 + 标题 + 基础属性） -->
+                <div class="house-info-col">
+                  <img
+                    :src="getHouseCover(house)"
+                    class="house-thumb"
+                    :alt="house.title"
+                  />
+                  <div class="house-item-info">
+                    <div class="house-item-header">
+                      <span class="house-item-title">{{ house.title }}</span>
+                    </div>
+                    <div class="house-item-meta">
+                      <span>{{ house.city }} {{ house.district }}</span>
+                      <span>¥{{ house.price }}/月</span>
+                      <span>{{ house.area }}㎡</span>
+                    </div>
                   </div>
                 </div>
+                <!-- 第二列：上下架状态，单独成列与操作列平行对齐 -->
+                <div class="house-status-col">
+                  <el-tag :type="houseStatusType(house.status)" size="small">
+                    {{ houseStatusLabel(house.status) }}
+                  </el-tag>
+                </div>
+                <!-- 第三列：操作按钮 -->
                 <div class="house-item-actions">
                   <el-button
                     v-if="canPutHouseOnline(house.status)"
@@ -581,20 +595,54 @@ function getOrderHouseTitleWithFallback(order) {
   margin-bottom: 16px;
 }
 
-.house-item {
-  display: flex;
+/* 我的房源表格容器：使用三列网格布局（房源信息 / 上下架状态 / 操作） */
+.house-table {
+  border: 1px solid #edf0f5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* 我的房源表头与每一行复用同一套列宽，确保“状态”与“操作”垂直对齐 */
+.house-table-head,
+.house-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 300px;
+  gap: 12px;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid #ebeef5;
-  border-radius: 16px;
-  margin-bottom: 12px;
-  background: #fafafa;
+}
+
+/* 表头样式：提供“房源信息/上下架状态/操作”导航提示 */
+.house-table-head {
+  background: #f8f9fc;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+/* 每行数据样式 */
+.house-table-row {
+  padding: 14px;
+  border-bottom: 1px solid #f1f3f8;
+  background: #fff;
   transition: box-shadow 0.3s ease;
 }
 
-.house-item:hover {
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+.house-table-row:last-child {
+  border-bottom: none;
+}
+
+.house-table-row:hover {
+  box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.15);
+}
+
+/* 第一列：房源信息块（图 + 文） */
+.house-info-col {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
 }
 
 .house-thumb {
@@ -633,10 +681,24 @@ function getOrderHouseTitleWithFallback(order) {
   color: #909399;
 }
 
+/* 第二列：状态列居中显示，与右侧按钮列保持平行视觉关系 */
+.house-status-col,
+.status-col-head {
+  text-align: center;
+}
+
+/* 第三列表头居中，配合按钮区域对齐 */
+.action-col-head {
+  text-align: center;
+}
+
 .house-item-actions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .table-card {
@@ -716,6 +778,8 @@ function getOrderHouseTitleWithFallback(order) {
 }
 
 @media (max-width: 1100px) {
+  .house-table-head,
+  .house-table-row,
   .orders-table .table-head,
   .orders-table .table-row,
   .contracts-table .table-head,
@@ -733,6 +797,23 @@ function getOrderHouseTitleWithFallback(order) {
     margin-bottom: 8px;
     border: 1px solid #edf0f5;
     border-radius: 10px;
+  }
+
+  .house-table {
+    border: none;
+    border-radius: 0;
+  }
+
+  .house-table-row {
+    margin-bottom: 8px;
+    border: 1px solid #edf0f5;
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .house-info-col {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
