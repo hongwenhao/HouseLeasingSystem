@@ -192,6 +192,28 @@
             <el-empty v-else description="暂无合同记录" />
           </el-tab-pane>
 
+          <!-- Reviews Tab：按需求放在“合同管理”后面 -->
+          <el-tab-pane label="收到的评价" name="reviews">
+            <div v-if="reviewsLoading">
+              <el-skeleton :rows="4" animated />
+            </div>
+            <div v-else-if="reviewRecords.length > 0" class="review-list">
+              <div v-for="review in reviewRecords" :key="review.id" class="review-item">
+                <div class="review-item-head">
+                  <h4 class="title-cell">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
+                  <el-rate :model-value="review.rating || 0" disabled show-score />
+                </div>
+                <div class="review-item-meta">
+                  <span>租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
+                  <span>订单ID：{{ review.orderId }}</span>
+                  <span>{{ formatDateTime(review.createTime) }}</span>
+                </div>
+                <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
+              </div>
+            </div>
+            <el-empty v-else description="暂无收到的评价" />
+          </el-tab-pane>
+
           <!-- Stats Tab -->
           <el-tab-pane label="收益统计" name="stats">
             <div class="stats-cards">
@@ -212,28 +234,6 @@
                 <div class="stat-label">总房源数</div>
               </el-card>
             </div>
-          </el-tab-pane>
-
-          <!-- Reviews Tab -->
-          <el-tab-pane label="评价管理" name="reviews">
-            <div v-if="reviewsLoading">
-              <el-skeleton :rows="4" animated />
-            </div>
-            <div v-else-if="reviewRecords.length > 0" class="review-list">
-              <div v-for="review in reviewRecords" :key="review.id" class="review-item">
-                <div class="review-item-head">
-                  <h4 class="title-cell">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
-                  <el-rate :model-value="review.rating || 0" disabled show-score />
-                </div>
-                <div class="review-item-meta">
-                  <span>租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
-                  <span>订单ID：{{ review.orderId }}</span>
-                  <span>{{ formatDateTime(review.createTime) }}</span>
-                </div>
-                <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
-              </div>
-            </div>
-            <el-empty v-else description="暂无收到的评价" />
           </el-tab-pane>
         </el-tabs>
       </div>
@@ -550,6 +550,7 @@ function getOrderHouseTitleWithFallback(order) {
   display: flex;
   flex-direction: column;
   background: #f0f2f5;
+  --house-table-cols: minmax(0, 1fr) 140px 300px; /* info | status | actions */
   --orders-table-cols: 2fr 1.1fr 1.4fr 1fr 1fr 2.2fr; /* title | tenant | appointment | orderStatus | paymentStatus | actions */
   --contracts-table-cols: 1.6fr 1.1fr 1.5fr 1fr 1fr 1.6fr; /* number | tenant | lease | rent | status | actions */
 }
@@ -606,7 +607,7 @@ function getOrderHouseTitleWithFallback(order) {
 .house-table-head,
 .house-table-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 140px 300px;
+  grid-template-columns: var(--house-table-cols);
   gap: 12px;
   align-items: center;
 }
@@ -701,6 +702,13 @@ function getOrderHouseTitleWithFallback(order) {
   flex-wrap: wrap;
 }
 
+/* 中屏适配：缩小“状态/操作”列宽，避免平板尺寸出现拥挤 */
+@media (max-width: 1280px) {
+  .landlord-center-page {
+    --house-table-cols: minmax(0, 1fr) 128px 260px;
+  }
+}
+
 .table-card {
   border: 1px solid #edf0f5;
   border-radius: 12px;
@@ -792,6 +800,10 @@ function getOrderHouseTitleWithFallback(order) {
     display: none;
   }
 
+  .house-table-head {
+    display: none;
+  }
+
   .table-row {
     background: #fff;
     margin-bottom: 8px;
@@ -814,6 +826,15 @@ function getOrderHouseTitleWithFallback(order) {
   .house-info-col {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .house-status-col {
+    text-align: left;
+  }
+
+  .house-item-actions {
+    justify-content: flex-start;
+    width: 100%;
   }
 }
 
