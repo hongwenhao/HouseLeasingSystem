@@ -122,7 +122,7 @@
             show-icon
             :closable="false"
             class="landlord-wait-alert"
-            title="请等待租客先签署：当前未找到房东签署任务是因为租客尚未完成签署。"
+            title="请等待租客先签署合同，房东才能签署合同。"
           />
           <el-button
             v-if="showSignBtn"

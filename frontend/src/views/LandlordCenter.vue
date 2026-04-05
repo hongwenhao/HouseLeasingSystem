@@ -88,7 +88,7 @@
           </el-tab-pane>
 
           <!-- Orders Tab -->
-          <el-tab-pane label="预约管理" name="orders">
+          <el-tab-pane label="预约订单管理" name="orders">
             <div class="table-toolbar">
               <!-- 预约订单搜索栏：按房源、租客、状态、时间等信息模糊匹配 -->
               <el-input
@@ -171,7 +171,7 @@
                 v-model.trim="contractSearchKeyword"
                 class="search-input"
                 clearable
-                placeholder="搜索合同（编号/租客/租期/状态）"
+                placeholder="搜索合同（合同编号/租客/租期/状态）"
               />
             </div>
             <div v-if="contractsLoading">

@@ -276,7 +276,7 @@
                   v-model.trim="contractSearchKeyword"
                   class="search-input"
                   clearable
-                  placeholder="搜索合同（编号/租期/状态/租金）"
+                  placeholder="搜索合同（合同编号/租期/状态/租金）"
                 />
               </div>
               <div v-if="contractsLoading">
