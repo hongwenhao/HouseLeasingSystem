@@ -20,6 +20,7 @@ import LandlordCenter from '../views/LandlordCenter.vue'
 import PublishHouse from '../views/PublishHouse.vue'
 import OrderDetail from '../views/OrderDetail.vue'
 import ContractDetail from '../views/ContractDetail.vue'
+import AlipayReturn from '../views/AlipayReturn.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 import AdminHouseDetail from '../views/AdminHouseDetail.vue'
 import NotFound from '../views/NotFound.vue'
@@ -40,6 +41,7 @@ const routes = [
   { path: '/publish-house/:id', component: PublishHouse, meta: { requiresAuth: true, requiresRole: 'LANDLORD' } },
   { path: '/orders/:id', component: OrderDetail, meta: { requiresAuth: true } },
   { path: '/contracts/:id', component: ContractDetail, meta: { requiresAuth: true } },
+  { path: '/payment/alipay/return', component: AlipayReturn, meta: { requiresAuth: true } },
   // 管理后台只允许 ADMIN 角色访问
   { path: '/admin', component: AdminDashboard, meta: { requiresAuth: true, requiresRole: 'ADMIN' } },
   { path: '/admin/houses/:id', component: AdminHouseDetail, meta: { requiresAuth: true, requiresRole: 'ADMIN' } },
