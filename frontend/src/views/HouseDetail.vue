@@ -251,8 +251,9 @@ const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
+const isLandlord = computed(() => userStore.userInfo.role === 'LANDLORD')
 // 仅租客或未登录访客显示预约/收藏入口: 访客点击后会被引导登录
-const shouldShowBookingActions = computed(() => !userStore.isLoggedIn || isTenant.value)
+const shouldShowBookingActions = computed(() => !isLandlord.value)
 const normalizedImages = computed(() => {
   const images = normalizeHouseImages(house.value?.images)
   return images.length > 0 ? images : [placeholder]

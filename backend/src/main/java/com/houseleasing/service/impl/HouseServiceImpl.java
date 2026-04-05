@@ -51,6 +51,8 @@ public class HouseServiceImpl implements HouseService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String BEHAVIOR_COLLECT = "COLLECT";
+    private static final String HOUSE_STATUS_ONLINE = "ONLINE";
+    private static final String HOUSE_STATUS_OFFLINE = "OFFLINE";
     private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0;
 
     /**
@@ -72,7 +74,7 @@ public class HouseServiceImpl implements HouseService {
             throw new BusinessException(403, "当前信用分过低，暂不可发布房源");
         }
         house.setOwnerId(ownerId);
-        house.setStatus("ONLINE"); // 新房源默认状态为已上线
+        house.setStatus(HOUSE_STATUS_ONLINE); // 新房源默认状态为已上线
         house.setViewCount(0);
         house.setCreateTime(LocalDateTime.now());
         house.setUpdateTime(LocalDateTime.now());
@@ -232,7 +234,7 @@ public class HouseServiceImpl implements HouseService {
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限操作该房源");
         }
-        existing.setStatus("ONLINE");
+        existing.setStatus(HOUSE_STATUS_ONLINE);
         existing.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(existing);
     }
@@ -260,7 +262,7 @@ public class HouseServiceImpl implements HouseService {
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限操作该房源");
         }
-        existing.setStatus("OFFLINE");
+        existing.setStatus(HOUSE_STATUS_OFFLINE);
         existing.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(existing);
     }
@@ -398,7 +400,7 @@ public class HouseServiceImpl implements HouseService {
         Map<Long, House> houseMap = houses.stream().collect(Collectors.toMap(House::getId, h -> h, (a, b) -> a));
         List<House> ordered = houseIds.stream()
                 .map(houseMap::get)
-                .filter(h -> h != null && "ONLINE".equals(h.getStatus()))
+                .filter(h -> h != null && HOUSE_STATUS_ONLINE.equals(h.getStatus()))
                 .toList();
         return PageResult.of(behaviorPage.getTotal(), ordered, (int) behaviorPage.getCurrent(), (int) behaviorPage.getSize());
     }
@@ -455,7 +457,7 @@ public class HouseServiceImpl implements HouseService {
     public List<House> getHotHouses() {
         try {
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(House::getStatus, "ONLINE");
+            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE);
             wrapper.orderByDesc(House::getViewCount);
             Page<House> page = new Page<>(1, 10);
             return houseMapper.selectPage(page, wrapper).getRecords();
