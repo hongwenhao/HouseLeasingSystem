@@ -120,7 +120,7 @@
               </div>
 
               <!-- 操作按钮 -->
-              <div v-if="showTenantActions" class="action-btns">
+              <div v-if="shouldShowBookingActions" class="action-btns">
                 <el-button
                   type="primary"
                   size="large"
@@ -251,7 +251,8 @@ const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
-const showTenantActions = computed(() => !userStore.isLoggedIn || isTenant.value)
+// 仅租客或未登录访客显示预约/收藏入口：访客点击后会被引导登录
+const shouldShowBookingActions = computed(() => !userStore.isLoggedIn || isTenant.value)
 const normalizedImages = computed(() => {
   const images = normalizeHouseImages(house.value?.images)
   return images.length > 0 ? images : [placeholder]
@@ -426,10 +427,6 @@ async function handleCollect() {
  * 调用创建订单接口，成功后跳转到订单详情页
  */
 async function submitAppointment() {
-  if (!isTenant.value) {
-    ElMessage.warning('仅租客可以预约看房')
-    return
-  }
   // 预约提交前主动拉取一次最新用户资料，避免本地缓存过期导致实名认证状态误判
   try {
     await userStore.fetchProfile()
