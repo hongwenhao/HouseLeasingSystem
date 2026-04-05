@@ -569,6 +569,23 @@ watch(
   { immediate: true }
 )
 
+/**
+ * 监听支付回跳标记：
+ * 当从支付宝回跳页进入个人中心（fromPay=1）时，主动刷新订单列表，确保“支付状态”立即从未支付更新为已支付。
+ */
+watch(
+  () => route.query.fromPay,
+  async (flag) => {
+    if (flag !== '1') return
+    await loadOrders()
+    // 刷新完成后移除一次性标记，避免后续普通切换 tab 时重复触发请求。
+    const nextQuery = { ...route.query }
+    delete nextQuery.fromPay
+    router.replace({ path: route.path, query: nextQuery })
+  },
+  { immediate: true }
+)
+
 /** 加载当前用户的预约订单列表（租客取我的预约；房东取收到的预约） */
 async function loadOrders() {
   ordersLoading.value = true

@@ -66,12 +66,24 @@ function normalizeQueryToMap() {
 onMounted(async () => {
   try {
     const params = normalizeQueryToMap()
+    // 兜底校验：若支付宝未回传关键参数，直接提示并引导用户回订单页，避免出现“空白成功页”的误导体验。
+    if (!params.out_trade_no) {
+      throw new Error('未获取到支付宝订单号，请返回订单列表刷新后查看支付状态')
+    }
     const res = await verifyAlipaySyncReturn(params)
     resultSuccess.value = !!res?.success
     resultMessage.value = res?.message || (resultSuccess.value ? '支付成功' : '支付确认失败')
     orderId.value = res?.orderId || null
     if (resultSuccess.value) {
       ElMessage.success('支付已确认')
+      /**
+       * 支付确认成功后自动回到“预约订单管理”：
+       * - replace：避免用户点浏览器返回又回到回跳页重复验签；
+       * - 带 query 标记 fromPay：便于个人中心识别并主动刷新订单状态。
+       */
+      setTimeout(() => {
+        router.replace('/user-center?tab=orders&fromPay=1')
+      }, 800)
     }
   } catch (e) {
     resultSuccess.value = false
@@ -81,7 +93,8 @@ onMounted(async () => {
 
 /** 返回个人中心并定位到“预约订单管理”标签页 */
 function goUserCenter() {
-  router.push('/user-center?tab=orders')
+  // 手动返回也统一带 fromPay 标记，确保订单列表刷新为最新支付结果。
+  router.push('/user-center?tab=orders&fromPay=1')
 }
 
 /** 跳转到订单详情页 */
