@@ -418,7 +418,8 @@ import MessageList from '../components/MessageList.vue'
 import HouseCard from '../components/HouseCard.vue'
 import { useUserStore } from '../stores/user.js'
 import { changePassword as changePasswordApi, realNameAuth as realNameAuthApi } from '../api/auth.js'
-import { getMyOrders, getLandlordOrders, cancelOrder, payOrder, refundOrder, reviewOrder, getTenantReviewRecords, getLandlordReviewRecords } from '../api/order.js'
+import { getMyOrders, getLandlordOrders, cancelOrder, refundOrder, reviewOrder, getTenantReviewRecords, getLandlordReviewRecords } from '../api/order.js'
+import { createAlipayPayForm } from '../api/alipay.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
 import { getMyCollections } from '../api/house.js'
@@ -720,9 +721,10 @@ async function cancelMyOrder(id) {
 }
 
 /**
- * 租客支付订单：
- * 仅在合同双方已签且订单为已批准未支付时显示“待支付”按钮。
- * 这里以确认弹窗模拟进入支付页后的“确认支付”动作，便于与现有系统快速联通。
+ * 租客支付订单（支付宝沙箱，同步回调）：
+ * 1) 调后端生成支付宝官方表单；
+ * 2) 将表单写入新窗口并自动提交到支付宝收银台；
+ * 3) 用户支付后回跳到前端 return 页面，再由该页面调用后端验签落库。
  */
 async function handlePayOrder(order) {
   try {
@@ -731,9 +733,22 @@ async function handlePayOrder(order) {
       '支付确认',
       { type: 'warning', confirmButtonText: '确认支付', cancelButtonText: '取消' }
     )
-    await payOrder(order.id)
-    ElMessage.success('支付成功')
-    loadOrders()
+    const res = await createAlipayPayForm(order.id)
+    const formHtml = res?.formHtml
+    if (!formHtml) {
+      throw new Error(`支付表单生成失败（订单ID：${order.id}）`)
+    }
+
+    // 通过新窗口承载支付宝表单，避免当前个人中心页被覆盖，提升支付后返回体验。
+    const payWindow = window.open('', '_blank')
+    if (!payWindow) {
+      throw new Error('浏览器拦截了弹窗，请在浏览器设置中允许本站弹窗后重试')
+    }
+    payWindow.document.open()
+    payWindow.document.write(formHtml)
+    payWindow.document.close()
+
+    ElMessage.success('已打开支付宝支付页面，请在新窗口完成支付')
   } catch (e) {
     if (e === 'cancel' || e === 'close') return
     ElMessage.error(e.message || '支付失败')

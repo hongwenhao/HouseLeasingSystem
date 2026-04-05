@@ -91,3 +91,18 @@ logging:
   level:
     com.houseleasing: debug          # 业务代码输出 DEBUG 级别日志
     org.springframework.security: warn  # Spring Security 只输出警告及以上
+
+# ---- 支付宝（沙箱）配置：仅同步回调方案 ----
+# 注意：
+# 1) 本项目按需求仅使用同步回调（return_url），不接入异步 notify_url；
+# 2) 推荐通过环境变量覆盖密钥，避免明文写入仓库；
+# 3) FRONTEND_BASE_URL 默认指向本地前端地址，可按部署环境调整。
+alipay:
+  app-id: ${ALIPAY_APP_ID:}
+  private-key: ${ALIPAY_PRIVATE_KEY:}
+  public-key: ${ALIPAY_PUBLIC_KEY:}
+  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
+  charset: ${ALIPAY_CHARSET:utf-8}
+  sign-type: ${ALIPAY_SIGN_TYPE:RSA2}
+  timeout-express: ${ALIPAY_TIMEOUT_EXPRESS:30m}
+  return-url: ${ALIPAY_RETURN_URL:${FRONTEND_BASE_URL:http://localhost:5173}/payment/alipay/return}
