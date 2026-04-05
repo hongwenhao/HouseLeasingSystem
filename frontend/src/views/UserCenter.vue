@@ -130,12 +130,33 @@
               </div>
             </el-tab-pane>
 
+            <!-- Favorites Tab -->
+            <el-tab-pane v-if="isTenant" name="favorites">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><Star /></el-icon>
+                  <span>我的收藏</span>
+                </div>
+              </template>
+              <div v-if="collectionsLoading">
+                <el-skeleton :rows="4" animated />
+              </div>
+              <div v-else-if="myCollections.length > 0" class="favorites-grid">
+                <HouseCard
+                  v-for="house in myCollections"
+                  :key="house.id"
+                  :house="house"
+                />
+              </div>
+              <el-empty v-else description="暂无收藏房源" />
+            </el-tab-pane>
+
             <!-- Orders Tab -->
             <el-tab-pane name="orders">
               <template #label>
                 <div class="tab-label">
                   <el-icon><Calendar /></el-icon>
-                  <span>预约管理</span>
+                  <span>预约订单管理</span>
                 </div>
               </template>
               <div v-if="ordersLoading">
@@ -223,55 +244,6 @@
               <el-empty v-else description="暂无预约记录" />
             </el-tab-pane>
 
-            <!-- Review Management Tab -->
-            <el-tab-pane name="reviews">
-              <template #label>
-                <div class="tab-label">
-                  <el-icon><Star /></el-icon>
-                  <span>{{ isLandlord ? '收到的评价' : '评价管理' }}</span>
-                </div>
-              </template>
-              <div v-if="reviewsLoading">
-                <el-skeleton :rows="4" animated />
-              </div>
-              <div v-else-if="reviewRecords.length > 0" class="review-list">
-                <div v-for="review in reviewRecords" :key="review.id" class="review-item">
-                  <div class="review-item-head">
-                  <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
-                    <el-rate :model-value="review.rating || 0" disabled show-score />
-                  </div>
-                  <div class="review-item-meta">
-                    <span v-if="isLandlord">租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
-                    <span>订单ID：{{ review.orderId }}</span>
-                    <span>{{ formatDateTime(review.createTime) }}</span>
-                  </div>
-                  <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
-                </div>
-              </div>
-              <el-empty v-else :description="isLandlord ? '暂无收到的评价' : '暂无评价记录'" />
-            </el-tab-pane>
-
-            <!-- Favorites Tab -->
-            <el-tab-pane v-if="isTenant" name="favorites">
-              <template #label>
-                <div class="tab-label">
-                  <el-icon><Star /></el-icon>
-                  <span>我的收藏</span>
-                </div>
-              </template>
-              <div v-if="collectionsLoading">
-                <el-skeleton :rows="4" animated />
-              </div>
-              <div v-else-if="myCollections.length > 0" class="favorites-grid">
-                <HouseCard
-                  v-for="house in myCollections"
-                  :key="house.id"
-                  :house="house"
-                />
-              </div>
-              <el-empty v-else description="暂无收藏房源" />
-            </el-tab-pane>
-
             <!-- Contracts Tab -->
             <el-tab-pane name="contracts">
               <template #label>
@@ -319,6 +291,34 @@
                 </div>
               </div>
               <el-empty v-else description="暂无合同记录" />
+            </el-tab-pane>
+
+            <!-- Review Management Tab -->
+            <el-tab-pane name="reviews">
+              <template #label>
+                <div class="tab-label">
+                  <el-icon><Star /></el-icon>
+                  <span>{{ isLandlord ? '收到的评价' : '评价管理' }}</span>
+                </div>
+              </template>
+              <div v-if="reviewsLoading">
+                <el-skeleton :rows="4" animated />
+              </div>
+              <div v-else-if="reviewRecords.length > 0" class="review-list">
+                <div v-for="review in reviewRecords" :key="review.id" class="review-item">
+                  <div class="review-item-head">
+                  <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
+                    <el-rate :model-value="review.rating || 0" disabled show-score />
+                  </div>
+                  <div class="review-item-meta">
+                    <span v-if="isLandlord">租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
+                    <span>订单ID：{{ review.orderId }}</span>
+                    <span>{{ formatDateTime(review.createTime) }}</span>
+                  </div>
+                  <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
+                </div>
+              </div>
+              <el-empty v-else :description="isLandlord ? '暂无收到的评价' : '暂无评价记录'" />
             </el-tab-pane>
 
             <!-- Messages Tab -->
