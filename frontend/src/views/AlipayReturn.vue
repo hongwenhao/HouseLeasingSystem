@@ -53,6 +53,8 @@ function normalizeQueryToMap() {
   const query = route.query || {}
   for (const [key, val] of Object.entries(query)) {
     if (Array.isArray(val)) {
+      // 理论上支付宝回调参数均应为单值；若出现数组，记录告警并取首值，避免参数结构异常导致流程中断。
+      console.warn('[AlipayReturn] 回调参数出现数组值，将使用首个元素：', key, val)
       map[key] = val[0] ?? ''
     } else {
       map[key] = val == null ? '' : String(val)
@@ -122,4 +124,3 @@ function goOrderDetail() {
   gap: 12px;
 }
 </style>
-

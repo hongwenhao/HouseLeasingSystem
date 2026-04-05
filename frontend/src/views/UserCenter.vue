@@ -736,13 +736,13 @@ async function handlePayOrder(order) {
     const res = await createAlipayPayForm(order.id)
     const formHtml = res?.formHtml
     if (!formHtml) {
-      throw new Error('支付表单生成失败')
+      throw new Error(`支付表单生成失败（订单ID：${order.id}）`)
     }
 
     // 通过新窗口承载支付宝表单，避免当前个人中心页被覆盖，提升支付后返回体验。
     const payWindow = window.open('', '_blank')
     if (!payWindow) {
-      throw new Error('浏览器拦截了弹窗，请允许后重试')
+      throw new Error('浏览器拦截了弹窗，请在浏览器设置中允许本站弹窗后重试')
     }
     payWindow.document.open()
     payWindow.document.write(formHtml)

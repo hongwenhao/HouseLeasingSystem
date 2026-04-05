@@ -136,13 +136,13 @@ public class AlipayServiceImpl implements AlipayService {
         }
 
         if (!TRADE_SUCCESS.equals(tradeStatus) && !TRADE_FINISHED.equals(tradeStatus)) {
-            throw new BusinessException(400, "支付未成功，请完成支付后重试");
+            throw new BusinessException(400, "支付未成功（当前状态：" + mapTradeStatusLabel(tradeStatus) + "），请完成支付后重试");
         }
 
         BigDecimal expectedAmount = calculatePayableAmount(order);
         BigDecimal callbackAmount = parseMoney(totalAmountStr);
         if (callbackAmount == null || callbackAmount.compareTo(expectedAmount) != 0) {
-            throw new BusinessException(400, "支付金额校验失败");
+            throw new BusinessException(400, "支付金额校验失败（期望：" + expectedAmount + "，实际：" + callbackAmount + "）");
         }
 
         // 复用既有支付落库逻辑：统一执行状态校验、状态变更与消息通知。
@@ -247,8 +247,12 @@ public class AlipayServiceImpl implements AlipayService {
      */
     private Order findByOrderNo(String orderNo) {
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Order::getOrderNo, orderNo).last("LIMIT 1");
-        return orderMapper.selectOne(wrapper);
+        wrapper.eq(Order::getOrderNo, orderNo);
+        java.util.List<Order> orders = orderMapper.selectList(wrapper);
+        if (orders == null || orders.isEmpty()) {
+            return null;
+        }
+        return orders.get(0);
     }
 
     /**
@@ -259,8 +263,12 @@ public class AlipayServiceImpl implements AlipayService {
      */
     private Contract findLatestContractByOrderId(Long orderId) {
         LambdaQueryWrapper<Contract> qw = new LambdaQueryWrapper<>();
-        qw.eq(Contract::getOrderId, orderId).orderByDesc(Contract::getCreateTime).last("LIMIT 1");
-        return contractMapper.selectOne(qw);
+        qw.eq(Contract::getOrderId, orderId).orderByDesc(Contract::getCreateTime);
+        java.util.List<Contract> contracts = contractMapper.selectList(qw);
+        if (contracts == null || contracts.isEmpty()) {
+            return null;
+        }
+        return contracts.get(0);
     }
 
     /**
@@ -278,5 +286,24 @@ public class AlipayServiceImpl implements AlipayService {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    /**
+     * 将支付宝交易状态映射为更友好的中文文案
+     *
+     * @param tradeStatus 支付宝交易状态码
+     * @return 中文状态描述
+     */
+    private String mapTradeStatusLabel(String tradeStatus) {
+        if (!StringUtils.hasText(tradeStatus)) {
+            return "未知状态";
+        }
+        return switch (tradeStatus) {
+            case "WAIT_BUYER_PAY" -> "等待支付";
+            case "TRADE_CLOSED" -> "交易已关闭";
+            case "TRADE_SUCCESS" -> "支付成功";
+            case "TRADE_FINISHED" -> "交易完成";
+            default -> "状态码：" + tradeStatus;
+        };
     }
 }
