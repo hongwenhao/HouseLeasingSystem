@@ -26,7 +26,7 @@
         - price_asc：月租金升序
         - price_desc：月租金降序
         - popular：按浏览量降序（热度排序）
-        - 默认：按创建时间降序（最新发布优先）
+        - 默认：按主键 ID 降序（最新发布优先）
     -->
     <select id="selectByCondition" resultType="com.houseleasing.entity.House">
         SELECT * FROM houses
@@ -81,7 +81,7 @@
             <when test="req.sortBy == 'price_asc'">ORDER BY price ASC</when>
             <when test="req.sortBy == 'price_desc'">ORDER BY price DESC</when>
             <when test="req.sortBy == 'popular'">ORDER BY view_count DESC</when>
-            <otherwise>ORDER BY create_time DESC</otherwise>
+            <otherwise>ORDER BY id DESC</otherwise>
         </choose>
     </select>
 

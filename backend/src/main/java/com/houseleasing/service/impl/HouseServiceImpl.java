@@ -295,7 +295,7 @@ public class HouseServiceImpl implements HouseService {
             log.error("复杂的房屋搜索出错了，系统正在改用基础搜索方式重试: {}", e.getMessage());
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(House::getStatus, "ONLINE");
-            wrapper.orderByDesc(House::getCreateTime);
+            wrapper.orderByDesc(House::getId);
             Page<House> result = houseMapper.selectPage(page, wrapper);
             return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize());
         }
