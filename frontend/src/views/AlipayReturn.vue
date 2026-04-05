@@ -42,6 +42,8 @@ const router = useRouter()
 const resultSuccess = ref(false)
 const resultMessage = ref('正在确认支付结果，请稍候...')
 const orderId = ref(null)
+// 支付成功后给用户一个短暂“已确认”反馈，再自动跳转订单页（单位：毫秒）。
+const PAYMENT_SUCCESS_REDIRECT_DELAY = 800
 
 /**
  * 提取路由 query，统一转为后端需要的字符串键值对
@@ -68,7 +70,7 @@ onMounted(async () => {
     const params = normalizeQueryToMap()
     // 兜底校验：若支付宝未回传关键参数，直接提示并引导用户回订单页，避免出现“空白成功页”的误导体验。
     if (!params.out_trade_no) {
-      throw new Error('未获取到支付宝订单号，请返回订单列表刷新后查看支付状态')
+      throw new Error('未获取到订单号，请返回订单列表刷新后查看支付状态')
     }
     const res = await verifyAlipaySyncReturn(params)
     resultSuccess.value = !!res?.success
@@ -83,7 +85,7 @@ onMounted(async () => {
        */
       setTimeout(() => {
         router.replace('/user-center?tab=orders&fromPay=1')
-      }, 800)
+      }, PAYMENT_SUCCESS_REDIRECT_DELAY)
     }
   } catch (e) {
     resultSuccess.value = false
