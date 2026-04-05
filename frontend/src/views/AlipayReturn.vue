@@ -30,12 +30,13 @@
  * 2) 调后端接口完成验签、金额校验和订单支付状态落库；
  * 3) 向用户展示最终结果，并提供返回入口。
  */
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import { verifyAlipaySyncReturn } from '../api/alipay.js'
+import { getOrderDetail } from '../api/order.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +45,10 @@ const resultMessage = ref('正在确认支付结果，请稍候...')
 const orderId = ref(null)
 // 支付成功后给用户一个短暂“已确认”反馈，再自动跳转订单页（单位：毫秒）。
 const PAYMENT_SUCCESS_REDIRECT_DELAY = 800
+// 支付状态兜底轮询：最多轮询 6 次，每次间隔 2 秒（约 12 秒）。
+const PAYMENT_STATUS_POLL_INTERVAL = 2000
+const PAYMENT_STATUS_POLL_MAX_ATTEMPTS = 6
+let pollTimer = null
 
 /**
  * 提取路由 query，统一转为后端需要的字符串键值对
@@ -78,14 +83,8 @@ onMounted(async () => {
     orderId.value = res?.orderId || null
     if (resultSuccess.value) {
       ElMessage.success('支付已确认')
-      /**
-       * 支付确认成功后自动回到“预约订单管理”：
-       * - replace：避免用户点浏览器返回又回到回跳页重复验签；
-       * - 带 query 标记 fromPay：便于个人中心识别并主动刷新订单状态。
-       */
-      setTimeout(() => {
-        router.replace('/user-center?tab=orders&fromPay=1')
-      }, PAYMENT_SUCCESS_REDIRECT_DELAY)
+      // 兜底：支付确认后再轮询一次订单支付状态，确保“已支付”状态真正可见后再跳转。
+      await pollOrderPaymentStatusAndRedirect()
     }
   } catch (e) {
     resultSuccess.value = false
@@ -104,6 +103,63 @@ function goOrderDetail() {
   if (!orderId.value) return
   router.push(`/orders/${orderId.value}`)
 }
+
+/**
+ * 轮询订单支付状态并在确认后跳转个人中心
+ *
+ * 设计目的：
+ * 1) 解决极端情况下“验签接口刚返回成功，但订单列表刷新仍短暂显示未支付”的瞬时不一致；
+ * 2) 若轮询超时，给出清晰提示并保留手动入口，不阻塞用户继续操作。
+ */
+async function pollOrderPaymentStatusAndRedirect() {
+  if (!orderId.value) {
+    // 没有订单 ID 时无法做精确轮询，直接按原路径跳转。
+    scheduleGoUserCenter()
+    return
+  }
+
+  let attempts = 0
+  const runCheck = async () => {
+    attempts += 1
+    try {
+      const detail = await getOrderDetail(orderId.value)
+      if (detail?.paymentStatus === 'PAID') {
+        clearPollTimer()
+        scheduleGoUserCenter()
+        return
+      }
+    } catch (e) {
+      // 轮询失败不立即中断，继续在剩余次数内重试，降低瞬时网络抖动影响。
+    }
+
+    if (attempts >= PAYMENT_STATUS_POLL_MAX_ATTEMPTS) {
+      clearPollTimer()
+      resultMessage.value = '支付已确认，但订单状态同步稍慢，请返回“预约订单管理”刷新查看'
+      return
+    }
+    pollTimer = setTimeout(runCheck, PAYMENT_STATUS_POLL_INTERVAL)
+  }
+
+  await runCheck()
+}
+
+/** 统一调度跳转，避免重复硬编码路由和延时逻辑。 */
+function scheduleGoUserCenter() {
+  setTimeout(() => {
+    router.replace('/user-center?tab=orders&fromPay=1')
+  }, PAYMENT_SUCCESS_REDIRECT_DELAY)
+}
+
+/** 清理轮询定时器，防止组件销毁后仍继续执行异步轮询。 */
+function clearPollTimer() {
+  if (!pollTimer) return
+  clearTimeout(pollTimer)
+  pollTimer = null
+}
+
+onBeforeUnmount(() => {
+  clearPollTimer()
+})
 </script>
 
 <style scoped>
