@@ -40,6 +40,24 @@
                   </div>
                 </div>
                 <div class="house-item-actions">
+                  <el-button
+                    v-if="canPutHouseOnline(house.status)"
+                    size="small"
+                    type="success"
+                    plain
+                    @click="putHouseOnline(house.id)"
+                  >
+                    上架
+                  </el-button>
+                  <el-button
+                    v-if="canPutHouseOffline(house.status)"
+                    size="small"
+                    type="warning"
+                    plain
+                    @click="putHouseOffline(house.id)"
+                  >
+                    下架
+                  </el-button>
                   <el-button size="small" type="primary" @click="router.push(`/publish-house/${house.id}`)">编辑</el-button>
                   <el-button size="small" type="danger" @click="deleteMyHouse(house.id)">删除</el-button>
                 </div>
@@ -236,7 +254,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
-import { getMyHouses, deleteHouse } from '../api/house.js'
+import { getMyHouses, deleteHouse, putMyHouseOnline, putMyHouseOffline } from '../api/house.js'
 import { getLandlordOrders, confirmOrder, rejectOrder, getLandlordReviewRecords } from '../api/order.js'
 import { getMyContracts } from '../api/contract.js'
 import { normalizeHouseImages } from '../utils/houseImages.js'
@@ -358,6 +376,44 @@ async function deleteMyHouse(id) {
     loadHouses()  // 重新加载房源列表
   } catch (e) {
     ElMessage.error(e.message || '删除失败')
+  }
+}
+
+/**
+ * 根据房源当前状态判断是否应展示“上架”按钮。
+ * 仅对 OFFLINE 状态提供上架入口，避免对审核中/已拒绝房源误操作。
+ */
+function canPutHouseOnline(status) {
+  return status === 'OFFLINE'
+}
+
+/**
+ * 根据房源当前状态判断是否应展示“下架”按钮。
+ * ONLINE/APPROVED 视作在架状态，允许房东主动下架。
+ */
+function canPutHouseOffline(status) {
+  return status === 'ONLINE' || status === 'APPROVED'
+}
+
+/** 房东将自己房源上架，成功后刷新“我的房源”列表 */
+async function putHouseOnline(id) {
+  try {
+    await putMyHouseOnline(id)
+    ElMessage.success('房源已上架')
+    loadHouses()
+  } catch (e) {
+    ElMessage.error(e.message || '上架失败')
+  }
+}
+
+/** 房东将自己房源下架，成功后刷新“我的房源”列表 */
+async function putHouseOffline(id) {
+  try {
+    await putMyHouseOffline(id)
+    ElMessage.success('房源已下架')
+    loadHouses()
+  } catch (e) {
+    ElMessage.error(e.message || '下架失败')
   }
 }
 

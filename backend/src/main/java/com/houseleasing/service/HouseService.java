@@ -119,6 +119,24 @@ public interface HouseService {
     void deleteHouse(Long id, Long ownerId);
 
     /**
+     * 房东主动上架自己的房源。
+     * <p>仅允许房源所有者操作，成功后房源状态会更新为 ONLINE。</p>
+     *
+     * @param id      房源 ID
+     * @param ownerId 当前操作房东 ID（必须与房源 ownerId 一致）
+     */
+    void putHouseOnline(Long id, Long ownerId);
+
+    /**
+     * 房东主动下架自己的房源。
+     * <p>仅允许房源所有者操作，成功后房源状态会更新为 OFFLINE。</p>
+     *
+     * @param id      房源 ID
+     * @param ownerId 当前操作房东 ID（必须与房源 ownerId 一致）
+     */
+    void putHouseOffline(Long id, Long ownerId);
+
+    /**
      * 查询指定房源的图片列表（从 house_images 明细表读取，按 sort 升序）
      *
      * @param houseId 房源 ID

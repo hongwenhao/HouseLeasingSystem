@@ -210,6 +210,62 @@ public class HouseServiceImpl implements HouseService {
     }
 
     /**
+     * 房东主动上架自己的房源。
+     * <p>安全约束：</p>
+     * <ul>
+     *   <li>房源必须存在，否则返回 404。</li>
+     *   <li>仅房源所有者可操作，否则返回 403。</li>
+     * </ul>
+     * <p>业务效果：将 status 设置为 ONLINE，并刷新更新时间。</p>
+     *
+     * @param id      房源 ID
+     * @param ownerId 当前操作房东 ID
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "hotHouses", allEntries = true)
+    public void putHouseOnline(Long id, Long ownerId) {
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限操作该房源");
+        }
+        existing.setStatus("ONLINE");
+        existing.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(existing);
+    }
+
+    /**
+     * 房东主动下架自己的房源。
+     * <p>安全约束：</p>
+     * <ul>
+     *   <li>房源必须存在，否则返回 404。</li>
+     *   <li>仅房源所有者可操作，否则返回 403。</li>
+     * </ul>
+     * <p>业务效果：将 status 设置为 OFFLINE，并刷新更新时间。</p>
+     *
+     * @param id      房源 ID
+     * @param ownerId 当前操作房东 ID
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "hotHouses", allEntries = true)
+    public void putHouseOffline(Long id, Long ownerId) {
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限操作该房源");
+        }
+        existing.setStatus("OFFLINE");
+        existing.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(existing);
+    }
+
+    /**
      * 查询房源详情，同时尝试增加浏览量（失败不影响主流程）。
      * 图片列表优先从 house_images 明细表读取并重建 images JSON 字段，
      * 确保 house_images 表中的排序信息得到实际使用。
