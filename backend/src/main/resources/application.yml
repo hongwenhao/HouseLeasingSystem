@@ -98,11 +98,11 @@ logging:
 # 2) 推荐通过环境变量覆盖密钥，避免明文写入仓库；
 # 3) FRONTEND_BASE_URL 默认指向本地前端地址，可按部署环境调整。
 alipay:
-  app-id: ${ALIPAY_APP_ID:}
-  private-key: ${ALIPAY_PRIVATE_KEY:}
-  public-key: ${ALIPAY_PUBLIC_KEY:}
-  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
-  charset: ${ALIPAY_CHARSET:utf-8}
-  sign-type: ${ALIPAY_SIGN_TYPE:RSA2}
-  timeout-express: ${ALIPAY_TIMEOUT_EXPRESS:30m}
-  return-url: ${ALIPAY_RETURN_URL:${FRONTEND_BASE_URL:http://localhost:5173}/payment/alipay/return}
+  app-id: 9021000162658843
+  private-key: MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCj0q8iG1H/B2HfsIfyjCWEHpkkmADeHATJ7If4D+h6iDgPz+tXt6Y3JJaksg6/X7ZkHSTPzKSuApR2BkRem0brOYeYcUgSF8uOkvrJ8DmCxBuzk++1rJthIg3S4ttD5dphZFA9wOcU9T/YPGl98cpbTw0zVrMj0Q3KXfr0lZD2o8tof/YNEQAm9uyGQq8CK9AarAaCEFUgRYTC1ZnhkFZnRn6i/CnlDLUiph3GdVmEGOeqrInetAXD0QszjMAI/FZ6scSpd3S+5xLjrejDQ44sAEUobLUqjJi56NeK3C2BAquOd/dSeerMPlGzQBJos2u/PYNw/4odXZF1C90olNcBAgMBAAECggEAUmKbjG1s2PIfeFzQoVt1anHw1gRTO1+f0ORQpKFramOiveD0G5LR1h1iXMTmwbsigEpfvtjNYG0PuCMCswknqxetZy5g7ihlR/gGgxN5+JcizzZwcE6zfS+hABLx7b1kC2JlMAkYrOOBDf+jlaDJAQ5KNy08vaBebQzCLcohssZxCStj3TWuJPl2boRkFhHxLd7P8w/RgqS/sWJnv+zAPS8OSmcy+Lp0xp6HbaasOEeEJgRlAPk3CE29Qnba0cUuIyDQ7PDuWLa6Xq0bUpiMGLn0HIOap6ZgIZsmNLLY00FdI9sgGteVP1zZ2VtQvoilkho/fXXfNhVCpl8TaEkwWQKBgQDm4PEUy+zdLh/Zsvl2A1cuE2ccMMMCViTxY7uIsPJRJ3QFmiehoBgTlLTPZFJ7G+oQDixkpPiWziOex7c2+xD7W5On9zo0CVNQm4iFFsoYcE8mFPR9WkIc7UTH1Ri0WqOo0L9SE0DgRUp4Vb+qbmAfURs5cYCDHIk3K3iQ1pGKqwKBgQC1pezzjMjD5KnPM7R0nWkvBlpK8h8STO3l7ExIYgesGEqP1BPbhYXu3QlKr0QtOUj7833ueEYpBnL8Cj4rLAaqxEcL08PGc8NNip/CCQBgFUgJYrsiJfFIpJzqsQRptRbJKME8kqnO9XuVdeHjE+aNo9buq6TFofQ9fQ9sg4ClAwKBgQCSEo91EPBzn9MW8V1ThRmLVUtPUqqOt+H3t5nXCdzF66hEQxv/7kJNYTBkZpyotyiHr+/2XUnKX/G5a7JHXuGHppDtHEX+1keYIE9npNuISsZI2ck15f0eQB/cLr7KnO4eyLPDQdsyCaTsLZRuSBcYuT/4QA+G5G8MMLy/JoI+sQKBgQCsLK0PIOd/PnNyMZkfW8DCUOwu05Z9+ysXX0Xi6gBJr/Ckqal0zvfnM93Fy6D8mKrEHcTEz335DuLYYUESHLXpEQgifsO3jCyXiAjrmyqe6C0SsGGd+YbdiyItFkKPi5UgcJ/QsVeBEo/kWAsW+Nr0cFKegVU5+suNqMeA3JiITwKBgQCZgRRxHOMqHbCf4eJVlTofl/Ae2BccumHIwR5vybILYFDPeOrN1JBYtFpnZ2f3TE0vcBPG4+7QiPPKw+kFpU4yASF+Yds7K1RuKEaeMgzhcDdOYf7eMpH0ZqcIevJziwg0yP6rUSGPZDrI0Pj2WQdewPs6az0NBdsAAAYlPIfuPQ==
+  public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjjqfdZgup5/11herxBQFjwiFO4w8Dvx1qPjVONVvizkdsG0/4qRjPizbB+21+Julng3OdSOUI1HDP3BJD5yDlKRCLU4pDb5uaTCaDAt1ILGfLjjQLDOqcBNPjMztHNNZdArKKIOJBuXOCI3D0NTFhkQimLjrbifr/6srZ+oqxUSN5ofrgFm6jT/Qp+S5DtL1YSBk3UzJQ7JuPDK4dCsLqH0hynw9tS8X86zs4Sj5oG2qZcDlVNyedxbdNclYtIhqrGKiUSb0gIzdrX2W5qov0CCLGHiMxGpgjr9S8e8D/ddJjPRc058pji8aaA8c6KSEv7XJe8Vv4+Q8d6ZV/uImdQIDAQAB
+  gateway-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+  charset: utf-8
+  sign-type: RSA2
+  timeout-express: 20m
+  return-url: http://localhost:5173}/payment/alipay/return
