@@ -1047,7 +1047,7 @@ function contractStatusTagType(status) {
   width: 100%;
 }
 
-:deep(.management-table th > .cell) {
+:deep(.management-table th > .cell, .management-table td > .cell) {
   text-align: left;
 }
 
