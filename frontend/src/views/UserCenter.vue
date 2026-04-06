@@ -456,7 +456,7 @@
 
 <script setup>
 // 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'     // 用于密码修改后跳转到登录页与读取路由参数
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled, Star } from '@element-plus/icons-vue'
@@ -538,12 +538,12 @@ const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 
  * 将当前激活标签同步到 URL query.tab。
  * 说明：顶部导航栏激活态基于 route.query.tab 计算，所以中心页内切换标签时也要同步 query。
  */
-async function syncTabToRouteQuery(tabName) {
+function syncTabToRouteQuery(tabName) {
   const targetTab = typeof tabName === 'string' ? tabName : ''
   if (!allowedTabs.includes(targetTab)) return
   if (route.query.tab === targetTab) return
   const nextQuery = { ...route.query, tab: targetTab }
-  await router.replace({ path: route.path, query: nextQuery })
+  router.replace({ path: route.path, query: nextQuery })
 }
 
 /**
@@ -709,8 +709,8 @@ watch(
  */
 watch(
   activeTab,
-  async (tab) => {
-    await syncTabToRouteQuery(tab)
+  (tab) => {
+    syncTabToRouteQuery(tab)
   }
 )
 
@@ -908,11 +908,8 @@ async function loadReviewRecords() {
 async function saveProfile() {
   savingProfile.value = true
   try {
-    // 先更新资料，再拉取后端最新资料，确保头像等字段与数据库保持一致并立即回显。
+    // updateProfile 内部已做 avatar/avatarUrl 兼容并回写 store，可直接驱动头像回显。
     await userStore.updateProfile(profileForm)
-    await userStore.fetchProfile()
-    // 等待依赖 userInfo 的组件（个人中心头像、顶部导航头像）完成本轮渲染。
-    await nextTick()
     ElMessage.success('保存成功')
   } catch (e) {
     ElMessage.error(e.message || '保存失败')

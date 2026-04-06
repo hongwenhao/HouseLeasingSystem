@@ -329,12 +329,12 @@ const allowedTabs = ['houses', 'orders', 'contracts', 'stats', 'reviews']
  * 将房东中心当前激活标签同步到 URL query.tab。
  * 说明：顶部导航栏“预约订单管理/合同管理/收到的评价”激活态依赖 query.tab。
  */
-async function syncTabToRouteQuery(tabName) {
+function syncTabToRouteQuery(tabName) {
   const targetTab = typeof tabName === 'string' ? tabName : ''
   if (!allowedTabs.includes(targetTab)) return
   if (route.query.tab === targetTab) return
   const nextQuery = { ...route.query, tab: targetTab }
-  await router.replace({ path: route.path, query: nextQuery })
+  router.replace({ path: route.path, query: nextQuery })
 }
 
 /**
@@ -436,8 +436,8 @@ watch(
  */
 watch(
   activeTab,
-  async (tab) => {
-    await syncTabToRouteQuery(tab)
+  (tab) => {
+    syncTabToRouteQuery(tab)
   }
 )
 

@@ -23,11 +23,12 @@ import { login as loginApi, logout as logoutApi, getProfile, updateProfile as up
  * 这里做双向兼容，避免头像“保存成功但页面不回显”。
  */
 function normalizeUserInfo(user = {}) {
-  const avatarUrl = user.avatarUrl || user.avatar || ''
+  // 明确优先级：以后端字段 avatar 为准，缺失时回退 avatarUrl。
+  const avatar = user.avatar || user.avatarUrl || ''
   return {
     ...user,
-    avatar: user.avatar || avatarUrl,
-    avatarUrl
+    avatar,
+    avatarUrl: avatar
   }
 }
 
@@ -99,7 +100,7 @@ export const useUserStore = defineStore('user', {
     async updateProfile(data) {
       // 后端 DTO 接收 avatar 字段，前端表单使用 avatarUrl 字段；这里统一转换后再提交。
       const payload = { ...data }
-      if (Object.prototype.hasOwnProperty.call(payload, 'avatarUrl')) {
+      if ('avatarUrl' in payload) {
         payload.avatar = payload.avatarUrl
         delete payload.avatarUrl
       }
