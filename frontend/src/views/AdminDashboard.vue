@@ -1024,11 +1024,7 @@ function contractStatusTagType(status) {
   width: 100%;
 }
 
-:deep(.management-table th > .cell) {
-  text-align: center;
-}
-
-:deep(.management-table td > .cell) {
+:deep(.management-table th > .cell, .management-table td > .cell) {
   text-align: center;
 }
 
