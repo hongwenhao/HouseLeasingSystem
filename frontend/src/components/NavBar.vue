@@ -17,14 +17,6 @@
         <!-- 仅管理员可见：管理后台分模块入口，与 /admin?tab=xxx 联动 -->
         <router-link
           v-if="isAdmin"
-          :to="adminOverviewNavTarget"
-          active-class=""
-          exact-active-class=""
-          :class="['nav-link', { 'tab-active': isAdminOverviewActive }]"
-          @click="menuOpen = false"
-        >数据概览</router-link>
-        <router-link
-          v-if="isAdmin"
           :to="adminUsersNavTarget"
           active-class=""
           exact-active-class=""
@@ -55,6 +47,14 @@
           :class="['nav-link', { 'tab-active': isAdminContractsActive }]"
           @click="menuOpen = false"
         >合同管理</router-link>
+        <router-link
+          v-if="isAdmin"
+          :to="adminOverviewNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isAdminOverviewActive }]"
+          @click="menuOpen = false"
+        >数据概览</router-link>
         <!-- 仅租客可见：我的收藏入口，按要求放在“房源列表”右侧 -->
         <router-link
           v-if="isLoggedIn && role === 'TENANT'"
