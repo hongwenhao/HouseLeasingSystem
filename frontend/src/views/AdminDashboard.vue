@@ -7,15 +7,37 @@
         <el-tabs v-model="activeTab" class="admin-tabs">
           <!-- User Management Tab -->
           <el-tab-pane label="用户管理" name="users">
+            <!--
+              用户管理搜索区：
+              1) 左侧关键字输入：按用户名/手机号模糊过滤；
+              2) 右侧状态下拉：支持“全部/正常/已封禁”状态筛选；
+              3) 输入与状态可叠加，便于管理员快速定位目标用户。
+            -->
             <div class="tab-toolbar">
-              <el-input
-                v-model="userSearch"
-                placeholder="搜索用户名/手机号"
-                clearable
-                style="width:280px"
-                @input="filterUsers"
-                prefix-icon="Search"
-              />
+              <div class="toolbar-row">
+                <el-input
+                  v-model="userSearch"
+                  placeholder="搜索用户名/手机号"
+                  clearable
+                  style="width:280px"
+                  @input="filterUsers"
+                  prefix-icon="Search"
+                />
+                <el-select
+                  v-model="userStatusFilter"
+                  clearable
+                  placeholder="状态筛选"
+                  style="width: 160px"
+                  @change="filterUsers"
+                >
+                  <el-option
+                    v-for="item in userStatusOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
+              </div>
             </div>
             <el-table
               :data="filteredUsers"
@@ -104,21 +126,22 @@
 
           <!-- Order Management Tab -->
           <el-tab-pane label="订单管理" name="orders">
-            <!-- 管理员订单搜索栏：左侧关键字输入，右侧状态下拉，支持组合筛选 -->
+            <!--
+              管理员订单搜索栏：
+              1) 关键字与状态下拉并列展示；
+              2) 查询按钮改为与“用户管理/房源管理”一致的主色按钮样式（type=primary）；
+              3) 保持回车触发、清空重载等交互不变。
+            -->
             <div class="tab-toolbar">
               <div class="toolbar-row">
                 <el-input
                   v-model.trim="orderKeyword"
                   clearable
                   placeholder="搜索订单（订单号）"
-                  style="max-width: 360px"
+                  style="width: 360px"
                   @keyup.enter="loadOrders"
                   @clear="loadOrders"
-                >
-                  <template #append>
-                    <el-button @click="loadOrders">搜索</el-button>
-                  </template>
-                </el-input>
+                />
                 <el-select
                   v-model="orderStatusFilter"
                   clearable
@@ -133,6 +156,7 @@
                     :value="item.value"
                   />
                 </el-select>
+                <el-button type="primary" @click="loadOrders">查询</el-button>
               </div>
             </div>
             <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table">
@@ -171,21 +195,22 @@
 
           <!-- Contract Management Tab -->
           <el-tab-pane label="合同管理" name="contracts">
-            <!-- 管理员合同搜索栏：左侧关键字输入，右侧状态下拉，支持组合筛选 -->
+            <!--
+              管理员合同搜索栏：
+              1) 关键字与状态下拉并列展示；
+              2) 查询按钮改为与“用户管理/房源管理”一致的主色按钮样式（type=primary）；
+              3) 保持回车触发、清空重载等交互不变。
+            -->
             <div class="tab-toolbar">
               <div class="toolbar-row">
                 <el-input
                   v-model.trim="contractKeyword"
                   clearable
                   placeholder="搜索合同（合同编号/关联订单号）"
-                  style="max-width: 360px"
+                  style="width: 360px"
                   @keyup.enter="loadContracts"
                   @clear="loadContracts"
-                >
-                  <template #append>
-                    <el-button @click="loadContracts">搜索</el-button>
-                  </template>
-                </el-input>
+                />
                 <el-select
                   v-model="contractStatusFilter"
                   clearable
@@ -200,6 +225,7 @@
                     :value="item.value"
                   />
                 </el-select>
+                <el-button type="primary" @click="loadContracts">查询</el-button>
               </div>
             </div>
             <!--
@@ -361,6 +387,11 @@ const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
 const usersLoading = ref(false)          // 用户列表加载状态
 const userSearch = ref('')               // 用户搜索关键词
+const userStatusFilter = ref('')         // 用户状态筛选（''=全部，ACTIVE=正常，BANNED=已封禁）
+const userStatusOptions = [              // 用户状态下拉选项
+  { label: '正常', value: 'ACTIVE' },
+  { label: '已封禁', value: 'BANNED' }
+]
 
 const houseManagementList = ref([])       // 房源管理列表
 const houseManagementLoading = ref(false) // 房源管理加载状态
@@ -462,14 +493,15 @@ async function loadStats() {
   } catch (e) { /* ignore */ }
 }
 
-/** 加载所有用户列表（支持关键词前端过滤） */
+/** 加载所有用户列表（支持关键词+状态前端过滤） */
 async function loadUsers() {
   usersLoading.value = true
   try {
     const res = await getUserList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
     // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
     users.value = Array.isArray(res) ? res : (res?.records || [])
-    filteredUsers.value = [...users.value]  // 初始不过滤
+    // 列表加载完成后执行一次统一过滤逻辑，保证筛选状态与展示结果一致。
+    filterUsers()
   } catch (e) { /* ignore */ }
   finally { usersLoading.value = false }
 }
@@ -532,14 +564,22 @@ async function loadContracts() {
 }
 
 /**
- * 前端实时过滤用户列表（按用户名或手机号模糊匹配）
- * 在搜索框 input 事件时触发
+ * 前端实时过滤用户列表（关键字 + 状态组合筛选）
+ * 触发时机：
+ * 1) 搜索框输入变化；
+ * 2) 状态下拉变化；
+ * 3) 用户列表初次加载完成。
  */
 function filterUsers() {
-  const keyword = userSearch.value.toLowerCase()
-  filteredUsers.value = users.value.filter(u =>
-    u.username?.toLowerCase().includes(keyword) || u.phone?.includes(keyword)
-  )
+  const keyword = userSearch.value.trim().toLowerCase()
+  const status = userStatusFilter.value
+  filteredUsers.value = users.value.filter((u) => {
+    const hitKeyword = !keyword
+      || u.username?.toLowerCase().includes(keyword)
+      || u.phone?.includes(keyword)
+    const hitStatus = !status || u.status === status
+    return hitKeyword && hitStatus
+  })
 }
 
 /**

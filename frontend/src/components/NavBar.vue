@@ -251,9 +251,12 @@ onMounted(async () => {
  */
 async function handleCommand(cmd) {
   if (cmd === 'profile') {
-    // 下拉“个人中心”按角色分流，管理员直接进入后台概览，房东进入房东中心，其余进入个人中心
+    // 下拉“个人中心”按角色分流：
+    // 1) 管理员按产品要求直接进入“用户管理”模块（/admin?tab=users）；
+    // 2) 房东进入房东中心；
+    // 3) 其他角色进入个人中心。
     if (role.value === 'ADMIN') {
-      router.push({ path: '/admin', query: { tab: 'overview' } })
+      router.push({ path: '/admin', query: { tab: 'users' } })
     } else if (role.value === 'LANDLORD') {
       router.push('/landlord-center')
     } else {
