@@ -183,16 +183,21 @@ public class AdminController {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
         List<Order> records = result.getRecords();
         // 批量查询关联信息，避免 N+1 查询
-        Map<Long, House> houseMap = mapById(houseMapper.selectBatchIds(records.stream()
+        Set<Long> houseIds = records.stream()
                 .map(Order::getHouseId)
                 .filter(id -> id != null)
-                .collect(Collectors.toSet())), House::getId);
+                .collect(Collectors.toSet());
+        Map<Long, House> houseMap = houseIds.isEmpty()
+                ? Map.of()
+                : mapById(houseMapper.selectBatchIds(houseIds), House::getId);
         Set<Long> userIds = new HashSet<>();
         records.forEach(order -> {
             if (order.getTenantId() != null) userIds.add(order.getTenantId());
             if (order.getLandlordId() != null) userIds.add(order.getLandlordId());
         });
-        Map<Long, User> userMap = mapById(userMapper.selectBatchIds(userIds), User::getId);
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Map.of()
+                : mapById(userMapper.selectBatchIds(userIds), User::getId);
         records.forEach(order -> {
             order.setHouse(houseMap.get(order.getHouseId()));
             order.setTenant(sanitizeUser(userMap.get(order.getTenantId())));
@@ -252,20 +257,28 @@ public class AdminController {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Contract> result = contractMapper.selectPage(pageObj, wrapper);
         List<Contract> records = result.getRecords();
         // 批量查询关联信息，避免 N+1 查询
-        Map<Long, House> houseMap = mapById(houseMapper.selectBatchIds(records.stream()
+        Set<Long> houseIds = records.stream()
                 .map(Contract::getHouseId)
                 .filter(id -> id != null)
-                .collect(Collectors.toSet())), House::getId);
+                .collect(Collectors.toSet());
+        Map<Long, House> houseMap = houseIds.isEmpty()
+                ? Map.of()
+                : mapById(houseMapper.selectBatchIds(houseIds), House::getId);
         Set<Long> userIds = new HashSet<>();
         records.forEach(contract -> {
             if (contract.getTenantId() != null) userIds.add(contract.getTenantId());
             if (contract.getLandlordId() != null) userIds.add(contract.getLandlordId());
         });
-        Map<Long, User> userMap = mapById(userMapper.selectBatchIds(userIds), User::getId);
-        Map<Long, Order> orderMap = mapById(orderMapper.selectBatchIds(records.stream()
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Map.of()
+                : mapById(userMapper.selectBatchIds(userIds), User::getId);
+        Set<Long> orderIds = records.stream()
                 .map(Contract::getOrderId)
                 .filter(id -> id != null)
-                .collect(Collectors.toSet())), Order::getId);
+                .collect(Collectors.toSet());
+        Map<Long, Order> orderMap = orderIds.isEmpty()
+                ? Map.of()
+                : mapById(orderMapper.selectBatchIds(orderIds), Order::getId);
         records.forEach(contract -> {
             contract.setHouse(houseMap.get(contract.getHouseId()));
             contract.setTenant(sanitizeUser(userMap.get(contract.getTenantId())));
