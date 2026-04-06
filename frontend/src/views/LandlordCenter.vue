@@ -133,9 +133,9 @@
             </div>
             <div v-else-if="filteredLandlordOrders.length > 0" class="table-card orders-table">
               <div class="table-head">
-                <span>预约房源</span>
-                <span>租客</span>
-                <span>预约时间</span>
+                <span class="center-head-cell">预约房源</span>
+                <span class="center-head-cell">租客</span>
+                <span class="center-head-cell">预约时间</span>
                 <span>订单状态</span>
                 <span>支付状态</span>
                 <span class="action-head">操作</span>
@@ -223,11 +223,11 @@
             </div>
             <div v-else-if="filteredContracts.length > 0" class="table-card contracts-table">
               <div class="table-head">
-                <span>合同编号</span>
-                <span>租客</span>
-                <span>租期</span>
-                <span>月租</span>
-                <span>状态</span>
+                <span class="center-head-cell">合同编号</span>
+                <span class="center-head-cell">租客</span>
+                <span class="center-head-cell">租期</span>
+                <span class="center-head-cell">月租</span>
+                <span class="center-head-cell">状态</span>
                 <span class="action-head">操作</span>
               </div>
               <div
@@ -850,8 +850,8 @@ function getOrderHouseTitleWithFallback(order) {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
-/* 房东端 tabs 标题（含“我的房源”）统一居中 */
-.center-tabs :deep(.el-tabs__item) {
+/* “我的房源”tab 标题居中 */
+.center-tabs :deep(.el-tabs__item:nth-child(1)) {
   text-align: center;
 }
 
@@ -1034,13 +1034,8 @@ function getOrderHouseTitleWithFallback(order) {
   border-bottom: 1px solid #edf0f5;
 }
 
-/* 预约订单管理：预约房源 / 租客 / 预约时间 表头居中 */
-.orders-table .table-head > span:nth-child(-n + 3) {
-  text-align: center;
-}
-
-/* 合同管理：合同编号 / 租客 / 租期 / 月租 / 状态 表头居中 */
-.contracts-table .table-head > span:nth-child(-n + 5) {
+/* 指定业务表头居中（预约房源/租客/预约时间、合同编号/租客/租期/月租/状态） */
+.table-head .center-head-cell {
   text-align: center;
 }
 
