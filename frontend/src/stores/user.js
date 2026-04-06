@@ -16,6 +16,21 @@
 import { defineStore } from 'pinia'
 import { login as loginApi, logout as logoutApi, getProfile, updateProfile as updateProfileApi } from '../api/auth.js'
 
+/**
+ * 统一用户对象字段：
+ * - 后端字段为 avatar；
+ * - 前端历史代码广泛使用 avatarUrl。
+ * 这里做双向兼容，避免头像“保存成功但页面不回显”。
+ */
+function normalizeUserInfo(user = {}) {
+  const avatarUrl = user.avatarUrl || user.avatar || ''
+  return {
+    ...user,
+    avatar: user.avatar || avatarUrl,
+    avatarUrl
+  }
+}
+
 export const useUserStore = defineStore('user', {
   /** 初始化状态：优先从 localStorage 恢复 token 和 role（刷新后保持登录态） */
   state: () => ({
@@ -26,6 +41,7 @@ export const useUserStore = defineStore('user', {
       phone: '',
       email: '',
       role: localStorage.getItem('role') || '', // 角色：TENANT / LANDLORD / ADMIN
+      avatar: '',
       avatarUrl: '',
       creditScore: 100  // 默认信用分 100
     },
@@ -40,7 +56,7 @@ export const useUserStore = defineStore('user', {
     async login(credentials) {
       const res = await loginApi(credentials)
       this.token = res.token
-      this.userInfo = res.user
+      this.userInfo = normalizeUserInfo(res.user)
       // 持久化存储 token 和角色，供路由守卫和 axios 拦截器读取
       localStorage.setItem('token', res.token)
       localStorage.setItem('role', res.user.role)
@@ -58,7 +74,7 @@ export const useUserStore = defineStore('user', {
         // 忽略后端登出失败，继续清除本地状态
       }
       this.token = ''
-      this.userInfo = { id: null, username: '', phone: '', email: '', role: '', avatarUrl: '', creditScore: 100 }
+      this.userInfo = { id: null, username: '', phone: '', email: '', role: '', avatar: '', avatarUrl: '', creditScore: 100 }
       this.isLoggedIn = false
       // 清除本地存储中的认证信息
       localStorage.removeItem('token')
@@ -71,8 +87,8 @@ export const useUserStore = defineStore('user', {
      */
     async fetchProfile() {
       const res = await getProfile()
-      this.userInfo = res
-      return res
+      this.userInfo = normalizeUserInfo(res)
+      return this.userInfo
     },
 
     /**
@@ -81,9 +97,15 @@ export const useUserStore = defineStore('user', {
      * 仅更新变更字段，合并到现有 userInfo 中
      */
     async updateProfile(data) {
-      const res = await updateProfileApi(data)
-      this.userInfo = { ...this.userInfo, ...res }
-      return res
+      // 后端 DTO 接收 avatar 字段，前端表单使用 avatarUrl 字段；这里统一转换后再提交。
+      const payload = { ...data }
+      if (Object.prototype.hasOwnProperty.call(payload, 'avatarUrl')) {
+        payload.avatar = payload.avatarUrl
+        delete payload.avatarUrl
+      }
+      const res = await updateProfileApi(payload)
+      this.userInfo = normalizeUserInfo({ ...this.userInfo, ...res })
+      return this.userInfo
     }
   }
 })

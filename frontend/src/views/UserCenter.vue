@@ -456,7 +456,7 @@
 
 <script setup>
 // 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'     // 用于密码修改后跳转到登录页与读取路由参数
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { UserFilled, ChatLineSquare, Calendar, Memo, StarFilled, Star } from '@element-plus/icons-vue'
@@ -533,6 +533,18 @@ const isLandlord = computed(() => userInfo.value.role === 'LANDLORD')
  * 例如：/user-center?tab=orders 会自动切换到“预约管理”。
  */
 const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'reviews', 'credit']
+
+/**
+ * 将当前激活标签同步到 URL query.tab。
+ * 说明：顶部导航栏激活态基于 route.query.tab 计算，所以中心页内切换标签时也要同步 query。
+ */
+async function syncTabToRouteQuery(tabName) {
+  const targetTab = typeof tabName === 'string' ? tabName : ''
+  if (!allowedTabs.includes(targetTab)) return
+  if (route.query.tab === targetTab) return
+  const nextQuery = { ...route.query, tab: targetTab }
+  await router.replace({ path: route.path, query: nextQuery })
+}
 
 /**
  * 统一搜索文本归一化函数：
@@ -690,6 +702,16 @@ watch(
     activeTab.value = targetTab
   },
   { immediate: true }
+)
+
+/**
+ * 用户在页面内手动切换 tab 时，同步 query.tab，保证顶部导航高亮实时联动。
+ */
+watch(
+  activeTab,
+  async (tab) => {
+    await syncTabToRouteQuery(tab)
+  }
 )
 
 /**
@@ -886,7 +908,11 @@ async function loadReviewRecords() {
 async function saveProfile() {
   savingProfile.value = true
   try {
+    // 先更新资料，再拉取后端最新资料，确保头像等字段与数据库保持一致并立即回显。
     await userStore.updateProfile(profileForm)
+    await userStore.fetchProfile()
+    // 等待依赖 userInfo 的组件（个人中心头像、顶部导航头像）完成本轮渲染。
+    await nextTick()
     ElMessage.success('保存成功')
   } catch (e) {
     ElMessage.error(e.message || '保存失败')
