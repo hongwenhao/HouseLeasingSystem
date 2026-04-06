@@ -138,7 +138,7 @@
                   v-model.trim="orderKeyword"
                   clearable
                   placeholder="搜索订单（订单号）"
-                  style="width: 360px"
+                  style="max-width: 360px"
                   @keyup.enter="loadOrders"
                   @clear="loadOrders"
                 />
@@ -207,7 +207,7 @@
                   v-model.trim="contractKeyword"
                   clearable
                   placeholder="搜索合同（合同编号/关联订单号）"
-                  style="width: 360px"
+                  style="max-width: 360px"
                   @keyup.enter="loadContracts"
                   @clear="loadContracts"
                 />
@@ -387,7 +387,7 @@ const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
 const usersLoading = ref(false)          // 用户列表加载状态
 const userSearch = ref('')               // 用户搜索关键词
-const userStatusFilter = ref('')         // 用户状态筛选（''=全部，ACTIVE=正常，BANNED=已封禁）
+const userStatusFilter = ref('')         // 用户状态筛选（通过 clearable 清空后回到“全部”）
 const userStatusOptions = [              // 用户状态下拉选项
   { label: '正常', value: 'ACTIVE' },
   { label: '已封禁', value: 'BANNED' }
@@ -498,7 +498,7 @@ async function loadUsers() {
   usersLoading.value = true
   try {
     const res = await getUserList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
-    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）
+    // 后端返回 PageResult 对象，其数据列表字段为 records（非 list）。
     users.value = Array.isArray(res) ? res : (res?.records || [])
     // 列表加载完成后执行一次统一过滤逻辑，保证筛选状态与展示结果一致。
     filterUsers()
@@ -572,12 +572,12 @@ async function loadContracts() {
  */
 function filterUsers() {
   const keyword = userSearch.value.trim().toLowerCase()
-  const status = userStatusFilter.value
+  const status = userStatusFilter.value || ''
   filteredUsers.value = users.value.filter((u) => {
-    const hitKeyword = !keyword
-      || u.username?.toLowerCase().includes(keyword)
-      || u.phone?.includes(keyword)
-    const hitStatus = !status || u.status === status
+    const hitKeyword = keyword
+      ? (u.username?.toLowerCase().includes(keyword) || u.phone?.includes(keyword))
+      : true
+    const hitStatus = status ? u.status === status : true
     return hitKeyword && hitStatus
   })
 }
