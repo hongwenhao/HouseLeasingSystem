@@ -139,8 +139,8 @@
                 <span class="center-cell">预约房源</span>
                 <span class="center-cell">租客</span>
                 <span class="center-cell">预约时间</span>
-                <span class="center-cell">订单状态</span>
-                <span class="center-cell">支付状态</span>
+                <span>订单状态</span>
+                <span>支付状态</span>
                 <span class="action-head">操作</span>
               </div>
               <div
@@ -149,15 +149,15 @@
                 class="table-row"
               >
                 <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
-                <span class="title-cell center-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
-                <span class="center-cell">{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
-                <span class="center-cell">{{ formatDateTime(order.appointmentTime) }}</span>
-                <span class="center-cell">
+                <span class="title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
+                <span>{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
+                <span>{{ formatDateTime(order.appointmentTime) }}</span>
+                <span>
                   <el-tag :type="orderStatusType(order.status)" size="small">
                     {{ orderStatusLabel(order.status) }}
                   </el-tag>
                 </span>
-                <span class="center-cell">
+                <span>
                   <el-tag :type="paymentStatusType(order.paymentStatus)" size="small">
                     {{ paymentStatusLabel(order.paymentStatus) }}
                   </el-tag>
@@ -238,11 +238,11 @@
                 :key="contract.id"
                 class="table-row"
               >
-                <span class="title-cell center-cell">{{ contract.contractNo || contract.id }}</span>
-                <span class="center-cell">{{ contract.tenantName || contract.tenant?.realName || contract.tenant?.username || contract.tenantId }}</span>
-                <span class="center-cell">{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                <span class="center-cell">¥{{ contract.monthlyRent ?? contract.rent }}</span>
-                <span class="center-cell">
+                <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
+                <span>{{ contract.tenantName || contract.tenant?.realName || contract.tenant?.username || contract.tenantId }}</span>
+                <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
+                <span>¥{{ contract.monthlyRent ?? contract.rent }}</span>
+                <span>
                   <el-tag :type="contractStatusType(contract.status)" size="small">
                     {{ contractStatusLabel(contract.status) }}
                   </el-tag>
