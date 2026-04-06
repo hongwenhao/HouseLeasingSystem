@@ -6,7 +6,10 @@
         <h2 class="page-title">管理后台</h2>
         <el-tabs v-model="activeTab" class="admin-tabs">
           <!-- User Management Tab -->
-          <el-tab-pane label="用户管理" name="users">
+          <el-tab-pane name="users">
+            <template #label>
+              <span class="admin-tab-title">用户管理</span>
+            </template>
             <!--
               用户管理搜索区：
               1) 左侧关键字输入：按用户名/手机号模糊过滤；
@@ -44,7 +47,7 @@
               v-loading="usersLoading"
               stripe
               border
-              class="data-table"
+              class="data-table management-table"
             >
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="username" label="用户名" width="130" />
@@ -82,7 +85,10 @@
           </el-tab-pane>
 
           <!-- House Management Tab -->
-          <el-tab-pane label="房源管理" name="houseMgmt">
+          <el-tab-pane name="houseMgmt">
+            <template #label>
+              <span class="admin-tab-title">房源管理</span>
+            </template>
             <div class="tab-toolbar toolbar-row">
               <el-input
                 v-model="houseMgmtKeyword"
@@ -113,7 +119,7 @@
               </el-select>
               <el-button type="primary" @click="loadHouseManagementList">查询</el-button>
             </div>
-            <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table">
+            <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table management-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="title" label="房源标题" min-width="220" />
               <el-table-column prop="city" label="城市" width="110" />
@@ -145,7 +151,10 @@
           </el-tab-pane>
 
           <!-- Order Management Tab -->
-          <el-tab-pane label="订单管理" name="orders">
+          <el-tab-pane name="orders">
+            <template #label>
+              <span class="admin-tab-title">预约订单管理</span>
+            </template>
             <!--
               管理员订单搜索栏：
               1) 关键字与状态下拉并列展示；
@@ -185,7 +194,7 @@
               2) 操作列取消 fixed，避免窄屏时右侧固定列遮挡前一列内容；
               3) 操作列宽度增大并支持双按钮布局（查看 + 取消）。
             -->
-            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table order-table">
+            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table management-table order-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="orderNo" label="订单编号" min-width="160" />
               <el-table-column label="房源" min-width="180">
@@ -223,7 +232,10 @@
           </el-tab-pane>
 
           <!-- Contract Management Tab -->
-          <el-tab-pane label="合同管理" name="contracts">
+          <el-tab-pane name="contracts">
+            <template #label>
+              <span class="admin-tab-title">合同管理</span>
+            </template>
             <!--
               管理员合同搜索栏：
               1) 关键字与状态下拉并列展示；
@@ -262,7 +274,7 @@
               1) 追加 contract-table 类，仅对合同表格做样式微调，避免影响其它管理表格；
               2) 将“操作”列取消 fixed="right"，避免在窄视口下覆盖“创建时间”列内容。
             -->
-            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table contract-table">
+            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table management-table contract-table">
               <el-table-column prop="id" label="ID" width="80" />
               <!--
                 合同编号列：通过 header/cell class 单独缩小字体，
@@ -1012,6 +1024,10 @@ function contractStatusTagType(status) {
   width: 100%;
 }
 
+:deep(.management-table th > .cell, .management-table td > .cell) {
+  text-align: center;
+}
+
 /*
   管理表格操作按钮组：
   - 通过弹性布局让“查看/取消”在狭窄列宽下自动换行，避免按钮互相遮挡；
@@ -1066,6 +1082,17 @@ function contractStatusTagType(status) {
 
 :deep(.contract-table .table-action-group) {
   min-width: 170px;
+}
+
+:deep(.admin-tabs .el-tabs__nav-wrap) {
+  display: flex;
+  justify-content: center;
+}
+
+.admin-tab-title {
+  display: inline-block;
+  min-width: 84px;
+  text-align: center;
 }
 
 .empty-audit {
