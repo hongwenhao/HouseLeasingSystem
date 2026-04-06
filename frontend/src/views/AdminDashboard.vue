@@ -225,8 +225,8 @@
 
 <script setup>
 // 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源管理、订单、合同管理功能
-import { ref, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, nextTick, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
 import NavBar from '../components/NavBar.vue'
@@ -248,6 +248,7 @@ import {
 
 const activeTab = ref('overview')        // 当前激活 tab
 const router = useRouter()               // 路由实例（用于跳转房源详情页）
+const route = useRoute()                 // 当前路由对象（用于读取/同步 ?tab=xxx）
 const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
@@ -270,6 +271,21 @@ const contractsLoading = ref(false)      // 合同列表加载状态
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
+// 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
+const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
+
+/**
+ * 将管理后台当前标签同步到 URL query.tab：
+ * 1) 让顶部导航栏（/admin?tab=xxx）高亮与后台标签保持一致；
+ * 2) 支持刷新后仍停留在当前模块。
+ */
+function syncAdminTabToRouteQuery(tabName) {
+  const targetTab = typeof tabName === 'string' ? tabName : ''
+  if (!allowedAdminTabs.includes(targetTab)) return
+  if (route.query.tab === targetTab) return
+  const nextQuery = { ...route.query, tab: targetTab }
+  router.replace({ path: route.path, query: nextQuery })
+}
 
 onMounted(async () => {
   // 并发加载统计数据、用户列表
@@ -284,6 +300,35 @@ onMounted(async () => {
     initCharts()
   }, 200)  // 额外延迟确保 tab 切换后 DOM 完全渲染
 })
+
+/**
+ * 监听 query.tab：
+ * - 支持从顶部导航栏点击“用户管理/房源管理/订单管理/合同管理/数据概览”后自动切换对应标签；
+ * - 对无效 tab 参数直接忽略，避免页面抖动或进入不存在标签。
+ */
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const targetTab = typeof tab === 'string' ? tab : ''
+    if (!targetTab) {
+      activeTab.value = 'overview'
+      // 当 URL 未携带 tab 时，补齐默认 tab=overview，避免地址与当前标签不一致。
+      syncAdminTabToRouteQuery('overview')
+      return
+    }
+    if (!allowedAdminTabs.includes(targetTab)) return
+    activeTab.value = targetTab
+  },
+  { immediate: true }
+)
+
+// 在后台内部切换标签时，同步 query.tab，确保与顶部导航双向联动。
+watch(
+  activeTab,
+  (tab) => {
+    syncAdminTabToRouteQuery(tab)
+  }
+)
 
 /** 加载平台整体数据概览统计 */
 async function loadStats() {
