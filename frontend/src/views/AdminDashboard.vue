@@ -315,13 +315,14 @@
                 1) 给“查看/取消”留出稳定展示空间，避免在中等分辨率下被压缩遮挡；
                 2) 保持非 fixed 布局，继续规避 fixed 列覆盖相邻列的问题。
               -->
-              <el-table-column label="操作" min-width="220">
+              <el-table-column label="操作" min-width="220" class-name="contract-actions-column">
                 <template #default="{ row }">
                   <div class="table-action-group">
-                    <el-button size="small" @click="handleViewContractDetail(row)">查看</el-button>
+                    <el-button size="small" text @click="handleViewContractDetail(row)">查看</el-button>
                     <el-button
                       size="small"
                       type="danger"
+                      text
                       :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
                       @click="handleCancelContractByAdmin(row)"
                     >取消</el-button>
@@ -1060,7 +1061,7 @@ function contractStatusTagType(status) {
   - 显式保证操作列单元格内容可见，不因默认溢出策略导致按钮被裁切；
   - 在窄宽度下允许按钮组换行，优先保证“取消”按钮可点击。
 */
-:deep(.contract-table .el-table__cell) {
+:deep(.contract-table .contract-actions-column) {
   overflow: visible;
 }
 
