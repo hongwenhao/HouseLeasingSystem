@@ -622,6 +622,8 @@ async function handleLocalImageChange(uploadFile) {
   padding: 12px 16px;
   display: flex;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .owner-type-option {

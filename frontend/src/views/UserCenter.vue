@@ -535,6 +535,18 @@ const isLandlord = computed(() => userInfo.value.role === 'LANDLORD')
 const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'reviews', 'credit']
 
 /**
+ * 将当前激活标签同步到 URL query.tab。
+ * 说明：顶部导航栏激活态基于 route.query.tab 计算，所以中心页内切换标签时也要同步 query。
+ */
+function syncTabToRouteQuery(tabName) {
+  const targetTab = typeof tabName === 'string' ? tabName : ''
+  if (!allowedTabs.includes(targetTab)) return
+  if (route.query.tab === targetTab) return
+  const nextQuery = { ...route.query, tab: targetTab }
+  router.replace({ path: route.path, query: nextQuery })
+}
+
+/**
  * 统一搜索文本归一化函数：
  * 1) 将 null/undefined 安全转换为空串；
  * 2) 去除首尾空格；
@@ -690,6 +702,16 @@ watch(
     activeTab.value = targetTab
   },
   { immediate: true }
+)
+
+/**
+ * 用户在页面内手动切换 tab 时，同步 query.tab，保证顶部导航高亮实时联动。
+ */
+watch(
+  activeTab,
+  (tab) => {
+    syncTabToRouteQuery(tab)
+  }
 )
 
 /**
@@ -886,6 +908,7 @@ async function loadReviewRecords() {
 async function saveProfile() {
   savingProfile.value = true
   try {
+    // updateProfile 内部已做 avatar/avatarUrl 兼容并回写 store，可直接驱动头像回显。
     await userStore.updateProfile(profileForm)
     ElMessage.success('保存成功')
   } catch (e) {
