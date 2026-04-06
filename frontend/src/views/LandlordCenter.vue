@@ -135,6 +135,7 @@
                   <el-button
                     v-if="order.contractId"
                     size="small"
+                    type="primary"
                     @click="router.push(`/contracts/${order.contractId}`)"
                   >
                     查看合同

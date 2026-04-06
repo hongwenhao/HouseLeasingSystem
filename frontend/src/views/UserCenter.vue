@@ -210,7 +210,8 @@
                     </el-tag>
                   </span>
                   <div class="row-actions">
-                    <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看</el-button>
+                    <!-- 按需求明确动作语义：预约订单管理“查看”统一改为“查看订单” -->
+                    <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看订单</el-button>
                     <!-- 按产品要求：租客端“退款”紧随“查看”并上下对齐，便于快速识别资金相关操作 -->
                     <el-button
                       v-if="canShowRefundAction(order)"
@@ -305,7 +306,8 @@
                     </el-tag>
                   </span>
                   <div class="row-actions">
-                    <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看</el-button>
+                    <!-- 按需求明确动作语义：合同管理“查看”统一改为“查看合同” -->
+                    <el-button size="small" @click="$router.push(`/contracts/${contract.id}`)">查看合同</el-button>
                     <el-button
                       v-if="contract.orderId"
                       size="small"
