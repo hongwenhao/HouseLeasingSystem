@@ -2,6 +2,7 @@ package com.houseleasing.common.security;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -24,8 +25,11 @@ import java.util.Base64;
  */
 @Slf4j
 @Component
+@lombok.RequiredArgsConstructor
 public class IdCardCryptoService {
 
+    /** 默认演示密钥（仅开发环境可用）。 */
+    private static final String DEFAULT_SECRET = "HouseLeasingSystem-IdCard-Default-Secret-ChangeMe";
     /** 密文前缀：用于快速区分“已加密数据”与“历史明文数据”。 */
     private static final String ENCRYPTED_PREFIX = "ENC$";
     /** AES-GCM 推荐 12 字节 IV。 */
@@ -40,10 +44,28 @@ public class IdCardCryptoService {
      * - 生产环境务必配置强密钥并定期轮换；
      * - 默认值仅用于本地开发演示，避免无配置时应用启动失败。
      */
-    @Value("${app.security.id-card-secret:HouseLeasingSystem-IdCard-Default-Secret-ChangeMe}")
+    @Value("${app.security.id-card-secret:" + DEFAULT_SECRET + "}")
     private String idCardSecret;
 
     private final SecureRandom secureRandom = new SecureRandom();
+    private final Environment environment;
+
+    /**
+     * 启动时执行安全兜底：
+     * - 生产环境若仍使用默认密钥，直接拒绝启动；
+     * - 防止“默认弱密钥误上线”导致的敏感数据可预测解密风险。
+     */
+    @jakarta.annotation.PostConstruct
+    public void validateSecret() {
+        if (!DEFAULT_SECRET.equals(idCardSecret)) {
+            return;
+        }
+        for (String profile : environment.getActiveProfiles()) {
+            if ("prod".equalsIgnoreCase(profile) || "production".equalsIgnoreCase(profile)) {
+                throw new IllegalStateException("生产环境禁止使用默认身份证加密密钥，请配置 app.security.id-card-secret");
+            }
+        }
+    }
 
     /**
      * 入库加密：

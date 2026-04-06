@@ -44,9 +44,12 @@ public class UserController {
     @Operation(summary = "Get current user profile")
     @GetMapping("/me")
     public Result<User> getProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
+        User current = userMapper.selectByUsername(userDetails.getUsername());
+        if (current == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
         // 统一复用服务层查询逻辑，确保用户敏感字段（如身份证）按“存储加密、读取解密”口径返回。
-        return Result.success(userService.getUserById(user.getId()));
+        return Result.success(userService.getUserById(current.getId()));
     }
 
     /**

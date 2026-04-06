@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -707,7 +708,7 @@ public class OrderServiceImpl implements OrderService {
     private BigDecimal calculateOrderTotalAmount(BigDecimal monthlyRent, BigDecimal deposit) {
         BigDecimal safeMonthlyRent = monthlyRent == null ? BigDecimal.ZERO : monthlyRent;
         BigDecimal safeDeposit = deposit == null ? BigDecimal.ZERO : deposit;
-        return safeMonthlyRent.add(safeDeposit).setScale(2, java.math.RoundingMode.HALF_UP);
+        return safeMonthlyRent.add(safeDeposit).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -739,7 +740,7 @@ public class OrderServiceImpl implements OrderService {
             userBehaviorMapper.insert(behavior);
             return;
         }
-        // 若已有 ORDER 行为，刷新时间和分值即可，避免产生重复行为行。
+        // 若已有 ORDER 行为，刷新时间和分值即可，避免产生重复行为记录。
         existing.setScore(BEHAVIOR_ORDER_SCORE);
         existing.setCreateTime(LocalDateTime.now());
         userBehaviorMapper.updateById(existing);
