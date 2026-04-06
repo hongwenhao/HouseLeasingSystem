@@ -93,7 +93,7 @@
               />
               <!--
                 房源状态筛选下拉：
-                1) 支持“全部/已上架/已下架/已拒绝”；
+                1) 支持“全部/已上架/已下架”；
                 2) 与关键字可叠加使用，便于管理员快速筛选待处理房源；
                 3) clearable 清空后回到“全部”。
               -->
@@ -310,7 +310,12 @@
               <!--
                 操作列：不再右侧固定，避免 fixed 列在窄屏时遮挡前一列（创建时间）的问题。
               -->
-              <el-table-column label="操作" width="180">
+              <!--
+                合同操作列扩宽并启用最小宽度：
+                1) 给“查看/取消”留出稳定展示空间，避免在中等分辨率下被压缩遮挡；
+                2) 保持非 fixed 布局，继续规避 fixed 列覆盖相邻列的问题。
+              -->
+              <el-table-column label="操作" min-width="220" class-name="contract-actions-column">
                 <template #default="{ row }">
                   <div class="table-action-group">
                     <el-button size="small" text @click="handleViewContractDetail(row)">查看</el-button>
@@ -428,11 +433,10 @@ const userStatusOptions = [              // 用户状态下拉选项
 const houseManagementList = ref([])       // 房源管理列表
 const houseManagementLoading = ref(false) // 房源管理加载状态
 const houseMgmtKeyword = ref('')          // 房源管理关键词
-const houseMgmtStatusFilter = ref('')     // 房源管理状态筛选（ONLINE/OFFLINE/REJECTED）
+const houseMgmtStatusFilter = ref('')     // 房源管理状态筛选（ONLINE/OFFLINE）
 const houseMgmtStatusOptions = [          // 房源状态下拉选项（与后端白名单保持一致）
   { label: '已上架', value: 'ONLINE' },
-  { label: '已下架', value: 'OFFLINE' },
-  { label: '已拒绝', value: 'REJECTED' }
+  { label: '已下架', value: 'OFFLINE' }
 ]
 
 const orders = ref([])                   // 管理员订单列表
@@ -844,13 +848,13 @@ function roleTagType(role) {
 
 /** 房源状态枚举转中文 */
 function houseStatusLabel(status) {
-  const map = { ONLINE: '已上架', OFFLINE: '已下架', REJECTED: '已拒绝' }
+  const map = { ONLINE: '已上架', OFFLINE: '已下架' }
   return map[status] || status
 }
 
 /** 房源状态对应的 Tag 类型 */
 function houseStatusTagType(status) {
-  const map = { ONLINE: 'success', OFFLINE: 'info', REJECTED: 'danger' }
+  const map = { ONLINE: 'success', OFFLINE: 'info' }
   return map[status] || 'info'
 }
 
@@ -1049,6 +1053,19 @@ function contractStatusTagType(status) {
 :deep(.contract-table .table-action-group .el-button) {
   white-space: nowrap;
   margin-left: 0;
+}
+
+/*
+  合同管理操作列增强：
+  - 显式保证操作列单元格内容可见，不因默认溢出策略导致按钮被裁切；
+  - 在窄宽度下允许按钮组换行，优先保证“取消”按钮可点击。
+*/
+:deep(.contract-table .contract-actions-column) {
+  overflow: visible;
+}
+
+:deep(.contract-table .table-action-group) {
+  min-width: 170px;
 }
 
 .empty-audit {

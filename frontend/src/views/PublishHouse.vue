@@ -617,8 +617,15 @@ async function handleLocalImageChange(uploadFile) {
   gap: 12px;
 }
 
+/*
+  房东身份三选项对齐增强：
+  1) 统一每个选项的最小高度，避免描述文字多寡导致卡片高度不一致；
+  2) 让 radio 内容区域纵向居中，确保“三个框”在视觉上整齐对齐；
+  3) 在保持现有交互的前提下，仅做样式级优化，不影响表单值绑定逻辑。
+*/
 .owner-type-group :deep(.el-radio.is-bordered) {
   height: auto;
+  min-height: 72px;
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -629,13 +636,17 @@ async function handleLocalImageChange(uploadFile) {
 .owner-type-option {
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .owner-type-group :deep(.el-radio) {
   align-items: center;
+  width: 100%;
 }
 
 .owner-type-group :deep(.el-radio__label) {
+  display: flex;
+  align-items: center;
   flex: 1;
   white-space: normal;
 }
