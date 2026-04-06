@@ -850,6 +850,11 @@ function getOrderHouseTitleWithFallback(order) {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
+/* 房东端 tabs 标题（含“我的房源”）统一居中 */
+.center-tabs :deep(.el-tabs__item) {
+  text-align: center;
+}
+
 .tab-toolbar {
   margin-bottom: 16px;
   display: flex;
@@ -1027,6 +1032,16 @@ function getOrderHouseTitleWithFallback(order) {
   font-weight: 700;
   padding: 12px 14px;
   border-bottom: 1px solid #edf0f5;
+}
+
+/* 预约订单管理：预约房源 / 租客 / 预约时间 表头居中 */
+.orders-table .table-head > span:nth-child(-n + 3) {
+  text-align: center;
+}
+
+/* 合同管理：合同编号 / 租客 / 租期 / 月租 / 状态 表头居中 */
+.contracts-table .table-head > span:nth-child(-n + 5) {
+  text-align: center;
 }
 
 .table-row {
