@@ -341,7 +341,7 @@ public class AdminController {
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
-        // 合同取消后异步通知合同双方，告知取消来源为管理员兜底处理，避免双方误解为对方主动取消。
+        // 合同取消后异步通知合同双方（租客+房东），告知取消来源为管理员兜底处理，避免双方误解为对方主动取消。
         notifyContractCancelledByAdmin(contract);
         House house = houseMapper.selectById(contract.getHouseId());
         if (house != null) {
@@ -734,7 +734,8 @@ public class AdminController {
         if (order == null) {
             return;
         }
-        String message = "管理员已取消该订单，如有疑问请联系平台客服。";
+        String orderNo = StringUtils.hasText(order.getOrderNo()) ? order.getOrderNo() : safeIdentifier(order.getId());
+        String message = String.format("管理员已取消订单（订单号：%s），如有疑问请联系平台客服。", orderNo);
         if (order.getTenantId() != null) {
             messageProducer.sendOrderStatusChange(order.getTenantId(), message);
         }
@@ -751,12 +752,21 @@ public class AdminController {
         if (contract == null) {
             return;
         }
-        String message = "管理员已取消该合同，如有疑问请联系平台客服。";
+        String contractNo = StringUtils.hasText(contract.getContractNo()) ? contract.getContractNo() : safeIdentifier(contract.getId());
+        String message = String.format("管理员已取消合同（合同编号：%s），如有疑问请联系平台客服。", contractNo);
         if (contract.getTenantId() != null) {
             messageProducer.sendContractStatusChange(contract.getTenantId(), message);
         }
         if (contract.getLandlordId() != null) {
             messageProducer.sendContractStatusChange(contract.getLandlordId(), message);
         }
+    }
+
+    /**
+     * 统一的标识符兜底格式化：
+     * 当编号为空时返回 N/A，避免消息文案出现“null”造成歧义。
+     */
+    private String safeIdentifier(Object id) {
+        return id == null ? "N/A" : String.valueOf(id);
     }
 }
