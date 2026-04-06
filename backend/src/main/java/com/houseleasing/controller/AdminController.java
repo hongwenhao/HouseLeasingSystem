@@ -71,6 +71,12 @@ public class AdminController {
     private static final Set<String> ORDER_STATUS_KEYWORDS = Set.of(
             "PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"
     );
+    /**
+     * 后台合同状态白名单（统一使用大写枚举值），用于状态下拉框后端兜底校验。
+     */
+    private static final Set<String> CONTRACT_STATUS_KEYWORDS = Set.of(
+            "DRAFT", "PENDING_SIGN", "TENANT_SIGNED", "LANDLORD_SIGNED", "FULLY_SIGNED", "CANCELLED"
+    );
 
     private static final String CREDIT_RANGE_CASE_SQL =
             "CASE " +
@@ -142,7 +148,8 @@ public class AdminController {
     public Result<PageResult<Order>> listAllOrders(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
@@ -158,6 +165,15 @@ public class AdminController {
                 wrapper.eq(Order::getStatus, normalizedStatusKeyword);
             } else {
                 wrapper.like(Order::getOrderNo, trimmedKeyword);
+            }
+        }
+        // 管理员新增状态下拉筛选：
+        // status 非空且命中白名单时，额外按状态精确过滤。
+        // 这样可与 keyword 同时生效（例如“订单号模糊 + 指定状态”）。
+        if (StringUtils.hasText(status)) {
+            String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
+            if (ORDER_STATUS_KEYWORDS.contains(normalizedStatus)) {
+                wrapper.eq(Order::getStatus, normalizedStatus);
             }
         }
         wrapper.orderByDesc(Order::getCreateTime);
@@ -187,17 +203,48 @@ public class AdminController {
      *
      * @param page 当前页码
      * @param size 每页大小
+     * @param keyword 搜索关键词（可选，匹配合同编号/关联订单号）
+     * @param status 状态筛选（可选，命中白名单时生效）
      * @return 所有合同的分页列表
      */
     @Operation(summary = "List all contracts")
     @GetMapping("/contracts")
     public Result<PageResult<Contract>> listAllContracts(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Contract> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        // 合同搜索增强：
+        // 1) keyword 支持匹配合同编号 contractNo；
+        // 2) keyword 同时支持匹配关联订单号 orderNo（先查 orders，再转为 orderId 集合过滤）；
+        // 3) status 下拉命中白名单时按状态精确过滤。
+        if (StringUtils.hasText(keyword)) {
+            String trimmedKeyword = keyword.trim();
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> orderNoWrapper =
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+            orderNoWrapper.like(Order::getOrderNo, trimmedKeyword).select(Order::getId);
+            List<Order> matchedOrders = orderMapper.selectList(orderNoWrapper);
+            Set<Long> matchedOrderIds = matchedOrders.stream()
+                    .map(Order::getId)
+                    .filter(id -> id != null)
+                    .collect(Collectors.toSet());
+            wrapper.and(w -> {
+                w.like(Contract::getContractNo, trimmedKeyword);
+                if (!matchedOrderIds.isEmpty()) {
+                    w.or().in(Contract::getOrderId, matchedOrderIds);
+                }
+            });
+        }
+        if (StringUtils.hasText(status)) {
+            String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
+            if (CONTRACT_STATUS_KEYWORDS.contains(normalizedStatus)) {
+                wrapper.eq(Contract::getStatus, normalizedStatus);
+            }
+        }
         wrapper.orderByDesc(Contract::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Contract> result = contractMapper.selectPage(pageObj, wrapper);
         List<Contract> records = result.getRecords();
@@ -224,6 +271,59 @@ public class AdminController {
             if (order != null) contract.setOrderNo(order.getOrderNo());
         });
         return Result.success(PageResult.of(result.getTotal(), records, page, size));
+    }
+
+    /**
+     * 管理员取消订单（管理兜底能力）：
+     * - 仅允许将“未取消”订单更新为 CANCELLED，避免重复写入；
+     * - 管理端取消不依赖租客/房东身份校验，适用于人工客服介入场景；
+     * - 保持幂等：订单已是 CANCELLED 时直接返回成功。
+     */
+    @Operation(summary = "Cancel order by admin")
+    @PutMapping("/orders/{id}/cancel")
+    public Result<Void> cancelOrderByAdmin(@PathVariable Long id) {
+        Order order = orderMapper.selectById(id);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        if ("CANCELLED".equals(order.getStatus())) {
+            return Result.success();
+        }
+        order.setStatus("CANCELLED");
+        order.setUpdateTime(LocalDateTime.now());
+        orderMapper.updateById(order);
+        return Result.success();
+    }
+
+    /**
+     * 管理员取消合同（管理兜底能力）：
+     * - 仅允许取消未“双方已签(FULLY_SIGNED)”的合同；
+     * - 合同取消后将房源状态恢复为 ONLINE，保持与业务取消链路一致；
+     * - 已取消合同重复操作时直接返回成功（幂等）。
+     */
+    @Operation(summary = "Cancel contract by admin")
+    @PutMapping("/contracts/{id}/cancel")
+    public Result<Void> cancelContractByAdmin(@PathVariable Long id) {
+        Contract contract = contractMapper.selectById(id);
+        if (contract == null) {
+            throw new BusinessException(404, "合同不存在");
+        }
+        if ("CANCELLED".equals(contract.getStatus())) {
+            return Result.success();
+        }
+        if ("FULLY_SIGNED".equals(contract.getStatus())) {
+            throw new BusinessException("已签署的合同不可取消");
+        }
+        contract.setStatus("CANCELLED");
+        contract.setUpdateTime(LocalDateTime.now());
+        contractMapper.updateById(contract);
+        House house = houseMapper.selectById(contract.getHouseId());
+        if (house != null) {
+            house.setStatus("ONLINE");
+            house.setUpdateTime(LocalDateTime.now());
+            houseMapper.updateById(house);
+        }
+        return Result.success();
     }
 
     /**

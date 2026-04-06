@@ -31,6 +31,12 @@ export const getOrderList = (params) => request.get('/admin/orders', { params })
 /** 获取管理员合同列表（分页） */
 export const getContractList = (params) => request.get('/admin/contracts', { params })
 
+/** 管理员取消订单 */
+export const cancelOrderByAdmin = (id) => request.put(`/admin/orders/${id}/cancel`)
+
+/** 管理员取消合同 */
+export const cancelContractByAdmin = (id) => request.put(`/admin/contracts/${id}/cancel`)
+
 /** 获取管理员房源管理列表（分页） */
 export const getHouseManagementList = (params) => request.get('/admin/houses', { params })
 

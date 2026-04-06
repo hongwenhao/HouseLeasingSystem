@@ -5,55 +5,6 @@
       <div class="page-inner">
         <h2 class="page-title">管理后台</h2>
         <el-tabs v-model="activeTab" class="admin-tabs">
-          <!-- Overview Tab -->
-          <el-tab-pane label="数据概览" name="overview">
-            <div class="stats-cards">
-              <el-card class="stat-card">
-                <div class="stat-icon blue"><el-icon><User /></el-icon></div>
-                <div class="stat-info">
-                  <div class="stat-num">{{ stats.userCount || 0 }}</div>
-                  <div class="stat-label">总用户数</div>
-                </div>
-              </el-card>
-              <el-card class="stat-card">
-                <div class="stat-icon green"><el-icon><House /></el-icon></div>
-                <div class="stat-info">
-                  <div class="stat-num">{{ stats.houseCount || 0 }}</div>
-                  <div class="stat-label">总房源数</div>
-                </div>
-              </el-card>
-              <el-card class="stat-card">
-                <div class="stat-icon orange"><el-icon><Clock /></el-icon></div>
-                <div class="stat-info">
-                  <div class="stat-num">{{ stats.pendingContracts || 0 }}</div>
-                  <div class="stat-label">待审核合同</div>
-                </div>
-              </el-card>
-              <el-card class="stat-card">
-                <div class="stat-icon purple"><el-icon><Document /></el-icon></div>
-                <div class="stat-info">
-                  <div class="stat-num">{{ stats.contractCount || 0 }}</div>
-                  <div class="stat-label">成交合同数</div>
-                </div>
-              </el-card>
-            </div>
-
-            <div class="charts-grid">
-              <el-card class="chart-card">
-                <template #header>各城市房源数量</template>
-                <div ref="areaChartRef" class="chart-container"></div>
-              </el-card>
-              <el-card class="chart-card">
-                <template #header>近6个月价格趋势</template>
-                <div ref="priceChartRef" class="chart-container"></div>
-              </el-card>
-              <el-card class="chart-card full-width">
-                <template #header>用户信用分布</template>
-                <div ref="creditChartRef" class="chart-container"></div>
-              </el-card>
-            </div>
-          </el-tab-pane>
-
           <!-- User Management Tab -->
           <el-tab-pane label="用户管理" name="users">
             <div class="tab-toolbar">
@@ -153,13 +104,13 @@
 
           <!-- Order Management Tab -->
           <el-tab-pane label="订单管理" name="orders">
-            <!-- 管理员订单搜索：支持按订单号快速检索，并兼容状态关键字筛选 -->
+            <!-- 管理员订单搜索栏：左侧关键字输入，右侧状态下拉，支持组合筛选 -->
             <div class="tab-toolbar">
               <div class="toolbar-row">
                 <el-input
                   v-model.trim="orderKeyword"
                   clearable
-                  placeholder="搜索订单（订单号/状态）"
+                  placeholder="搜索订单（订单号）"
                   style="max-width: 360px"
                   @keyup.enter="loadOrders"
                   @clear="loadOrders"
@@ -168,6 +119,20 @@
                     <el-button @click="loadOrders">搜索</el-button>
                   </template>
                 </el-input>
+                <el-select
+                  v-model="orderStatusFilter"
+                  clearable
+                  placeholder="状态筛选"
+                  style="width: 180px"
+                  @change="loadOrders"
+                >
+                  <el-option
+                    v-for="item in orderStatusOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
               </div>
             </div>
             <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table">
@@ -187,12 +152,56 @@
                   <el-tag :type="orderStatusTagType(row.status)" size="small">{{ orderStatusLabel(row.status) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="createTime" label="创建时间" min-width="170" />
+              <el-table-column label="创建时间" min-width="170">
+                <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="120" fixed="right">
+                <template #default="{ row }">
+                  <el-button
+                    size="small"
+                    type="danger"
+                    plain
+                    :disabled="row.status === 'CANCELLED'"
+                    @click="handleCancelOrderByAdmin(row)"
+                  >取消</el-button>
+                </template>
+              </el-table-column>
             </el-table>
           </el-tab-pane>
 
           <!-- Contract Management Tab -->
           <el-tab-pane label="合同管理" name="contracts">
+            <!-- 管理员合同搜索栏：左侧关键字输入，右侧状态下拉，支持组合筛选 -->
+            <div class="tab-toolbar">
+              <div class="toolbar-row">
+                <el-input
+                  v-model.trim="contractKeyword"
+                  clearable
+                  placeholder="搜索合同（合同编号/关联订单号）"
+                  style="max-width: 360px"
+                  @keyup.enter="loadContracts"
+                  @clear="loadContracts"
+                >
+                  <template #append>
+                    <el-button @click="loadContracts">搜索</el-button>
+                  </template>
+                </el-input>
+                <el-select
+                  v-model="contractStatusFilter"
+                  clearable
+                  placeholder="状态筛选"
+                  style="width: 200px"
+                  @change="loadContracts"
+                >
+                  <el-option
+                    v-for="item in contractStatusOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
+              </div>
+            </div>
             <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="contractNo" label="合同编号" min-width="170" />
@@ -211,9 +220,72 @@
                   <el-tag :type="contractStatusTagType(row.status)" size="small">{{ contractStatusLabel(row.status) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="createTime" label="创建时间" min-width="170" />
+              <el-table-column label="创建时间" min-width="170">
+                <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="120" fixed="right">
+                <template #default="{ row }">
+                  <el-button
+                    size="small"
+                    type="danger"
+                    plain
+                    :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
+                    @click="handleCancelContractByAdmin(row)"
+                  >取消</el-button>
+                </template>
+              </el-table-column>
             </el-table>
           </el-tab-pane>
+
+          <!-- Overview Tab -->
+          <el-tab-pane label="数据概览" name="overview">
+            <div class="stats-cards">
+              <el-card class="stat-card">
+                <div class="stat-icon blue"><el-icon><User /></el-icon></div>
+                <div class="stat-info">
+                  <div class="stat-num">{{ stats.userCount || 0 }}</div>
+                  <div class="stat-label">总用户数</div>
+                </div>
+              </el-card>
+              <el-card class="stat-card">
+                <div class="stat-icon green"><el-icon><House /></el-icon></div>
+                <div class="stat-info">
+                  <div class="stat-num">{{ stats.houseCount || 0 }}</div>
+                  <div class="stat-label">总房源数</div>
+                </div>
+              </el-card>
+              <el-card class="stat-card">
+                <div class="stat-icon orange"><el-icon><Clock /></el-icon></div>
+                <div class="stat-info">
+                  <div class="stat-num">{{ stats.pendingContracts || 0 }}</div>
+                  <div class="stat-label">待审核合同</div>
+                </div>
+              </el-card>
+              <el-card class="stat-card">
+                <div class="stat-icon purple"><el-icon><Document /></el-icon></div>
+                <div class="stat-info">
+                  <div class="stat-num">{{ stats.contractCount || 0 }}</div>
+                  <div class="stat-label">成交合同数</div>
+                </div>
+              </el-card>
+            </div>
+
+            <div class="charts-grid">
+              <el-card class="chart-card">
+                <template #header>各城市房源数量</template>
+                <div ref="areaChartRef" class="chart-container"></div>
+              </el-card>
+              <el-card class="chart-card">
+                <template #header>近6个月价格趋势</template>
+                <div ref="priceChartRef" class="chart-container"></div>
+              </el-card>
+              <el-card class="chart-card full-width">
+                <template #header>用户信用分布</template>
+                <div ref="creditChartRef" class="chart-container"></div>
+              </el-card>
+            </div>
+          </el-tab-pane>
+
         </el-tabs>
       </div>
     </div>
@@ -242,6 +314,8 @@ import {
   putHouseOfflineByAdmin,
   getOrderList,
   getContractList,
+  cancelOrderByAdmin,
+  cancelContractByAdmin,
   banUser,
   unbanUser
 } from '../api/admin.js'
@@ -262,10 +336,28 @@ const houseMgmtKeyword = ref('')          // 房源管理关键词
 
 const orders = ref([])                   // 管理员订单列表
 const ordersLoading = ref(false)         // 订单列表加载状态
-const orderKeyword = ref('')             // 管理员订单搜索关键字（订单号/状态）
+const orderKeyword = ref('')             // 管理员订单搜索关键字（订单号）
+const orderStatusFilter = ref('')        // 管理员订单状态筛选
+const orderStatusOptions = [             // 订单状态下拉选项（文案与后端状态枚举一一对应）
+  { label: '待处理', value: 'PENDING' },
+  { label: '已通过', value: 'APPROVED' },
+  { label: '已拒绝', value: 'REJECTED' },
+  { label: '已取消', value: 'CANCELLED' },
+  { label: '已完成', value: 'COMPLETED' }
+]
 
 const contracts = ref([])                // 管理员合同列表
 const contractsLoading = ref(false)      // 合同列表加载状态
+const contractKeyword = ref('')          // 管理员合同搜索关键字（合同编号/关联订单号）
+const contractStatusFilter = ref('')     // 管理员合同状态筛选
+const contractStatusOptions = [          // 合同状态下拉选项（文案与后端状态枚举一一对应）
+  { label: '草稿', value: 'DRAFT' },
+  { label: '待签署', value: 'PENDING_SIGN' },
+  { label: '租客已签', value: 'TENANT_SIGNED' },
+  { label: '房东已签', value: 'LANDLORD_SIGNED' },
+  { label: '双方已签', value: 'FULLY_SIGNED' },
+  { label: '已取消', value: 'CANCELLED' }
+]
 
 // ECharts 图表 DOM 引用
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
@@ -378,7 +470,8 @@ async function loadOrders() {
     const res = await getOrderList({
       page: 1,
       size: DEFAULT_ADMIN_PAGE_SIZE,
-      keyword: orderKeyword.value || undefined
+      keyword: orderKeyword.value || undefined,
+      status: orderStatusFilter.value || undefined
     })
     orders.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
@@ -388,11 +481,16 @@ async function loadOrders() {
   }
 }
 
-/** 加载管理员合同列表 */
+/** 加载管理员合同列表（支持关键词+状态筛选） */
 async function loadContracts() {
   contractsLoading.value = true
   try {
-    const res = await getContractList({ page: 1, size: DEFAULT_ADMIN_PAGE_SIZE })
+    const res = await getContractList({
+      page: 1,
+      size: DEFAULT_ADMIN_PAGE_SIZE,
+      keyword: contractKeyword.value || undefined,
+      status: contractStatusFilter.value || undefined
+    })
     contracts.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
     ElMessage.error(e.message || '加载合同失败')
@@ -560,6 +658,37 @@ async function handlePutHouseOffline(house) {
 /** 查看管理员房源管理详情（跳转到独立详情页） */
 function handleViewHouseDetail(house) {
   router.push(`/admin/houses/${house.id}`)
+}
+
+/**
+ * 格式化日期时间，解决后端 ISO 字符串中 “T” 直出问题：
+ * 例如 2026-04-06T18:30:00 -> 2026-04-06 18:30:00
+ */
+function formatDateTime(dateTime) {
+  if (!dateTime) return '-'
+  return String(dateTime).replace('T', ' ')
+}
+
+/** 管理员取消订单（取消后刷新列表，保证状态即时可见） */
+async function handleCancelOrderByAdmin(order) {
+  try {
+    await cancelOrderByAdmin(order.id)
+    ElMessage.success('订单已取消')
+    loadOrders()
+  } catch (e) {
+    ElMessage.error(e.message || '取消订单失败')
+  }
+}
+
+/** 管理员取消合同（取消后刷新列表，保持合同与房源状态展示一致） */
+async function handleCancelContractByAdmin(contract) {
+  try {
+    await cancelContractByAdmin(contract.id)
+    ElMessage.success('合同已取消')
+    loadContracts()
+  } catch (e) {
+    ElMessage.error(e.message || '取消合同失败')
+  }
 }
 
 /** 用户角色枚举转中文标签 */
