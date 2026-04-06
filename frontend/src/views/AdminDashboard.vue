@@ -47,7 +47,7 @@
               v-loading="usersLoading"
               stripe
               border
-              class="data-table"
+              class="data-table management-table"
             >
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="username" label="用户名" width="130" />
@@ -119,7 +119,7 @@
               </el-select>
               <el-button type="primary" @click="loadHouseManagementList">查询</el-button>
             </div>
-            <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table">
+            <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table management-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="title" label="房源标题" min-width="220" />
               <el-table-column prop="city" label="城市" width="110" />
@@ -194,7 +194,7 @@
               2) 操作列取消 fixed，避免窄屏时右侧固定列遮挡前一列内容；
               3) 操作列宽度增大并支持双按钮布局（查看 + 取消）。
             -->
-            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table order-table">
+            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table management-table order-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="orderNo" label="订单编号" min-width="160" />
               <el-table-column label="房源" min-width="180">
@@ -274,7 +274,7 @@
               1) 追加 contract-table 类，仅对合同表格做样式微调，避免影响其它管理表格；
               2) 将“操作”列取消 fixed="right"，避免在窄视口下覆盖“创建时间”列内容。
             -->
-            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table contract-table">
+            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table management-table contract-table">
               <el-table-column prop="id" label="ID" width="80" />
               <!--
                 合同编号列：通过 header/cell class 单独缩小字体，
@@ -1022,6 +1022,14 @@ function contractStatusTagType(status) {
 
 .data-table {
   width: 100%;
+}
+
+:deep(.management-table th > .cell) {
+  text-align: center;
+}
+
+:deep(.management-table td > .cell) {
+  text-align: center;
 }
 
 /*
