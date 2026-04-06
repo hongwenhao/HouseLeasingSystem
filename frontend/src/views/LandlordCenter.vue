@@ -439,11 +439,11 @@ function matchesOrderTimeFilter(order, selectedTimeRange) {
     return targetTime >= todayStart && targetTime < tomorrowStart
   }
   if (selectedTimeRange === 'last7days') {
-    const rangeStart = todayStart - 6 * 24 * 60 * 60 * 1000
+    const rangeStart = todayStart - 7 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
   if (selectedTimeRange === 'last30days') {
-    const rangeStart = todayStart - 29 * 24 * 60 * 60 * 1000
+    const rangeStart = todayStart - 30 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
   return true
