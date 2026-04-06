@@ -3,6 +3,7 @@ package com.houseleasing.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.houseleasing.common.PageResult;
+import com.houseleasing.common.security.IdCardCryptoService;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.common.utils.JwtUtil;
 import com.houseleasing.dto.ChangePasswordRequest;
@@ -60,6 +61,7 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
     private final MessageProducer messageProducer;
+    private final IdCardCryptoService idCardCryptoService;
 
     /**
      * 用户注册：验证用户名、手机号、邮箱的唯一性，加密密码后保存用户信息
@@ -165,6 +167,8 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(404, "用户不存在");
         }
         user.setPassword(null);
+        // 对外返回用户信息时按需解密身份证字段，确保前端表单“已认证信息回显”不受存储加密影响。
+        user.setIdCard(idCardCryptoService.decryptFromStorage(user.getIdCard()));
         return user;
     }
 
@@ -191,6 +195,8 @@ public class UserServiceImpl implements UserService {
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
         user.setPassword(null);
+        // 更新资料接口复用用户对象直接返回，需要解密身份证以保持接口输出语义稳定。
+        user.setIdCard(idCardCryptoService.decryptFromStorage(user.getIdCard()));
         return user;
     }
 
@@ -218,7 +224,8 @@ public class UserServiceImpl implements UserService {
         validateChineseIdCard(normalizedIdCard);
 
         user.setRealName(normalizedRealName);
-        user.setIdCard(normalizedIdCard);
+        // 身份证号入库前做对称加密，避免敏感明文直接落库。
+        user.setIdCard(idCardCryptoService.encryptForStorage(normalizedIdCard));
         user.setIsRealNameAuth(true); // 标记实名认证完成
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
@@ -368,8 +375,11 @@ public class UserServiceImpl implements UserService {
         }
         wrapper.orderByDesc(User::getCreateTime);
         Page<User> result = userMapper.selectPage(pageObj, wrapper);
-        // 清空所有用户的密码字段
-        result.getRecords().forEach(u -> u.setPassword(null));
+        // 清空所有用户的密码字段，并解密身份证字段（如有）以保持前端展示兼容性。
+        result.getRecords().forEach(u -> {
+            u.setPassword(null);
+            u.setIdCard(idCardCryptoService.decryptFromStorage(u.getIdCard()));
+        });
         return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 

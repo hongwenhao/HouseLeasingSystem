@@ -22,7 +22,7 @@ public class UserBehavior {
     private Long userId;
     /** 被操作的房源 ID */
     private Long houseId;
-    /** 行为类型：VIEW（浏览）、COLLECT（收藏）、ORDER（下单） */
+    /** 行为类型：VIEW（浏览）、COLLECT（收藏）、ORDER（下单）；不再使用 REVIEW */
     private String behaviorType;
     /** 行为权重分值（不同行为类型对应不同分值） */
     private java.math.BigDecimal score;

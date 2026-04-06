@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password` VARCHAR(255) NOT NULL COMMENT '密码',
   `role` ENUM('TENANT','LANDLORD','ADMIN') DEFAULT 'TENANT' COMMENT '用户角色，TENANT租客/LANDLORD房东/ADMIN管理员，默认值为TENANT',
   `real_name` VARCHAR(50) COMMENT '真实姓名',
-  `id_card` VARCHAR(18) COMMENT '身份证号码',
+  `id_card` VARCHAR(255) COMMENT '身份证号码（密文存储，应用层加密后写入）',
   `avatar` VARCHAR(500) COMMENT '头像URL',
   `credit_score` INT DEFAULT 100 COMMENT '信用评分，初始100分',
   `is_real_name_auth` TINYINT DEFAULT 0 COMMENT '是否实名认证，0否1是，默认值为0',
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS `user_behaviors` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '行为ID',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',
   `house_id` BIGINT NOT NULL COMMENT '房源ID',
-  `behavior_type` ENUM('VIEW','COLLECT','ORDER','REVIEW') DEFAULT 'VIEW' COMMENT '行为类型，默认值为VIEW，VIEW浏览/COLLECT收藏/ORDER下单',
+  `behavior_type` ENUM('VIEW','COLLECT','ORDER') DEFAULT 'VIEW' COMMENT '行为类型，默认值为VIEW，VIEW浏览/COLLECT收藏/ORDER下单（不使用REVIEW）',
   `score` DECIMAL(3,1) DEFAULT 1.0 COMMENT '行为评分(VIEW=1, COLLECT=3, ORDER=5)',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   INDEX `idx_user_id` (`user_id`),
@@ -211,8 +211,10 @@ CREATE TABLE IF NOT EXISTS `reviews` (
   `content` TEXT COMMENT '评价内容',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   INDEX `idx_house_id` (`house_id`),
+  INDEX `idx_order_id` (`order_id`),
   INDEX `idx_user_id` (`user_id`),
   CONSTRAINT `fk_reviews_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

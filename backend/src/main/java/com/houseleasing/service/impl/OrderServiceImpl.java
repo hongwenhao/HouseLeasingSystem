@@ -13,11 +13,13 @@ import com.houseleasing.entity.Order;
 import com.houseleasing.entity.Review;
 import com.houseleasing.entity.User;
 import com.houseleasing.entity.Contract;
+import com.houseleasing.entity.UserBehavior;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
 import com.houseleasing.mapper.ReviewMapper;
 import com.houseleasing.mapper.UserMapper;
 import com.houseleasing.mapper.ContractMapper;
+import com.houseleasing.mapper.UserBehaviorMapper;
 import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.MessageService;
 import com.houseleasing.service.OrderService;
@@ -57,6 +59,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserMapper userMapper;
     private final ReviewMapper reviewMapper;
     private final ContractMapper contractMapper;
+    private final UserBehaviorMapper userBehaviorMapper;
     private final MessageProducer messageProducer;
     private final MessageService messageService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -77,6 +80,10 @@ public class OrderServiceImpl implements OrderService {
     private static final int DEFAULT_CREDIT_SCORE = 100;
     private static final String REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE = "租客已完成评价：%d星";
     private static final String REVIEW_NOTIFY_TO_TENANT = "您的评价已提交，感谢反馈";
+    /** 订单行为埋点类型（仅保留 VIEW/COLLECT/ORDER，不再使用 REVIEW）。 */
+    private static final String BEHAVIOR_ORDER = "ORDER";
+    /** ORDER 行为推荐权重：下单行为代表强意向。 */
+    private static final BigDecimal BEHAVIOR_ORDER_SCORE = new BigDecimal("5.0");
 
     /**
      * 创建意向订单：租客表达租房意向，通知房东
@@ -116,6 +123,8 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("PENDING");
         order.setMonthlyRent(house.getPrice());
         order.setDeposit(depositAmount); // 存储实际押金金额（元），而非月数
+        // 统一落库订单总金额，避免 total_amount 长期为空导致支付/对账口径分裂。
+        order.setTotalAmount(calculateOrderTotalAmount(house.getPrice(), depositAmount));
         order.setRemark(remark);
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
@@ -165,6 +174,8 @@ public class OrderServiceImpl implements OrderService {
         order.setEndDate(request.getEndDate());
         order.setMonthlyRent(house.getPrice());
         order.setDeposit(depositAmount); // 存储实际押金金额（元），而非月数
+        // 与意向订单保持一致：创建时即写入 total_amount（默认=月租+押金）。
+        order.setTotalAmount(calculateOrderTotalAmount(house.getPrice(), depositAmount));
         order.setRemark(request.getRemark());
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
@@ -480,6 +491,8 @@ public class OrderServiceImpl implements OrderService {
         review.setContent(request.getContent());
         review.setCreateTime(LocalDateTime.now());
         reviewMapper.insert(review);
+        // 评价成功后记录 ORDER 行为（不再写 REVIEW 类型），确保推荐系统行为枚举口径一致。
+        upsertOrderBehavior(tenantId, order.getHouseId());
 
         User landlord = userMapper.selectById(order.getLandlordId());
         if (landlord != null) {
@@ -683,6 +696,53 @@ public class OrderServiceImpl implements OrderService {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int random = ThreadLocalRandom.current().nextInt(1000, 9999);
         return prefix + timestamp + random;
+    }
+
+    /**
+     * 计算订单总金额：
+     * - 当前业务口径为“首期应付 = 月租 + 押金”；
+     * - 空值按 0 处理，避免空指针；
+     * - 保留两位小数，保证与支付网关金额口径一致。
+     */
+    private BigDecimal calculateOrderTotalAmount(BigDecimal monthlyRent, BigDecimal deposit) {
+        BigDecimal safeMonthlyRent = monthlyRent == null ? BigDecimal.ZERO : monthlyRent;
+        BigDecimal safeDeposit = deposit == null ? BigDecimal.ZERO : deposit;
+        return safeMonthlyRent.add(safeDeposit).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 记录下单行为（幂等更新）：
+     * - user_behaviors 表已明确不使用 REVIEW 行为类型；
+     * - 若该用户-房源已存在 ORDER 行为，则仅刷新时间和分值；
+     * - 否则新增一条 ORDER 行为记录。
+     *
+     * <p>实现说明：复用 create_time 作为“最近一次下单行为时间”字段，
+     * 便于推荐系统按最近行为排序；在当前数据结构下不新增额外字段。</p>
+     */
+    private void upsertOrderBehavior(Long userId, Long houseId) {
+        if (userId == null || houseId == null) {
+            return;
+        }
+        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserBehavior::getUserId, userId)
+                .eq(UserBehavior::getHouseId, houseId)
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_ORDER)
+                .last("LIMIT 1");
+        UserBehavior existing = userBehaviorMapper.selectOne(wrapper);
+        if (existing == null) {
+            UserBehavior behavior = new UserBehavior();
+            behavior.setUserId(userId);
+            behavior.setHouseId(houseId);
+            behavior.setBehaviorType(BEHAVIOR_ORDER);
+            behavior.setScore(BEHAVIOR_ORDER_SCORE);
+            behavior.setCreateTime(LocalDateTime.now());
+            userBehaviorMapper.insert(behavior);
+            return;
+        }
+        // 若已有 ORDER 行为，刷新时间和分值即可，避免产生重复行为行。
+        existing.setScore(BEHAVIOR_ORDER_SCORE);
+        existing.setCreateTime(LocalDateTime.now());
+        userBehaviorMapper.updateById(existing);
     }
 
     private static DefaultRedisScript<Long> buildIncrWithExpireOneDayScript() {

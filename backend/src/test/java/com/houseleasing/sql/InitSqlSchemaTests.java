@@ -27,6 +27,19 @@ class InitSqlSchemaTests {
                 initSql.contains("`status` ENUM('DRAFT','PENDING_SIGN','SIGNED','CANCELLED')"),
                 "contracts.status 不应再包含旧的四态枚举定义"
         );
+
+        assertTrue(
+                initSql.contains("`behavior_type` ENUM('VIEW','COLLECT','ORDER')"),
+                "user_behaviors.behavior_type 枚举应只保留 VIEW/COLLECT/ORDER"
+        );
+        assertTrue(
+                initSql.contains("CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE"),
+                "reviews.order_id 应配置到 orders.id 的外键约束"
+        );
+        assertTrue(
+                initSql.contains("`id_card` VARCHAR(255)"),
+                "users.id_card 字段应扩展长度以存储加密密文"
+        );
     }
 
     private Path resolveInitSqlPath() {

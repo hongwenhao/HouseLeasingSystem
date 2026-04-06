@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
+import com.houseleasing.common.security.IdCardCryptoService;
 import com.houseleasing.dto.ContractGenerateRequest;
 import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.House;
@@ -72,6 +73,7 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRiskService contractRiskService;
     private final MessageProducer messageProducer;
     private final ObjectMapper objectMapper;
+    private final IdCardCryptoService idCardCryptoService;
 
     /**
      * 根据订单生成租赁合同，包括自动生成合同文本和风险分析
@@ -192,8 +194,9 @@ public class ContractServiceImpl implements ContractService {
         String startDate = order.getStartDate() != null ? order.getStartDate().toString() : "";
         String endDate = order.getEndDate() != null ? order.getEndDate().toString() : "";
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
-        String landlordIdCard = maskIdCard(landlord != null ? landlord.getIdCard() : null);
-        String tenantIdCard = maskIdCard(tenant != null ? tenant.getIdCard() : null);
+        // users.id_card 改为密文存储后，合同文本中若需展示证件号，必须先解密再脱敏。
+        String landlordIdCard = maskIdCard(landlord != null ? idCardCryptoService.decryptFromStorage(landlord.getIdCard()) : null);
+        String tenantIdCard = maskIdCard(tenant != null ? idCardCryptoService.decryptFromStorage(tenant.getIdCard()) : null);
         String waterRule = buildFeeRule(house != null ? house.getWaterFeeType() : null, house != null ? house.getWaterFee() : null, "元/吨");
         String electricRule = buildFeeRule(house != null ? house.getElectricFeeType() : null, house != null ? house.getElectricFee() : null, "元/度");
         String gasRule = buildFeeRule(house != null ? house.getGasFeeType() : null, house != null ? house.getGasFee() : null, "元/方");
@@ -446,7 +449,7 @@ public class ContractServiceImpl implements ContractService {
             if (tenant != null) {
                 tenant.setPassword(null);
                 // 合同详情仅返回脱敏身份证号，既满足合同展示诉求，也避免泄露敏感信息。
-                tenant.setIdCard(maskIdCard(tenant.getIdCard()));
+                tenant.setIdCard(maskIdCard(idCardCryptoService.decryptFromStorage(tenant.getIdCard())));
                 contract.setTenant(tenant);
             }
         }
@@ -454,7 +457,7 @@ public class ContractServiceImpl implements ContractService {
             User landlord = userMapper.selectById(contract.getLandlordId());
             if (landlord != null) {
                 landlord.setPassword(null);
-                landlord.setIdCard(maskIdCard(landlord.getIdCard()));
+                landlord.setIdCard(maskIdCard(idCardCryptoService.decryptFromStorage(landlord.getIdCard())));
                 contract.setLandlord(landlord);
             }
         }

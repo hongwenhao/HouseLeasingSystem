@@ -10,6 +10,7 @@ import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
 import com.houseleasing.mapper.ReviewMapper;
 import com.houseleasing.mapper.UserMapper;
+import com.houseleasing.mapper.UserBehaviorMapper;
 import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.MessageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ class OrderServiceImplTest {
     private UserMapper userMapper;
     private ReviewMapper reviewMapper;
     private ContractMapper contractMapper;
+    private UserBehaviorMapper userBehaviorMapper;
     private MessageProducer messageProducer;
     private MessageService messageService;
     private RedisTemplate<String, Object> redisTemplate;
@@ -45,6 +47,7 @@ class OrderServiceImplTest {
         userMapper = mock(UserMapper.class);
         reviewMapper = mock(ReviewMapper.class);
         contractMapper = mock(ContractMapper.class);
+        userBehaviorMapper = mock(UserBehaviorMapper.class);
         messageProducer = mock(MessageProducer.class);
         messageService = mock(MessageService.class);
         redisTemplate = mock(RedisTemplate.class);
@@ -54,6 +57,7 @@ class OrderServiceImplTest {
                 userMapper,
                 reviewMapper,
                 contractMapper,
+                userBehaviorMapper,
                 messageProducer,
                 messageService,
                 redisTemplate
