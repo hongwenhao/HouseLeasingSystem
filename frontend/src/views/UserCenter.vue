@@ -11,12 +11,12 @@
         </div>
 
         <div class="stats-row">
-          <div class="stat-card">
+          <div v-if="!isAdmin" class="stat-card">
             <div class="stat-title">总预约</div>
             <div class="stat-number primary">{{ myOrders.length }}</div>
             <div class="stat-desc">全部预约记录</div>
           </div>
-          <div class="stat-card">
+          <div v-if="!isAdmin" class="stat-card">
             <div class="stat-title">合同总数</div>
             <div class="stat-number warning">{{ myContracts.length }}</div>
             <div class="stat-desc">所有合同记录</div>
@@ -182,7 +182,7 @@
             </el-tab-pane>
 
             <!-- Orders Tab -->
-            <el-tab-pane name="orders">
+            <el-tab-pane v-if="!isAdmin" name="orders">
               <template #label>
                 <div class="tab-label">
                   <el-icon><Calendar /></el-icon>
@@ -286,7 +286,7 @@
             </el-tab-pane>
 
             <!-- Contracts Tab -->
-            <el-tab-pane name="contracts">
+            <el-tab-pane v-if="!isAdmin" name="contracts">
               <template #label>
                 <div class="tab-label">
                   <el-icon><Memo /></el-icon>
@@ -345,7 +345,7 @@
             </el-tab-pane>
 
             <!-- Review Management Tab -->
-            <el-tab-pane name="reviews">
+            <el-tab-pane v-if="!isAdmin" name="reviews">
               <template #label>
                 <div class="tab-label">
                   <el-icon><Star /></el-icon>
@@ -535,11 +535,21 @@ const roleLabel = computed(() => {
 })
 const isTenant = computed(() => userInfo.value.role === 'TENANT')
 const isLandlord = computed(() => userInfo.value.role === 'LANDLORD')
+const isAdmin = computed(() => userInfo.value.role === 'ADMIN')
 /**
  * 允许通过 URL query 指定的标签页白名单，避免无效参数污染界面状态。
  * 例如：/user-center?tab=orders 会自动切换到“预约管理”。
  */
-const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 'reviews', 'credit']
+const allowedTabs = computed(() => {
+  // 按角色返回可见标签集合，确保 URL query.tab 与页面可见模块严格一致：
+  // - ADMIN：仅保留基础信息、消息和信用；
+  // - LANDLORD：无“收藏”标签；
+  // - TENANT：包含“收藏”。
+  if (isAdmin.value) return ['profile', 'messages', 'credit']
+  if (isLandlord.value) return ['profile', 'orders', 'contracts', 'messages', 'reviews', 'credit']
+  if (isTenant.value) return ['profile', 'orders', 'favorites', 'contracts', 'messages', 'reviews', 'credit']
+  return ['profile', 'messages', 'credit']
+})
 
 /**
  * 将当前激活标签同步到 URL query.tab。
@@ -547,7 +557,7 @@ const allowedTabs = ['profile', 'orders', 'favorites', 'contracts', 'messages', 
  */
 function syncTabToRouteQuery(tabName) {
   const targetTab = typeof tabName === 'string' ? tabName : ''
-  if (!allowedTabs.includes(targetTab)) return
+  if (!allowedTabs.value.includes(targetTab)) return
   if (route.query.tab === targetTab) return
   const nextQuery = { ...route.query, tab: targetTab }
   router.replace({ path: route.path, query: nextQuery })
@@ -700,7 +710,7 @@ watch(
   () => route.query.tab,
   (tab) => {
     const targetTab = typeof tab === 'string' ? tab : ''
-    if (!allowedTabs.includes(targetTab)) return
+    if (!allowedTabs.value.includes(targetTab)) return
     // favorites 仅租客可见：非租客误传该 tab 时回退到 profile，防止进入不存在标签页
     if (targetTab === 'favorites' && !isTenant.value) {
       activeTab.value = 'profile'
@@ -740,6 +750,12 @@ watch(
 
 /** 加载当前用户的预约订单列表（租客取我的预约；房东取收到的预约） */
 async function loadOrders() {
+  // 管理员不参与预约流程，个人中心不展示订单列表，直接返回避免无效请求。
+  if (isAdmin.value) {
+    myOrders.value = []
+    ordersLoading.value = false
+    return
+  }
   ordersLoading.value = true
   try {
     const res = isTenant.value
@@ -848,6 +864,12 @@ async function submitRealNameAuth() {
 
 /** 加载当前用户参与的合同列表（最多20条） */
 async function loadContracts() {
+  // 管理员在个人中心不展示合同管理，清空数据并跳过接口调用。
+  if (isAdmin.value) {
+    myContracts.value = []
+    contractsLoading.value = false
+    return
+  }
   contractsLoading.value = true
   try {
     const res = await getMyContracts({ page: 1, size: 20 })
@@ -893,6 +915,12 @@ async function loadMessages() {
  * 导致页面错误显示“暂无评价记录”。
  */
 async function loadReviewRecords() {
+  // 管理员不参与评价体系，避免请求租客/房东评价接口。
+  if (isAdmin.value) {
+    reviewRecords.value = []
+    reviewsLoading.value = false
+    return
+  }
   if (!isTenant.value && !isLandlord.value) {
     reviewRecords.value = []
     reviewsLoading.value = false

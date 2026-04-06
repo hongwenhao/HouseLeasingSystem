@@ -14,6 +14,47 @@
       <div class="nav-links" :class="{ open: menuOpen }">
         <router-link to="/" class="nav-link" @click="menuOpen = false">首页</router-link>
         <router-link to="/houses" class="nav-link" @click="menuOpen = false">房源列表</router-link>
+        <!-- 仅管理员可见：管理后台分模块入口，与 /admin?tab=xxx 联动 -->
+        <router-link
+          v-if="isAdmin"
+          :to="adminOverviewNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isAdminOverviewActive }]"
+          @click="menuOpen = false"
+        >数据概览</router-link>
+        <router-link
+          v-if="isAdmin"
+          :to="adminUsersNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isAdminUsersActive }]"
+          @click="menuOpen = false"
+        >用户管理</router-link>
+        <router-link
+          v-if="isAdmin"
+          :to="adminHouseMgmtNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isAdminHouseMgmtActive }]"
+          @click="menuOpen = false"
+        >房源管理</router-link>
+        <router-link
+          v-if="isAdmin"
+          :to="adminOrdersNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isAdminOrdersActive }]"
+          @click="menuOpen = false"
+        >订单管理</router-link>
+        <router-link
+          v-if="isAdmin"
+          :to="adminContractsNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isAdminContractsActive }]"
+          @click="menuOpen = false"
+        >合同管理</router-link>
         <!-- 仅租客可见：我的收藏入口，按要求放在“房源列表”右侧 -->
         <router-link
           v-if="isLoggedIn && role === 'TENANT'"
@@ -25,7 +66,7 @@
         >我的收藏</router-link>
         <!-- 已登录用户可见：预约订单管理，按角色跳转到对应页面并定位到 orders 标签页 -->
         <router-link
-          v-if="isLoggedIn"
+          v-if="isLoggedIn && !isAdmin"
           :to="ordersNavTarget"
           active-class=""
           exact-active-class=""
@@ -34,7 +75,7 @@
         >预约订单管理</router-link>
         <!-- 已登录用户可见：合同管理，按角色跳转到对应页面并定位到 contracts 标签页 -->
         <router-link
-          v-if="isLoggedIn"
+          v-if="isLoggedIn && !isAdmin"
           :to="contractsNavTarget"
           active-class=""
           exact-active-class=""
@@ -43,7 +84,7 @@
         >合同管理</router-link>
         <!-- 已登录用户可见：评价入口，租客显示“评价管理”，房东显示“收到的评价”，并放在合同管理后面 -->
         <router-link
-          v-if="isLoggedIn"
+          v-if="isLoggedIn && !isAdmin"
           :to="reviewsNavTarget"
           active-class=""
           exact-active-class=""
@@ -52,7 +93,7 @@
         >{{ role === 'LANDLORD' ? '收到的评价' : '评价管理' }}</router-link>
         <!-- 已登录用户可见：消息中心（目前统一在个人中心 messages 标签页展示） -->
         <router-link
-          v-if="isLoggedIn"
+          v-if="isLoggedIn && !isAdmin"
           :to="messagesNavTarget"
           active-class=""
           exact-active-class=""
@@ -73,13 +114,6 @@
           class="nav-link"
           @click="menuOpen = false"
         >发布房源</router-link>
-        <!-- 仅管理员可见：管理后台入口 -->
-        <router-link
-          v-if="role === 'ADMIN'"
-          to="/admin"
-          class="nav-link"
-          @click="menuOpen = false"
-        >管理后台</router-link>
       </div>
 
       <!-- 右侧操作区域 -->
@@ -152,6 +186,8 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
 // 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
 const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
+// 角色快捷判断：便于模板按角色精确控制导航项显示
+const isAdmin = computed(() => role.value === 'ADMIN')
 // 顶栏“预约订单管理”目标路由：房东进入房东中心订单标签，其他角色进入个人中心订单标签
 const ordersNavTarget = computed(() => (
   role.value === 'LANDLORD'
@@ -174,14 +210,27 @@ const reviewsNavTarget = computed(() => (
 ))
 // 顶栏“消息中心”目标路由：消息目前统一在个人中心 messages 标签页
 const messagesNavTarget = computed(() => ({ path: '/user-center', query: { tab: 'messages' } }))
+// 顶栏“管理员分模块”目标路由：统一落到 /admin 并携带 query.tab，与后台标签联动
+const adminOverviewNavTarget = computed(() => ({ path: '/admin', query: { tab: 'overview' } }))
+const adminUsersNavTarget = computed(() => ({ path: '/admin', query: { tab: 'users' } }))
+const adminHouseMgmtNavTarget = computed(() => ({ path: '/admin', query: { tab: 'houseMgmt' } }))
+const adminOrdersNavTarget = computed(() => ({ path: '/admin', query: { tab: 'orders' } }))
+const adminContractsNavTarget = computed(() => ({ path: '/admin', query: { tab: 'contracts' } }))
 
 const isCenterRoute = computed(() => route.path === '/user-center' || route.path === '/landlord-center')
+const isAdminRoute = computed(() => route.path === '/admin')
 const isOrdersActive = computed(() => isCenterRoute.value && route.query.tab === 'orders')
 const isContractsActive = computed(() => isCenterRoute.value && route.query.tab === 'contracts')
 // 仅在个人中心 favorites 标签时点亮“我的收藏”导航
 const isFavoritesActive = computed(() => route.path === '/user-center' && route.query.tab === 'favorites')
 const isReviewsActive = computed(() => isCenterRoute.value && route.query.tab === 'reviews')
 const isMessagesActive = computed(() => isCenterRoute.value && route.query.tab === 'messages')
+// 管理员后台导航激活态：支持无 tab 参数时默认点亮“数据概览”
+const isAdminOverviewActive = computed(() => isAdminRoute.value && (!route.query.tab || route.query.tab === 'overview'))
+const isAdminUsersActive = computed(() => isAdminRoute.value && route.query.tab === 'users')
+const isAdminHouseMgmtActive = computed(() => isAdminRoute.value && route.query.tab === 'houseMgmt')
+const isAdminOrdersActive = computed(() => isAdminRoute.value && route.query.tab === 'orders')
+const isAdminContractsActive = computed(() => isAdminRoute.value && route.query.tab === 'contracts')
 
 onMounted(async () => {
   // 已登录时，异步拉取未读消息数量，展示在消息角标上
@@ -202,7 +251,14 @@ onMounted(async () => {
  */
 async function handleCommand(cmd) {
   if (cmd === 'profile') {
-    router.push('/user-center')
+    // 下拉“个人中心”按角色分流，管理员直接进入后台概览，房东进入房东中心，其余进入个人中心
+    if (role.value === 'ADMIN') {
+      router.push({ path: '/admin', query: { tab: 'overview' } })
+    } else if (role.value === 'LANDLORD') {
+      router.push('/landlord-center')
+    } else {
+      router.push('/user-center')
+    }
   } else if (cmd === 'logout') {
     await userStore.logout()
     router.push('/')
