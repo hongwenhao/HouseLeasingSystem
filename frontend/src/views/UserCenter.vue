@@ -233,10 +233,10 @@
               </div>
                 <div v-else-if="filteredMyOrders.length > 0" class="table-card orders-table">
                 <div class="table-head">
-                  <span>预约房源</span>
-                  <span>预约时间</span>
-                  <span>创建时间</span>
-                  <span>订单状态</span>
+                  <span class="center-head">预约房源</span>
+                  <span class="center-head">预约时间</span>
+                  <span class="center-head">创建时间</span>
+                  <span class="center-head">订单状态</span>
                   <span>支付状态</span>
                   <span class="action-head">操作</span>
                 </div>
@@ -349,10 +349,10 @@
               </div>
               <div v-else-if="filteredMyContracts.length > 0" class="table-card contracts-table">
                 <div class="table-head">
-                  <span>合同编号</span>
-                  <span>租期</span>
-                  <span>月租</span>
-                  <span>状态</span>
+                  <span class="center-head">合同编号</span>
+                  <span class="center-head">租期</span>
+                  <span class="center-head">月租</span>
+                  <span class="center-head">状态</span>
                   <span class="action-head">操作</span>
                 </div>
                 <div
@@ -1636,6 +1636,10 @@ function getOrderHouseTitleWithFallback(order) {
 
 /* “操作”列表头与按钮区域保持视觉居中，便于快速定位操作入口 */
 .action-head {
+  text-align: center;
+}
+
+.center-head {
   text-align: center;
 }
 
