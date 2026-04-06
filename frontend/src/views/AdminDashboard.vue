@@ -749,8 +749,8 @@ function handleViewHouseDetail(house) {
  * - 管理员复用系统统一订单详情页，保持与租客/房东一致的信息结构；
  * - 仅负责跳转，不在列表页额外请求详情数据，避免重复网络开销。
  */
-function handleViewOrderDetail(order) {
-  router.push(`/orders/${order.id}`)
+function handleViewOrderDetail(orderRow) {
+  router.push(`/orders/${orderRow.id}`)
 }
 
 /**
@@ -758,8 +758,8 @@ function handleViewOrderDetail(order) {
  * - 管理员复用系统统一合同详情页，直接查看对应合同完整条款与签署状态；
  * - 列表页点击后路由跳转，由详情页自行拉取完整合同数据。
  */
-function handleViewContractDetail(contract) {
-  router.push(`/contracts/${contract.id}`)
+function handleViewContractDetail(contractRow) {
+  router.push(`/contracts/${contractRow.id}`)
 }
 
 /**
