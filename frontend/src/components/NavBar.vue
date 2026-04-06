@@ -14,6 +14,15 @@
       <div class="nav-links" :class="{ open: menuOpen }">
         <router-link to="/" class="nav-link" @click="menuOpen = false">首页</router-link>
         <router-link to="/houses" class="nav-link" @click="menuOpen = false">房源列表</router-link>
+        <!-- 仅租客可见：我的收藏入口，按要求放在“房源列表”右侧 -->
+        <router-link
+          v-if="isLoggedIn && role === 'TENANT'"
+          :to="favoritesNavTarget"
+          active-class=""
+          exact-active-class=""
+          :class="['nav-link', { 'tab-active': isFavoritesActive }]"
+          @click="menuOpen = false"
+        >我的收藏</router-link>
         <!-- 已登录用户可见：预约订单管理，按角色跳转到对应页面并定位到 orders 标签页 -->
         <router-link
           v-if="isLoggedIn"
@@ -154,6 +163,8 @@ const contractsNavTarget = computed(() => (
     ? { path: '/landlord-center', query: { tab: 'contracts' } }
     : { path: '/user-center', query: { tab: 'contracts' } }
 ))
+// 顶栏“我的收藏”目标路由：仅租客进入个人中心 favorites 标签
+const favoritesNavTarget = computed(() => ({ path: '/user-center', query: { tab: 'favorites' } }))
 // 顶栏“评价管理/收到的评价”目标路由：房东进入房东中心 reviews 标签，其他角色进入个人中心 reviews 标签
 const reviewsNavTarget = computed(() => (
   role.value === 'LANDLORD'
@@ -166,6 +177,8 @@ const messagesNavTarget = computed(() => ({ path: '/user-center', query: { tab: 
 const isCenterRoute = computed(() => route.path === '/user-center' || route.path === '/landlord-center')
 const isOrdersActive = computed(() => isCenterRoute.value && route.query.tab === 'orders')
 const isContractsActive = computed(() => isCenterRoute.value && route.query.tab === 'contracts')
+// 仅在个人中心 favorites 标签时点亮“我的收藏”导航
+const isFavoritesActive = computed(() => route.path === '/user-center' && route.query.tab === 'favorites')
 const isReviewsActive = computed(() => isCenterRoute.value && route.query.tab === 'reviews')
 const isMessagesActive = computed(() => isCenterRoute.value && route.query.tab === 'messages')
 
