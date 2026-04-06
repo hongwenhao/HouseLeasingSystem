@@ -246,21 +246,21 @@ onMounted(async () => {
 })
 
 /**
- * 处理用户下拉菜单命令
- * @param {string} cmd - 'profile'（跳转个人中心）或 'logout'（退出登录）
+ * 处理用户下拉菜单命令。
+ * @param {string} cmd - 'profile'（进入个人信息）或 'logout'（退出登录）
  */
 async function handleCommand(cmd) {
   if (cmd === 'profile') {
-    // 下拉“个人中心”按角色分流：
-    // 1) 管理员按产品要求直接进入“用户管理”模块（/admin?tab=users）；
-    // 2) 房东进入房东中心；
-    // 3) 其他角色进入个人中心。
+    // 下拉“个人中心”统一按“进入个人信息”处理：
+    // 1) 管理员：仍按原产品设计进入后台用户管理（/admin?tab=users）。
+    //    原因：管理员“个人中心”入口在本系统语义上更偏向“后台工作台入口”，
+    //    其高频任务是用户治理与平台运营，不使用租客/房东的个人资料页流程。
+    // 2) 房东/租客：都跳转到个人中心的“个人信息”标签页（/user-center?tab=profile）。
+    //    这样可确保两端点击“个人中心”后都直接落到“个人信息”界面，避免房东误入业务管理标签页。
     if (role.value === 'ADMIN') {
       router.push({ path: '/admin', query: { tab: 'users' } })
-    } else if (role.value === 'LANDLORD') {
-      router.push('/landlord-center')
     } else {
-      router.push('/user-center')
+      router.push({ path: '/user-center', query: { tab: 'profile' } })
     }
   } else if (cmd === 'logout') {
     await userStore.logout()
