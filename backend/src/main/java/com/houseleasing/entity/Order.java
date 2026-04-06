@@ -28,7 +28,7 @@ public class Order {
     private Long landlordId;
     /** 订单编号（系统生成的唯一编号） */
     private String orderNo;
-    /** 订单状态：PENDING（待处理）、APPROVED（已批准）、REJECTED（已拒绝）、CANCELLED（已取消）、COMPLETED（已完成） */
+    /** 订单状态：PENDING（待处理）、APPROVED（房东已确认）、SIGNED（双方已签约）、REJECTED（已拒绝）、CANCELLED（已取消）、COMPLETED（已完成） */
     private String status = "PENDING";
     /** 预约看房时间 */
     private LocalDateTime appointmentTime;

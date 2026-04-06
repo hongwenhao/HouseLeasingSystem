@@ -69,7 +69,7 @@ public class AdminController {
      * 当 keyword 命中该集合时，按状态精确过滤；否则按订单号模糊过滤。
      */
     private static final Set<String> ORDER_STATUS_KEYWORDS = Set.of(
-            "PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"
+            "PENDING", "APPROVED", "SIGNED", "REJECTED", "CANCELLED", "COMPLETED"
     );
     /**
      * 后台合同状态白名单（统一使用大写枚举值），用于状态下拉框后端兜底校验。

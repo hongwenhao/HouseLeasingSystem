@@ -3,6 +3,7 @@ package com.houseleasing.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.houseleasing.common.PageResult;
+import com.houseleasing.common.utils.OrderStatusUtil;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.OrderCreateRequest;
 import com.houseleasing.dto.OrderReviewRequest;
@@ -373,7 +374,7 @@ public class OrderServiceImpl implements OrderService {
     /**
      * 租客支付订单：
      * 1) 校验订单存在与租客身份；
-     * 2) 校验订单必须处于 APPROVED 且未支付；
+     * 2) 校验订单必须处于 APPROVED（兼容历史）或 SIGNED（双方签约后）且未支付；
      * 3) 校验合同必须双方已签（FULLY_SIGNED）；
      * 4) 更新订单状态与支付状态，并通知双方。
      */
@@ -387,8 +388,12 @@ public class OrderServiceImpl implements OrderService {
         if (!Objects.equals(order.getTenantId(), tenantId)) {
             throw new BusinessException(403, "没有操作权限");
         }
-        if (!"APPROVED".equals(order.getStatus())) {
-            throw new BusinessException(400, "仅已批准订单可支付");
+        // 支付入口兼容两种状态：
+        // - APPROVED：历史流程中，签约前后可能未拆分状态；
+        // - SIGNED：当前流程中，双方签约完成后会显式写入该状态。
+        // 这样既满足“签约后订单=SIGNED”的新口径，也不破坏历史数据可支付能力。
+        if (!OrderStatusUtil.isPayableStatus(order.getStatus())) {
+            throw new BusinessException(400, "仅已确认或已签约订单可支付");
         }
         if ("PAID".equals(order.getPaymentStatus())) {
             throw new BusinessException(400, "订单已支付，请勿重复支付");

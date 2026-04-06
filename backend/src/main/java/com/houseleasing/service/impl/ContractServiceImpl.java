@@ -401,6 +401,16 @@ public class ContractServiceImpl implements ContractService {
         if (Boolean.TRUE.equals(contract.getTenantSigned()) && Boolean.TRUE.equals(contract.getLandlordSigned())) {
             contract.setStatus("FULLY_SIGNED");
             contract.setSignTime(LocalDateTime.now());
+            // 关键业务口径：
+            // 当租客与房东都完成合同签署后，预约订单应从“房东已确认(APPROVED)”进入“已签约(SIGNED)”。
+            // 这样前端列表与详情能准确区分“仅确认预约”与“双方已签合同”两个阶段，
+            // 同时为后续支付、履约等流程提供明确的状态边界。
+            if (contract.getOrderId() != null) {
+                // 使用“带状态条件”的原子更新代替“先查后改”，避免并发签署时出现竞态覆盖。
+                // 返回值为 0 表示订单不存在或状态已不是 APPROVED（例如已被其他事务更新），
+                // 该场景属于幂等可接受结果，无需抛错中断合同签署流程。
+                orderMapper.markOrderSignedIfApproved(contract.getOrderId());
+            }
             messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成");
             messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成");
         } else {

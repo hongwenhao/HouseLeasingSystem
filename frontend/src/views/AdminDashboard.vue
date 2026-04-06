@@ -727,13 +727,13 @@ function houseStatusTagType(status) {
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
-  const map = { PENDING: '待处理', APPROVED: '已通过', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待处理', APPROVED: '已通过', SIGNED: '已签约', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[status] || status
 }
 
 /** 订单状态对应 Tag 类型 */
 function orderStatusTagType(status) {
-  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  const map = { PENDING: 'warning', APPROVED: 'success', SIGNED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
 }
 

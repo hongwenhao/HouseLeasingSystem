@@ -681,6 +681,7 @@ function matchesOrderTimeFilter(order, selectedTimeRange) {
 const orderStatusFilterOptions = [
   { label: orderStatusLabel('PENDING'), value: 'PENDING' },
   { label: orderStatusLabel('APPROVED'), value: 'APPROVED' },
+  { label: orderStatusLabel('SIGNED'), value: 'SIGNED' },
   { label: orderStatusLabel('REJECTED'), value: 'REJECTED' },
   { label: orderStatusLabel('CANCELLED'), value: 'CANCELLED' },
   { label: orderStatusLabel('COMPLETED'), value: 'COMPLETED' }
@@ -1227,13 +1228,13 @@ async function markAllMessagesRead() {
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
-  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
+  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', SIGNED: '已签约', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
   return map[status] || status
 }
 
 /** 订单状态对应的 Element Plus Tag 类型 */
 function orderStatusType(status) {
-  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  const map = { PENDING: 'warning', APPROVED: 'success', SIGNED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
 }
 
@@ -1252,13 +1253,13 @@ function paymentStatusType(status) {
 /**
  * 是否展示“待支付”按钮：
  * - 仅租客可见；
- * - 订单必须已批准；
+ * - 订单必须为“房东已确认(APPROVED)”或“已签约(SIGNED)”；
  * - 支付状态为未支付；
  * - 合同状态已达到双方签署完成（后端通过 canPay 返回）。
  */
 function canShowPayAction(order) {
   return isTenant.value &&
-    order?.status === 'APPROVED' &&
+    (order?.status === 'APPROVED' || order?.status === 'SIGNED') &&
     order?.paymentStatus === 'UNPAID' &&
     order?.canPay === true
 }
