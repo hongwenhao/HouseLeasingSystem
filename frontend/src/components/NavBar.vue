@@ -86,7 +86,8 @@
       <div class="nav-right">
         <!-- 消息角标：已登录时显示，展示未读消息数量 -->
         <el-badge :value="unreadCount > 0 ? unreadCount : ''" class="msg-badge" v-if="isLoggedIn">
-          <router-link to="/user-center" class="icon-btn">
+          <!-- 铃铛入口与“消息中心”导航保持同一目标，点击直接进入消息标签页 -->
+          <router-link :to="messagesNavTarget" class="icon-btn">
             <el-icon size="20"><Bell /></el-icon>
           </router-link>
         </el-badge>
