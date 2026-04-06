@@ -202,10 +202,35 @@
                 </el-select>
               </div>
             </div>
-            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table">
+            <!--
+              合同管理表格：
+              1) 追加 contract-table 类，仅对合同表格做样式微调，避免影响其它管理表格；
+              2) 将“操作”列取消 fixed="right"，避免在窄视口下覆盖“创建时间”列内容。
+            -->
+            <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table contract-table">
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="contractNo" label="合同编号" min-width="170" />
-              <el-table-column prop="orderNo" label="关联订单" min-width="160" />
+              <!--
+                合同编号列：通过 header/cell class 单独缩小字体，
+                保证长编号可读同时减少横向占用，给“创建时间”列留出展示空间。
+              -->
+              <el-table-column
+                prop="contractNo"
+                label="合同编号"
+                min-width="160"
+                header-cell-class-name="contract-compact-header"
+                cell-class-name="contract-compact-cell"
+              />
+              <!--
+                关联订单列：与合同编号列保持一致的紧凑字体策略，
+                统一视觉密度并降低表格横向挤压。
+              -->
+              <el-table-column
+                prop="orderNo"
+                label="关联订单"
+                min-width="150"
+                header-cell-class-name="contract-compact-header"
+                cell-class-name="contract-compact-cell"
+              />
               <el-table-column label="房源" min-width="180">
                 <template #default="{ row }">{{ row.house?.title || '-' }}</template>
               </el-table-column>
@@ -220,10 +245,17 @@
                   <el-tag :type="contractStatusTagType(row.status)" size="small">{{ contractStatusLabel(row.status) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="创建时间" min-width="170">
+              <!--
+                创建时间列：适当增大最小宽度并开启溢出提示，
+                防止时间字符串被截断或在紧凑布局下显示不全。
+              -->
+              <el-table-column label="创建时间" min-width="190" show-overflow-tooltip>
                 <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="120" fixed="right">
+              <!--
+                操作列：不再右侧固定，避免 fixed 列在窄屏时遮挡前一列（创建时间）的问题。
+              -->
+              <el-table-column label="操作" width="120">
                 <template #default="{ row }">
                   <el-button
                     size="small"
@@ -877,6 +909,19 @@ function contractStatusTagType(status) {
 
 .data-table {
   width: 100%;
+}
+
+/*
+  合同表格紧凑字体样式（仅作用于合同管理 tab）：
+  - 目的：缩小“合同编号/关联订单”字号，减少横向空间占用；
+  - 范围：通过 .contract-table 前缀限定，避免影响用户、订单等其它表格。
+*/
+:deep(.contract-table .contract-compact-header .cell) {
+  font-size: 13px;
+}
+
+:deep(.contract-table .contract-compact-cell .cell) {
+  font-size: 13px;
 }
 
 .empty-audit {
