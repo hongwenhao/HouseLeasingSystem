@@ -449,7 +449,7 @@ function matchesOrderTimeFilter(order, selectedRange) {
   return true
 }
 
-// 订单状态筛选选项：文案与列表状态标签保持一致
+// 订单状态筛选选项: 文案与列表状态标签保持一致
 const orderStatusFilterOptions = [
   { label: orderStatusLabel('PENDING'), value: 'PENDING' },
   { label: orderStatusLabel('APPROVED'), value: 'APPROVED' },
@@ -458,21 +458,21 @@ const orderStatusFilterOptions = [
   { label: orderStatusLabel('COMPLETED'), value: 'COMPLETED' }
 ]
 
-// 支付状态筛选选项：文案与支付状态标签保持一致
+// 支付状态筛选选项: 文案与支付状态标签保持一致
 const paymentStatusFilterOptions = [
   { label: paymentStatusLabel('UNPAID'), value: 'UNPAID' },
   { label: paymentStatusLabel('PAID'), value: 'PAID' },
   { label: paymentStatusLabel('REFUNDED'), value: 'REFUNDED' }
 ]
 
-// 订单时间筛选选项：替代搜索框中的时间关键字模糊匹配
+// 订单时间筛选选项: 替代搜索框中的时间关键字模糊匹配
 const orderTimeFilterOptions = [
   { label: '今日', value: 'today' },
   { label: '近7天', value: 'last7days' },
   { label: '近30天', value: 'last30days' }
 ]
 
-// 合同状态筛选选项：文案与合同状态标签保持一致
+// 合同状态筛选选项: 文案与合同状态标签保持一致
 const contractStatusFilterOptions = [
   { label: contractStatusLabel('DRAFT'), value: 'DRAFT' },
   { label: contractStatusLabel('PENDING_SIGN'), value: 'PENDING_SIGN' },
