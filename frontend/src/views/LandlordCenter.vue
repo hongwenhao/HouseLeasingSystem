@@ -230,9 +230,11 @@
                 </div>
                 <div class="review-item-meta">
                   <span>租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
-                  <span>订单ID：{{ review.orderId }}</span>
-                  <span>{{ formatDateTime(review.createTime) }}</span>
+                  <!-- 优先展示业务订单号 orderNo，历史数据缺失时回退 orderId -->
+                  <span>订单编号：{{ review.orderNo || review.orderId || '-' }}</span>
                 </div>
+                <!-- 评价时间独立成行并左对齐，避免与其它元信息同排时出现错位 -->
+                <div class="review-item-time">评价时间：{{ formatDateTime(review.createTime) }}</div>
                 <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
               </div>
             </div>
@@ -986,6 +988,13 @@ function getOrderHouseTitleWithFallback(order) {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.review-item-time {
+  margin-top: 8px;
+  color: #8a94a6;
+  font-size: 12px;
+  text-align: left;
 }
 
 .review-item-content {
