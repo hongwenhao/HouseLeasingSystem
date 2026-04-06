@@ -77,6 +77,11 @@ public class AdminController {
     private static final Set<String> CONTRACT_STATUS_KEYWORDS = Set.of(
             "DRAFT", "PENDING_SIGN", "TENANT_SIGNED", "LANDLORD_SIGNED", "FULLY_SIGNED", "CANCELLED"
     );
+    /**
+     * 后台房源状态白名单：
+     * 仅允许按 ONLINE/OFFLINE/REJECTED 进行筛选，避免非法参数导致查询语义不清晰。
+     */
+    private static final Set<String> HOUSE_STATUS_KEYWORDS = Set.of("ONLINE", "OFFLINE", "REJECTED");
 
     private static final String CREDIT_RANGE_CASE_SQL =
             "CASE " +
@@ -308,6 +313,9 @@ public class AdminController {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        // 管理员取消订单属于关键业务动作：
+        // 通过 MQ 异步推送给订单双方（租客+房东），确保双方及时在消息中心看到状态变化。
+        notifyOrderCancelledByAdmin(order);
         return Result.success();
     }
 
@@ -333,6 +341,8 @@ public class AdminController {
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
+        // 合同取消后异步通知合同双方，告知取消来源为管理员兜底处理，避免双方误解为对方主动取消。
+        notifyContractCancelledByAdmin(contract);
         House house = houseMapper.selectById(contract.getHouseId());
         if (house != null) {
             house.setStatus("ONLINE");
@@ -499,7 +509,8 @@ public class AdminController {
     public Result<PageResult<House>> listAllHouses(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<House> wrapper =
@@ -508,6 +519,13 @@ public class AdminController {
             wrapper.and(w -> w.like(House::getTitle, keyword)
                     .or().like(House::getCity, keyword)
                     .or().like(House::getAddress, keyword));
+        }
+        // 管理员房源状态下拉筛选：仅命中白名单时生效，保证接口健壮性与向后兼容。
+        if (StringUtils.hasText(status)) {
+            String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
+            if (HOUSE_STATUS_KEYWORDS.contains(normalizedStatus)) {
+                wrapper.eq(House::getStatus, normalizedStatus);
+            }
         }
         wrapper.orderByDesc(House::getCreateTime);
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> result = houseMapper.selectPage(pageObj, wrapper);
@@ -706,5 +724,39 @@ public class AdminController {
             return "未命名房源";
         }
         return house.getTitle();
+    }
+
+    /**
+     * 管理员取消订单后，异步通知订单双方。
+     * 文案明确“管理员已取消”，避免用户误判为交易对方主动取消。
+     */
+    private void notifyOrderCancelledByAdmin(Order order) {
+        if (order == null) {
+            return;
+        }
+        String message = "管理员已取消该订单，如有疑问请联系平台客服。";
+        if (order.getTenantId() != null) {
+            messageProducer.sendOrderStatusChange(order.getTenantId(), message);
+        }
+        if (order.getLandlordId() != null) {
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), message);
+        }
+    }
+
+    /**
+     * 管理员取消合同后，异步通知合同双方。
+     * 与订单通知一致采用统一 MQ 通道，确保消息落库逻辑一致可观测。
+     */
+    private void notifyContractCancelledByAdmin(Contract contract) {
+        if (contract == null) {
+            return;
+        }
+        String message = "管理员已取消该合同，如有疑问请联系平台客服。";
+        if (contract.getTenantId() != null) {
+            messageProducer.sendContractStatusChange(contract.getTenantId(), message);
+        }
+        if (contract.getLandlordId() != null) {
+            messageProducer.sendContractStatusChange(contract.getLandlordId(), message);
+        }
     }
 }

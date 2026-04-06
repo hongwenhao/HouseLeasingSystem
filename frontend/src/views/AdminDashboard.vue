@@ -91,6 +91,26 @@
                 style="width:280px"
                 @keyup.enter="loadHouseManagementList"
               />
+              <!--
+                房源状态筛选下拉：
+                1) 支持“全部/已上架/已下架/已拒绝”；
+                2) 与关键字可叠加使用，便于管理员快速筛选待处理房源；
+                3) clearable 清空后回到“全部”。
+              -->
+              <el-select
+                v-model="houseMgmtStatusFilter"
+                clearable
+                placeholder="上下架状态"
+                style="width: 180px"
+                @change="loadHouseManagementList"
+              >
+                <el-option
+                  v-for="item in houseMgmtStatusOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
               <el-button type="primary" @click="loadHouseManagementList">查询</el-button>
             </div>
             <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table">
@@ -266,7 +286,7 @@
                 header-cell-class-name="contract-compact-header"
                 cell-class-name="contract-compact-cell"
               />
-              <el-table-column label="房源" min-width="180">
+              <el-table-column label="房源" min-width="160">
                 <template #default="{ row }">{{ row.house?.title || '-' }}</template>
               </el-table-column>
               <el-table-column label="租客" width="120">
@@ -284,20 +304,20 @@
                 创建时间列：适当增大最小宽度并开启溢出提示，
                 防止时间字符串被截断或在紧凑布局下显示不全。
               -->
-              <el-table-column label="创建时间" min-width="190" show-overflow-tooltip>
+              <el-table-column label="创建时间" min-width="170" show-overflow-tooltip>
                 <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
               </el-table-column>
               <!--
                 操作列：不再右侧固定，避免 fixed 列在窄屏时遮挡前一列（创建时间）的问题。
               -->
-              <el-table-column label="操作" width="200">
+              <el-table-column label="操作" width="180">
                 <template #default="{ row }">
                   <div class="table-action-group">
-                    <el-button size="small" @click="handleViewContractDetail(row)">查看</el-button>
+                    <el-button size="small" text @click="handleViewContractDetail(row)">查看</el-button>
                     <el-button
                       size="small"
                       type="danger"
-                      plain
+                      text
                       :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
                       @click="handleCancelContractByAdmin(row)"
                     >取消</el-button>
@@ -408,6 +428,12 @@ const userStatusOptions = [              // 用户状态下拉选项
 const houseManagementList = ref([])       // 房源管理列表
 const houseManagementLoading = ref(false) // 房源管理加载状态
 const houseMgmtKeyword = ref('')          // 房源管理关键词
+const houseMgmtStatusFilter = ref('')     // 房源管理状态筛选（ONLINE/OFFLINE/REJECTED）
+const houseMgmtStatusOptions = [          // 房源状态下拉选项（与后端白名单保持一致）
+  { label: '已上架', value: 'ONLINE' },
+  { label: '已下架', value: 'OFFLINE' },
+  { label: '已拒绝', value: 'REJECTED' }
+]
 
 const orders = ref([])                   // 管理员订单列表
 const ordersLoading = ref(false)         // 订单列表加载状态
@@ -525,7 +551,8 @@ async function loadHouseManagementList() {
     const res = await getHouseManagementList({
       page: 1,
       size: DEFAULT_ADMIN_PAGE_SIZE,
-      keyword: houseMgmtKeyword.value || undefined
+      keyword: houseMgmtKeyword.value || undefined,
+      status: houseMgmtStatusFilter.value || undefined
     })
     houseManagementList.value = Array.isArray(res) ? res : (res?.records || [])
   } catch (e) {
@@ -1021,6 +1048,7 @@ function contractStatusTagType(status) {
 */
 :deep(.contract-table .table-action-group .el-button) {
   white-space: nowrap;
+  margin-left: 0;
 }
 
 .empty-audit {
