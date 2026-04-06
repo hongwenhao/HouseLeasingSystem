@@ -455,6 +455,7 @@ function matchesOrderTimeFilter(order, selectedTimeRange) {
 const orderStatusFilterOptions = [
   { label: orderStatusLabel('PENDING'), value: 'PENDING' },
   { label: orderStatusLabel('APPROVED'), value: 'APPROVED' },
+  { label: orderStatusLabel('SIGNED'), value: 'SIGNED' },
   { label: orderStatusLabel('REJECTED'), value: 'REJECTED' },
   { label: orderStatusLabel('CANCELLED'), value: 'CANCELLED' },
   { label: orderStatusLabel('COMPLETED'), value: 'COMPLETED' }
@@ -747,13 +748,13 @@ function houseStatusType(status) {
 
 /** 订单状态枚举转中文 */
 function orderStatusLabel(status) {
-  const map = { PENDING: '待确认', APPROVED: '已确认', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
+  const map = { PENDING: '待确认', APPROVED: '已确认', SIGNED: '已签约', REJECTED: '已拒绝', CANCELLED: '已取消', COMPLETED: '已完成' }
   return map[status] || status
 }
 
 /** 订单状态对应 Tag 类型 */
 function orderStatusType(status) {
-  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  const map = { PENDING: 'warning', APPROVED: 'success', SIGNED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[status] || 'info'
 }
 

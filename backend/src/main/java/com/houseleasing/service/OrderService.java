@@ -87,7 +87,7 @@ public interface OrderService {
 
     /**
      * 支付订单（租客操作）
-     * 仅当订单为 APPROVED 且合同双方已签署时允许支付；
+     * 仅当订单为 APPROVED（兼容历史）或 SIGNED（双方签约后）且合同双方已签署时允许支付；
      * 支付后订单状态更新为 COMPLETED，支付状态更新为 PAID。
      *
      * @param orderId   订单 ID

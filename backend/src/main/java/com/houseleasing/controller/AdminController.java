@@ -69,7 +69,7 @@ public class AdminController {
      * 当 keyword 命中该集合时，按状态精确过滤；否则按订单号模糊过滤。
      */
     private static final Set<String> ORDER_STATUS_KEYWORDS = Set.of(
-            "PENDING", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"
+            "PENDING", "APPROVED", "SIGNED", "REJECTED", "CANCELLED", "COMPLETED"
     );
 
     private static final String CREDIT_RANGE_CASE_SQL =

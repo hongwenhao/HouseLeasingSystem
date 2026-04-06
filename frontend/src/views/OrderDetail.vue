@@ -214,13 +214,13 @@ const role = localStorage.getItem('role') || ''  // 当前用户角色（从 loc
 
 /** 订单状态对应的中文标签 */
 const statusLabel = computed(() => {
-  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
+  const map = { PENDING: '待房东确认', APPROVED: '房东已确认', SIGNED: '已签约', REJECTED: '房东已拒绝', CANCELLED: '订单已取消', COMPLETED: '订单已完成' }
   return map[order.value?.status] || order.value?.status || '-'
 })
 
 /** 订单状态对应的 Element Plus Tag 类型（颜色） */
 const statusType = computed(() => {
-  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
+  const map = { PENDING: 'warning', APPROVED: 'success', SIGNED: 'success', REJECTED: 'danger', CANCELLED: 'info', COMPLETED: 'primary' }
   return map[order.value?.status] || 'info'
 })
 
@@ -251,6 +251,8 @@ const timelineEvents = computed(() => {
   ]
   if (order.value.status === 'APPROVED') {
     events.push({ label: '房东确认预约', time: formatDateTime(order.value.updateTime), type: 'success' })
+  } else if (order.value.status === 'SIGNED') {
+    events.push({ label: '合同已签约', time: formatDateTime(order.value.updateTime), type: 'success' })
   } else if (order.value.status === 'REJECTED') {
     events.push({ label: '房东拒绝预约', time: formatDateTime(order.value.updateTime), type: 'danger' })
   } else if (order.value.status === 'CANCELLED') {

@@ -225,8 +225,10 @@ public class AlipayServiceImpl implements AlipayService {
      * @param order 订单
      */
     private void validateOrderCanPay(Order order) {
-        if (!"APPROVED".equals(order.getStatus())) {
-            throw new BusinessException(400, "仅已批准订单可支付");
+        // 与 OrderServiceImpl.payOrder 保持一致：
+        // 签约后订单会被标记为 SIGNED，因此支付前置状态需同时兼容 APPROVED/SIGNED。
+        if (!"APPROVED".equals(order.getStatus()) && !"SIGNED".equals(order.getStatus())) {
+            throw new BusinessException(400, "仅已确认或已签约订单可支付");
         }
         if ("PAID".equals(order.getPaymentStatus())) {
             throw new BusinessException(400, "订单已支付，请勿重复支付");
