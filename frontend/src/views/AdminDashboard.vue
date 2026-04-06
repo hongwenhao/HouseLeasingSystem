@@ -1084,17 +1084,6 @@ function contractStatusTagType(status) {
   min-width: 170px;
 }
 
-:deep(.admin-tabs .el-tabs__nav-wrap) {
-  display: flex;
-  justify-content: center;
-}
-
-.admin-tab-title {
-  display: inline-block;
-  min-width: 84px;
-  text-align: center;
-}
-
 .empty-audit {
   padding: 40px 0;
 }
