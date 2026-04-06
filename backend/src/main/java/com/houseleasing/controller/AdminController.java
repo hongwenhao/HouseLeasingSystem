@@ -550,7 +550,9 @@ public class AdminController {
 
     /**
      * 管理员审核房源上线状态：
-     * status=APPROVED/ONLINE 视为通过并上线；status=REJECTED/OFFLINE 视为驳回并保持下线。
+     * status=APPROVED/ONLINE 视为通过并上线；
+     * status=REJECTED 视为明确驳回（落库为 REJECTED，便于管理端区分“驳回”和“手动下架”）；
+     * status=OFFLINE 视为普通下线（落库为 OFFLINE）。
      *
      * @param id   房源 ID
      * @param body 审核请求体，示例：{"status":"APPROVED","reason":"..."}
@@ -569,7 +571,12 @@ public class AdminController {
             throw new BusinessException(400, "审核状态不能为空");
         }
         boolean approved = "APPROVED".equalsIgnoreCase(status) || "ONLINE".equalsIgnoreCase(status);
-        house.setStatus(approved ? "ONLINE" : "OFFLINE");
+        boolean rejected = "REJECTED".equalsIgnoreCase(status);
+        // 细分审核结果：
+        // 1) 通过 => ONLINE；
+        // 2) 明确驳回 => REJECTED（用于管理端“已拒绝”状态筛选）；
+        // 3) 其余下线语义（如 OFFLINE）=> OFFLINE。
+        house.setStatus(approved ? "ONLINE" : (rejected ? "REJECTED" : "OFFLINE"));
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
         // 审核动作后通知房东，便于房东及时感知房源状态变化
