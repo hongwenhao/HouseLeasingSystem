@@ -596,11 +596,22 @@ public class OrderServiceImpl implements OrderService {
                 .map(Review::getHouseId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        // 为评价列表补齐 order_no：reviews 仅存 orderId，需要批量回查 orders 获取业务单号。
+        Set<Long> orderIds = reviews.stream()
+                .map(Review::getOrderId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         Map<Long, House> houseMap = new HashMap<>();
         if (!houseIds.isEmpty()) {
             houseMap = houseMapper.selectBatchIds(houseIds).stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toMap(House::getId, house -> house));
+        }
+        Map<Long, Order> orderMap = new HashMap<>();
+        if (!orderIds.isEmpty()) {
+            orderMap = orderMapper.selectBatchIds(orderIds).stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(Order::getId, order -> order));
         }
 
         Set<Long> tenantIds = reviews.stream()
@@ -621,11 +632,17 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Map<Long, House> finalHouseMap = houseMap;
+        Map<Long, Order> finalOrderMap = orderMap;
         Map<Long, User> finalUserMap = userMap;
         return reviews.stream().map(review -> {
             ReviewRecordResponse response = new ReviewRecordResponse();
             response.setId(review.getId());
             response.setOrderId(review.getOrderId());
+            // 评价管理优先展示 order_no；若历史数据缺失该字段，前端仍可回退展示 orderId。
+            Order order = review.getOrderId() != null ? finalOrderMap.get(review.getOrderId()) : null;
+            if (order != null) {
+                response.setOrderNo(order.getOrderNo());
+            }
             response.setHouseId(review.getHouseId());
             response.setTenantId(review.getUserId());
             response.setRating(review.getRating());

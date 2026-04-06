@@ -211,6 +211,17 @@
                   </span>
                   <div class="row-actions">
                     <el-button size="small" @click="$router.push(`/orders/${order.id}`)">查看</el-button>
+                    <!-- 按产品要求：租客端“退款”紧随“查看”并上下对齐，便于快速识别资金相关操作 -->
+                    <el-button
+                      v-if="canShowRefundAction(order)"
+                      size="small"
+                      type="info"
+                      plain
+                      class="refund-action"
+                      @click="handleRefundOrder(order)"
+                    >
+                      退款
+                    </el-button>
                     <el-button
                       size="small"
                       type="success"
@@ -246,15 +257,6 @@
                       @click="handlePayOrder(order)"
                     >
                       待支付
-                    </el-button>
-                    <el-button
-                      v-if="canShowRefundAction(order)"
-                      size="small"
-                      type="info"
-                      plain
-                      @click="handleRefundOrder(order)"
-                    >
-                      退款
                     </el-button>
                   </div>
                 </div>
@@ -331,107 +333,111 @@
               <div v-if="reviewsLoading">
                 <el-skeleton :rows="4" animated />
               </div>
-              <div v-else-if="reviewRecords.length > 0" class="review-list">
-                <div v-for="review in reviewRecords" :key="review.id" class="review-item">
-                  <div class="review-item-head">
-                    <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
-                    <el-rate :model-value="review.rating || 0" disabled show-score />
-                  </div>
-                  <div class="review-item-meta">
-                    <span v-if="isLandlord">租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
-                    <span>订单ID：{{ review.orderId }}</span>
-                    <span>{{ formatDateTime(review.createTime) }}</span>
-                  </div>
-                  <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
-                </div>
-              </div>
-              <el-empty v-else :description="isLandlord ? '暂无收到的评价' : '暂无评价记录'" />
-            </el-tab-pane>
-
-            <!-- Messages Tab -->
-            <el-tab-pane name="messages">
-              <template #label>
-                <div class="tab-label">
-                  <el-icon><ChatLineSquare /></el-icon>
-                  <span>消息中心</span>
-                </div>
-              </template>
-              <div class="messages-toolbar">
-                <el-button size="small" @click="markAllMessagesRead">全部标记已读</el-button>
-              </div>
-              <MessageList :messages="messages" @read="handleMarkRead" />
-            </el-tab-pane>
-
-            <!-- Credit Tab -->
-            <el-tab-pane name="credit">
-              <template #label>
-                <div class="tab-label">
-                  <el-icon><StarFilled /></el-icon>
-                  <span>信用评分</span>
-                </div>
-              </template>
-              <div class="credit-section">
-                  <div class="credit-score-card">
-                    <div class="score-display">
-                      <span class="score-num">{{ creditScore }}</span>
-                      <span class="score-total">/200</span>
+                <div v-else-if="reviewRecords.length > 0" class="review-list">
+                  <div v-for="review in reviewRecords" :key="review.id" class="review-item">
+                    <div class="review-item-head">
+                      <h4 class="review-house-title">{{ review.houseTitle || (review.houseId ? `房源#${review.houseId}` : '-') }}</h4>
+                      <el-rate :model-value="review.rating || 0" disabled show-score />
                     </div>
-                    <el-progress
-                    :percentage="creditProgress"
-                    :color="creditColor(creditScore)"
-                    :stroke-width="16"
-                    class="credit-progress"
-                  />
-                  <p class="credit-label">{{ creditLabel(creditScore) }}</p>
+                    <div class="review-item-meta">
+                      <!-- 租客端与房东端统一展示双方身份信息，减少沟通歧义 -->
+                      <span>房东：{{ review.landlordName || (review.landlordId ? `用户#${review.landlordId}` : '-') }}</span>
+                      <span>租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
+                      <!-- 评价订单标识优先展示业务 order_no，缺失时回退主键 ID 兼容历史数据 -->
+                      <span>订单ID：{{ review.orderNo || review.orderId || '-' }}</span>
+                    </div>
+                    <!-- 将评价时间独立为单独一行并左对齐，避免在元信息拥挤时视觉跳动 -->
+                    <div class="review-item-time">评价时间：{{ formatDateTime(review.createTime) }}</div>
+                    <div class="review-item-content">{{ review.content || '（未填写评价内容）' }}</div>
+                  </div>
                 </div>
-                <div class="credit-desc">
-                  <h4>信用评分说明</h4>
-                  <p>信用评分反映您在平台上的信誉状况，由交易记录、合同履约情况等综合计算；系统满分为200分，持续良好行为可逐步提升到100分以上。</p>
-                  <ul>
-                    <li>90-200分：优秀信用，享受优先推荐</li>
-                    <li>70-89分：良好信用</li>
-                    <li>60-69分：一般信用</li>
-                    <li>60分以下：信用较低，部分功能受限</li>
-                  </ul>
+                <el-empty v-else :description="isLandlord ? '暂无收到的评价' : '暂无评价记录'" />
+              </el-tab-pane>
+
+              <!-- Messages Tab -->
+              <el-tab-pane name="messages">
+                <template #label>
+                  <div class="tab-label">
+                    <el-icon><ChatLineSquare /></el-icon>
+                    <span>消息中心</span>
+                  </div>
+                </template>
+                <div class="messages-toolbar">
+                  <el-button size="small" @click="markAllMessagesRead">全部标记已读</el-button>
                 </div>
-              </div>
-            </el-tab-pane>
-          </el-tabs>
+                <MessageList :messages="messages" @read="handleMarkRead" />
+              </el-tab-pane>
+
+              <!-- Credit Tab -->
+              <el-tab-pane name="credit">
+                <template #label>
+                  <div class="tab-label">
+                    <el-icon><StarFilled /></el-icon>
+                    <span>信用评分</span>
+                  </div>
+                </template>
+                <div class="credit-section">
+                    <div class="credit-score-card">
+                      <div class="score-display">
+                        <span class="score-num">{{ creditScore }}</span>
+                        <span class="score-total">/200</span>
+                      </div>
+                      <el-progress
+                      :percentage="creditProgress"
+                      :color="creditColor(creditScore)"
+                      :stroke-width="16"
+                      class="credit-progress"
+                    />
+                    <p class="credit-label">{{ creditLabel(creditScore) }}</p>
+                  </div>
+                  <div class="credit-desc">
+                    <h4>信用评分说明</h4>
+                    <p>信用评分反映您在平台上的信誉状况，由交易记录、合同履约情况等综合计算；系统满分为200分，持续良好行为可逐步提升到100分以上。</p>
+                    <ul>
+                      <li>90-200分：优秀信用，享受优先推荐</li>
+                      <li>70-89分：良好信用</li>
+                      <li>60-69分：一般信用</li>
+                      <li>60分以下：信用较低，部分功能受限</li>
+                    </ul>
+                  </div>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
         </div>
       </div>
+
+      <!-- 评价弹窗：租客对已完成订单进行一次性评价 -->
+      <el-dialog v-model="reviewDialogVisible" title="订单评价" width="500px">
+        <el-form label-width="90px">
+          <el-form-item label="房源">
+            <div class="review-house-title">{{ getOrderHouseTitleWithFallback(reviewTargetOrder) }}</div>
+          </el-form-item>
+          <el-form-item label="评分" required>
+            <el-rate v-model="reviewForm.rating" :max="5" show-score />
+          </el-form-item>
+          <el-form-item label="评价内容">
+            <el-input
+              v-model="reviewForm.content"
+              type="textarea"
+              :rows="4"
+              maxlength="500"
+              show-word-limit
+              placeholder="请填写您的看房/签约体验（选填）"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="reviewDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submittingReview" @click="submitOrderReview">
+            提交评价
+          </el-button>
+        </template>
+      </el-dialog>
+
+      <Footer />
     </div>
-
-    <!-- 评价弹窗：租客对已完成订单进行一次性评价 -->
-    <el-dialog v-model="reviewDialogVisible" title="订单评价" width="500px">
-      <el-form label-width="90px">
-        <el-form-item label="房源">
-          <div class="review-house-title">{{ getOrderHouseTitleWithFallback(reviewTargetOrder) }}</div>
-        </el-form-item>
-        <el-form-item label="评分" required>
-          <el-rate v-model="reviewForm.rating" :max="5" show-score />
-        </el-form-item>
-        <el-form-item label="评价内容">
-          <el-input
-            v-model="reviewForm.content"
-            type="textarea"
-            :rows="4"
-            maxlength="500"
-            show-word-limit
-            placeholder="请填写您的看房/签约体验（选填）"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="reviewDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submittingReview" @click="submitOrderReview">
-          提交评价
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <Footer />
-  </div>
-</template>
+  </template>
 
 <script setup>
 // 说明：个人中心页逻辑，管理用户资料编辑、密码修改、预约订单、合同、消息和信用评分展示
@@ -1270,10 +1276,20 @@ function getOrderHouseTitleWithFallback(order) {
 }
 
 .row-actions {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  justify-content: start;
+  justify-items: start;
   gap: 8px;
-  flex-wrap: wrap;
+}
+
+/* 订单操作固定左对齐堆叠，保证“查看”“退款”等关键按钮纵向位置稳定 */
+.orders-table .row-actions {
+  grid-auto-flow: row;
+}
+
+/* 退款按钮要求放在“查看”下方：通过显式行定位锁定其第二行位置 */
+.orders-table .row-actions .refund-action {
+  grid-row: 2;
 }
 
 /* “操作”列表头与按钮区域保持视觉居中，便于快速定位操作入口 */
@@ -1375,6 +1391,17 @@ function getOrderHouseTitleWithFallback(order) {
   font-size: 12px;
   display: flex;
   gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* 将评价时间独立为左对齐信息行，避免与身份/订单信息挤在同一行导致错位 */
+.review-item-time {
+  margin-top: 8px;
+  color: #8a94a6;
+  font-size: 12px;
+  text-align: left;
 }
 
 .review-item-content {
