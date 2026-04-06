@@ -74,7 +74,21 @@
                     </el-select>
                   </el-form-item>
                   <el-form-item label="头像URL">
-                    <el-input v-model="profileForm.avatarUrl" placeholder="输入头像图片链接" />
+                    <div class="avatar-upload-field">
+                      <!-- 头像上传复用房源图片上传接口，保持全站一致的上传流程与错误提示体验 -->
+                      <el-upload
+                        action="#"
+                        :auto-upload="false"
+                        :show-file-list="false"
+                        accept="image/*"
+                        :disabled="uploadingAvatar"
+                        :on-change="handleAvatarFileChange"
+                      >
+                        <el-button type="primary" plain :loading="uploadingAvatar">本地上传头像</el-button>
+                      </el-upload>
+                      <!-- 保留 URL 输入框：上传成功后自动回填，也允许用户手动覆盖 -->
+                      <el-input v-model="profileForm.avatarUrl" placeholder="上传后自动填充，也可手动输入头像链接" />
+                    </div>
                   </el-form-item>
                   <el-form-item>
                     <el-button type="primary" :loading="savingProfile" @click="saveProfile">保存修改</el-button>
@@ -456,13 +470,14 @@ import { getMyOrders, getLandlordOrders, cancelOrder, refundOrder, reviewOrder, 
 import { createAlipayPayForm } from '../api/alipay.js'
 import { getMyContracts } from '../api/contract.js'
 import { getMessages, markRead, markAllRead } from '../api/message.js'
-import { getMyCollections } from '../api/house.js'
+import { getMyCollections, uploadHouseImage } from '../api/house.js'
 
 const router = useRouter()                 // 获取路由实例以便在密码修改后跳转
 const route = useRoute()                   // 获取当前路由，用于识别 ?tab=xxx 参数
 const userStore = useUserStore()
 const activeTab = ref('profile')      // 当前激活的 tab 标签名
 const savingProfile = ref(false)      // 保存资料按钮 loading 状态
+const uploadingAvatar = ref(false)    // 头像上传按钮 loading 状态
 const changingPwd = ref(false)        // 修改密码按钮 loading 状态
 const submittingRealName = ref(false) // 实名认证按钮 loading 状态
 const ordersLoading = ref(false)      // 订单列表加载状态
@@ -877,6 +892,34 @@ async function saveProfile() {
     ElMessage.error(e.message || '保存失败')
   } finally {
     savingProfile.value = false
+  }
+}
+
+/**
+ * 本地上传头像（与发布房源图片上传逻辑保持一致）：
+ * 1) 仅允许图片类型文件；
+ * 2) 上传成功后将返回 URL 回填到资料表单；
+ * 3) 不自动保存，仍需用户点击“保存修改”统一提交资料变更。
+ */
+async function handleAvatarFileChange(uploadFile) {
+  const rawFile = uploadFile?.raw
+  if (!rawFile) {
+    ElMessage.warning('未获取到上传文件，请重试')
+    return
+  }
+  if (!rawFile.type?.startsWith('image/')) {
+    ElMessage.warning('仅支持上传图片文件')
+    return
+  }
+  uploadingAvatar.value = true
+  try {
+    const avatarUrl = await uploadHouseImage(rawFile)
+    profileForm.avatarUrl = avatarUrl || ''
+    ElMessage.success('头像上传成功，请点击“保存修改”生效')
+  } catch (e) {
+    ElMessage.error(e.message || '头像上传失败，请重试')
+  } finally {
+    uploadingAvatar.value = false
   }
 }
 
@@ -1308,6 +1351,18 @@ function getOrderHouseTitleWithFallback(order) {
 
 .profile-form :deep(.el-form-item) {
   margin-bottom: 14px;
+}
+
+.avatar-upload-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.avatar-upload-field :deep(.el-input) {
+  width: 100%;
 }
 
 .table-card {

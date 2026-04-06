@@ -620,14 +620,17 @@ async function handleLocalImageChange(uploadFile) {
 .owner-type-group :deep(.el-radio.is-bordered) {
   height: auto;
   padding: 12px 16px;
+  display: flex;
+  align-items: center;
 }
 
 .owner-type-option {
   display: flex;
+  align-items: center;
 }
 
 .owner-type-group :deep(.el-radio) {
-  align-items: flex-start;
+  align-items: center;
 }
 
 .owner-type-group :deep(.el-radio__label) {

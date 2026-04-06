@@ -136,6 +136,7 @@
                     v-if="order.contractId"
                     size="small"
                     type="primary"
+                    plain
                     @click="router.push(`/contracts/${order.contractId}`)"
                   >
                     查看合同
