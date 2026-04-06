@@ -666,7 +666,15 @@ function handleViewHouseDetail(house) {
  */
 function formatDateTime(dateTime) {
   if (!dateTime) return '-'
-  return String(dateTime).replace('T', ' ')
+  const raw = String(dateTime).trim()
+  // 仅在标准 ISO 时间字符串场景下执行“T”替换与毫秒裁剪，避免对非时间文本误处理。
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    return raw
+      .replace('T', ' ')
+      .replace(/\.\d+Z?$/, '')
+      .replace(/Z$/, '')
+  }
+  return raw
 }
 
 /** 管理员取消订单（取消后刷新列表，保证状态即时可见） */
