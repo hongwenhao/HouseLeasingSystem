@@ -1034,6 +1034,7 @@ function contractStatusTagType(status) {
 }
 
 .tab-toolbar {
+  margin-top: 12px;
   margin-bottom: 16px;
 }
 
