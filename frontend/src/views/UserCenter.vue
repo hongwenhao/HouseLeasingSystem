@@ -233,11 +233,11 @@
               </div>
                 <div v-else-if="filteredMyOrders.length > 0" class="table-card orders-table">
                 <div class="table-head">
-                  <span>预约房源</span>
-                  <span>预约时间</span>
-                  <span>创建时间</span>
-                  <span>订单状态</span>
-                  <span>支付状态</span>
+                  <span class="center-cell">预约房源</span>
+                  <span class="center-cell">预约时间</span>
+                  <span class="center-cell">创建时间</span>
+                  <span class="center-cell">订单状态</span>
+                  <span class="center-cell">支付状态</span>
                   <span class="action-head">操作</span>
                 </div>
                 <div
@@ -246,16 +246,16 @@
                   class="table-row"
                 >
                   <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
-                  <span class="title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
-                  <span>{{ formatDateTime(order.appointmentTime) }}</span>
+                  <span class="title-cell center-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
+                  <span class="center-cell">{{ formatDateTime(order.appointmentTime) }}</span>
                   <!-- 兼容后端实际字段 createTime 与历史字段 createdAt -->
-                  <span>{{ formatDate(order.createTime || order.createdAt) }}</span>
-                  <span>
+                  <span class="center-cell">{{ formatDate(order.createTime || order.createdAt) }}</span>
+                  <span class="center-cell">
                     <el-tag :type="orderStatusType(order.status)" size="small">
                       {{ orderStatusLabel(order.status) }}
                     </el-tag>
                   </span>
-                  <span>
+                  <span class="center-cell">
                     <el-tag :type="paymentStatusType(order.paymentStatus)" size="small">
                       {{ paymentStatusLabel(order.paymentStatus) }}
                     </el-tag>
@@ -349,10 +349,10 @@
               </div>
               <div v-else-if="filteredMyContracts.length > 0" class="table-card contracts-table">
                 <div class="table-head">
-                  <span>合同编号</span>
-                  <span>租期</span>
-                  <span>月租</span>
-                  <span>状态</span>
+                  <span class="center-cell">合同编号</span>
+                  <span class="center-cell">租期</span>
+                  <span class="center-cell">月租</span>
+                  <span class="center-cell">状态</span>
                   <span class="action-head">操作</span>
                 </div>
                 <div
@@ -360,10 +360,10 @@
                   :key="contract.id"
                   class="table-row"
                 >
-                  <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
-                  <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                  <span>¥{{ contract.monthlyRent ?? contract.rent }}</span>
-                  <span>
+                  <span class="title-cell center-cell">{{ contract.contractNo || contract.id }}</span>
+                  <span class="center-cell">{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
+                  <span class="center-cell">¥{{ contract.monthlyRent ?? contract.rent }}</span>
+                  <span class="center-cell">
                     <el-tag :type="contractStatusType(contract.status)" size="small">
                       {{ contractStatusLabel(contract.status) }}
                     </el-tag>
@@ -1604,6 +1604,12 @@ function getOrderHouseTitleWithFallback(order) {
 .contracts-table .table-head,
 .contracts-table .table-row {
   grid-template-columns: var(--contracts-table-cols);
+}
+
+/* 预约订单管理与合同管理：表头与数据统一居中，保持列对齐 */
+.table-head .center-cell,
+.table-row .center-cell {
+  text-align: center;
 }
 
 .title-cell {
