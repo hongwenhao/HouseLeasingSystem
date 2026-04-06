@@ -159,7 +159,13 @@
                 <el-button type="primary" @click="loadOrders">查询</el-button>
               </div>
             </div>
-            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table">
+            <!--
+              订单管理表格布局优化：
+              1) 增加 order-table 类，便于只针对订单表格调整操作区样式；
+              2) 操作列取消 fixed，避免窄屏时右侧固定列遮挡前一列内容；
+              3) 操作列宽度增大并支持双按钮布局（查看 + 取消）。
+            -->
+            <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table order-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="orderNo" label="订单编号" min-width="160" />
               <el-table-column label="房源" min-width="180">
@@ -179,15 +185,18 @@
               <el-table-column label="创建时间" min-width="170">
                 <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="120" fixed="right">
+              <el-table-column label="操作" width="200">
                 <template #default="{ row }">
-                  <el-button
-                    size="small"
-                    type="danger"
-                    plain
-                    :disabled="row.status === 'CANCELLED'"
-                    @click="handleCancelOrderByAdmin(row)"
-                  >取消</el-button>
+                  <div class="table-action-group">
+                    <el-button size="small" @click="handleViewOrderDetail(row)">查看</el-button>
+                    <el-button
+                      size="small"
+                      type="danger"
+                      plain
+                      :disabled="row.status === 'CANCELLED'"
+                      @click="handleCancelOrderByAdmin(row)"
+                    >取消</el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -237,12 +246,12 @@
               <el-table-column prop="id" label="ID" width="80" />
               <!--
                 合同编号列：通过 header/cell class 单独缩小字体，
-                保证长编号可读同时减少横向占用，给“创建时间”列留出展示空间。
+                让长编号在同等宽度下展示更多字符，减少操作列被挤压概率。
               -->
               <el-table-column
                 prop="contractNo"
                 label="合同编号"
-                min-width="160"
+                min-width="150"
                 header-cell-class-name="contract-compact-header"
                 cell-class-name="contract-compact-cell"
               />
@@ -253,7 +262,7 @@
               <el-table-column
                 prop="orderNo"
                 label="关联订单"
-                min-width="150"
+                min-width="140"
                 header-cell-class-name="contract-compact-header"
                 cell-class-name="contract-compact-cell"
               />
@@ -281,15 +290,18 @@
               <!--
                 操作列：不再右侧固定，避免 fixed 列在窄屏时遮挡前一列（创建时间）的问题。
               -->
-              <el-table-column label="操作" width="120">
+              <el-table-column label="操作" width="200">
                 <template #default="{ row }">
-                  <el-button
-                    size="small"
-                    type="danger"
-                    plain
-                    :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
-                    @click="handleCancelContractByAdmin(row)"
-                  >取消</el-button>
+                  <div class="table-action-group">
+                    <el-button size="small" @click="handleViewContractDetail(row)">查看</el-button>
+                    <el-button
+                      size="small"
+                      type="danger"
+                      plain
+                      :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
+                      @click="handleCancelContractByAdmin(row)"
+                    >取消</el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -733,6 +745,24 @@ function handleViewHouseDetail(house) {
 }
 
 /**
+ * 查看订单详情：
+ * - 管理员复用系统统一订单详情页，保持与租客/房东一致的信息结构；
+ * - 仅负责跳转，不在列表页额外请求详情数据，避免重复网络开销。
+ */
+function handleViewOrderDetail(orderRow) {
+  router.push(`/orders/${orderRow.id}`)
+}
+
+/**
+ * 查看合同详情：
+ * - 管理员复用系统统一合同详情页，直接查看对应合同完整条款与签署状态；
+ * - 列表页点击后路由跳转，由详情页自行拉取完整合同数据。
+ */
+function handleViewContractDetail(contractRow) {
+  router.push(`/contracts/${contractRow.id}`)
+}
+
+/**
  * 格式化日期时间，解决后端 ISO 字符串中 “T” 直出问题：
  * 例如 2026-04-06T18:30:00 -> 2026-04-06 18:30:00
  */
@@ -952,16 +982,45 @@ function contractStatusTagType(status) {
 }
 
 /*
+  管理表格操作按钮组：
+  - 通过弹性布局让“查看/取消”在狭窄列宽下自动换行，避免按钮互相遮挡；
+  - 统一订单管理与合同管理操作列的按钮间距和可读性。
+*/
+:deep(.table-action-group) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/*
   合同表格紧凑字体样式（仅作用于合同管理 tab）：
   - 目的：缩小“合同编号/关联订单”字号，减少横向空间占用；
   - 范围：通过 .contract-table 前缀限定，避免影响用户、订单等其它表格。
 */
 :deep(.contract-table .contract-compact-header .cell) {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 :deep(.contract-table .contract-compact-cell .cell) {
-  font-size: 13px;
+  font-size: 12px;
+}
+
+/*
+  订单管理操作列优化：
+  - 操作区按钮文本不换行，避免“查看/取消”被压缩到不可读；
+  - 仅作用在订单管理表格，防止影响其它页面的按钮行为。
+*/
+:deep(.order-table .table-action-group .el-button) {
+  white-space: nowrap;
+}
+
+/*
+  合同管理操作列优化：
+  - 与订单管理保持一致的按钮布局策略，解决右侧按钮被遮挡问题；
+  - 限定在合同表格作用域内，确保样式变更可控。
+*/
+:deep(.contract-table .table-action-group .el-button) {
+  white-space: nowrap;
 }
 
 .empty-audit {
