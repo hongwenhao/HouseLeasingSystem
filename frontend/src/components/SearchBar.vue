@@ -211,15 +211,30 @@ const props = defineProps({
 // 声明组件向外发送的事件：update:modelValue（v-model 更新）和 search（触发搜索）
 const emit = defineEmits(['update:modelValue', 'search'])
 
-// 过滤占位的分组名称，防止“市辖区”等分组节点被当成真实城市显示
+// 行政区划数据中的分组节点标签（不是真实的城市名，而是数据中的分组占位符）
+const GROUPING_NODE_LABELS = ['市辖区', '县', '省直辖县级行政区划']
+const EXCLUDED_REGIONS = ['香港特别行政区', '澳门特别行政区', '台湾省']
+
+// 过滤占位的分组名称，防止“市辖区”等分组节点被当成真实城市显示。
+// 关键说明：
+// 1) 该函数会在组件初始化阶段立即被调用（用于构造 initialFilters）；
+// 2) 因此它依赖的 GROUPING_NODE_LABELS 必须先定义完成；
+// 3) 若先调用再定义常量，在 JavaScript 的 TDZ（暂时性死区）规则下会抛出 ReferenceError，
+//    从而导致页面渲染中断，表现为“点击搜索后白屏”。
 const sanitizeAreaValue = (val) => (val && GROUPING_NODE_LABELS.includes(val) ? '' : (val || ''))
+
+// 初始筛选值：合并父组件传入的 modelValue，并对城市/区域做占位值清洗。
+// 这里会覆盖 localFilters 默认值，用于支持：
+// - 首页选择条件后跳转到列表页，筛选条件自动回填；
+// - 刷新页面后根据 URL query 恢复筛选状态。
 const initialFilters = {
   ...props.modelValue,
   city: sanitizeAreaValue(props.modelValue.city),
   district: sanitizeAreaValue(props.modelValue.district)
 }
 
-// 本地筛选状态对象，初始化时合并父组件传入的值
+// 本地筛选状态对象，初始化时合并父组件传入的值。
+// 说明：默认字段先声明，再由 initialFilters 覆盖，确保字段结构完整且可响应。
 const localFilters = reactive({
   keyword: '',
   province: '',
@@ -232,10 +247,6 @@ const localFilters = reactive({
   decoration: '',
   ...initialFilters  // 支持父组件预设初始筛选值（如从 URL query 参数初始化）
 })
-
-// 行政区划数据中的分组节点标签（不是真实的城市名，而是数据中的分组占位符）
-const GROUPING_NODE_LABELS = ['市辖区', '县', '省直辖县级行政区划']
-const EXCLUDED_REGIONS = ['香港特别行政区', '澳门特别行政区', '台湾省']
 
 // 构建三级联动数据：省份 → 城市 → 区域
 // 对于直辖市（北京、天津、上海、重庆），其下级只有"市辖区"等分组节点，
