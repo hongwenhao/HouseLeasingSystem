@@ -4,7 +4,8 @@
     <div class="page-content">
       <div class="page-inner">
         <h2 class="page-title">管理后台</h2>
-        <el-tabs v-model="activeTab" class="admin-tabs">
+        <div class="content-card">
+          <el-tabs v-model="activeTab" class="admin-tabs">
           <!-- User Management Tab -->
           <el-tab-pane name="users">
             <template #label>
@@ -345,7 +346,10 @@
           </el-tab-pane>
 
           <!-- Overview Tab -->
-          <el-tab-pane label="数据概览" name="overview">
+          <el-tab-pane name="overview">
+            <template #label>
+              <span class="admin-tab-title">数据概览</span>
+            </template>
             <div class="stats-cards">
               <el-card class="stat-card">
                 <div class="stat-icon blue"><el-icon><User /></el-icon></div>
@@ -393,7 +397,8 @@
             </div>
           </el-tab-pane>
 
-        </el-tabs>
+          </el-tabs>
+        </div>
       </div>
     </div>
 
@@ -905,39 +910,57 @@ function contractStatusTagType(status) {
 
 .page-content {
   flex: 1;
-  padding: 32px 20px;
+  padding: 32px 20px 48px;
 }
 
 .page-inner {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
 .page-title {
+  margin: 0 0 12px;
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 800;
   color: #1a1a2e;
-  margin-bottom: 24px;
-  position: relative;
-  padding-left: 16px;
+  letter-spacing: 0.2px;
 }
 
-.page-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 4px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #667eea, #764ba2);
+.content-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(31, 45, 61, 0.08);
+  border: 1px solid #e8ebf3;
+  overflow: hidden;
 }
 
 .admin-tabs {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  padding: 0 20px 24px;
+}
+
+.admin-tabs :deep(.el-tabs__header) {
+  margin: 0;
+  border-bottom: 1px solid #eef0f6;
+}
+
+.admin-tabs :deep(.el-tabs__nav-wrap)::after {
+  display: none;
+}
+
+.admin-tabs :deep(.el-tabs__item) {
+  padding: 16px 22px;
+  font-weight: 700;
+  color: #7a8597;
+  transition: color 0.2s ease;
+}
+
+.admin-tabs :deep(.is-active) {
+  color: #5b6dff;
+}
+
+.admin-tabs :deep(.el-tabs__active-bar) {
+  height: 3px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .stats-cards {
@@ -1024,8 +1047,8 @@ function contractStatusTagType(status) {
   width: 100%;
 }
 
-:deep(.management-table th > .cell, .management-table td > .cell) {
-  text-align: center;
+:deep(.management-table th > .cell) {
+  text-align: left;
 }
 
 /*
