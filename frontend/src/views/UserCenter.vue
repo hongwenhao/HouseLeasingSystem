@@ -655,7 +655,7 @@ function matchesOrderTimeFilter(order, selectedTimeRange) {
   if (!rawTime) return false
 
   const targetTime = new Date(rawTime).getTime()
-  if (Number.isNaN(targetTime)) return false
+  if (!Number.isFinite(targetTime)) return false
 
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
