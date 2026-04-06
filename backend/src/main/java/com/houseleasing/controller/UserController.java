@@ -44,8 +44,12 @@ public class UserController {
     @Operation(summary = "Get current user profile")
     @GetMapping("/me")
     public Result<User> getProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(user);
+        User current = userMapper.selectByUsername(userDetails.getUsername());
+        if (current == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        // 统一复用服务层查询逻辑，确保用户敏感字段（如身份证）按“存储加密、读取解密”口径返回。
+        return Result.success(userService.getUserById(current.getId()));
     }
 
     /**
@@ -119,6 +123,8 @@ public class UserController {
             throw new BusinessException(404, "用户不存在");
         }
         user.setPassword(null); // 清空密码字段，防止密码泄露
+        // 出于最小暴露原则，用户中心“/me”接口不直接返回身份证字段（由实名认证流程单独处理）。
+        user.setIdCard(null);
         return user;
     }
 }

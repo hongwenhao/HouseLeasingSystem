@@ -56,7 +56,7 @@ class AuthControllerLoginTests {
                     password VARCHAR(255) NOT NULL,
                     role VARCHAR(20),
                     real_name VARCHAR(50),
-                    id_card VARCHAR(18),
+                    id_card VARCHAR(255),
                     avatar VARCHAR(500),
                     credit_score INT,
                     is_real_name_auth BOOLEAN,

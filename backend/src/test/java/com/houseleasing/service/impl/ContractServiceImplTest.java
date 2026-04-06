@@ -2,6 +2,7 @@ package com.houseleasing.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.activiti.WorkflowService;
+import com.houseleasing.common.security.IdCardCryptoService;
 import com.houseleasing.entity.Contract;
 import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
@@ -30,6 +31,7 @@ class ContractServiceImplTest {
     private UserMapper userMapper;
     private ContractRiskService contractRiskService;
     private MessageProducer messageProducer;
+    private IdCardCryptoService idCardCryptoService;
     private ContractServiceImpl contractService;
 
     @BeforeEach
@@ -41,6 +43,7 @@ class ContractServiceImplTest {
         userMapper = mock(UserMapper.class);
         contractRiskService = mock(ContractRiskService.class);
         messageProducer = mock(MessageProducer.class);
+        idCardCryptoService = mock(IdCardCryptoService.class);
         contractService = new ContractServiceImpl(
                 workflowService,
                 contractMapper,
@@ -49,7 +52,8 @@ class ContractServiceImplTest {
                 userMapper,
                 contractRiskService,
                 messageProducer,
-                new ObjectMapper()
+                new ObjectMapper(),
+                idCardCryptoService
         );
     }
 
