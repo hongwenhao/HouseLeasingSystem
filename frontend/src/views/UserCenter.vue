@@ -73,9 +73,14 @@
                       <el-option :value="2" label="女" />
                     </el-select>
                   </el-form-item>
-                  <el-form-item label="头像URL">
+                  <el-form-item label="头像">
                     <div class="avatar-upload-field">
-                      <!-- 头像上传复用房源图片上传接口，保持全站一致的上传流程与错误提示体验 -->
+                      <!--
+                        头像上传入口：
+                        1) 复用统一图片上传接口，确保鉴权、错误提示、返回结构与全站一致；
+                        2) 关闭自动上传，交由 handleAvatarFileChange 做类型校验与状态控制；
+                        3) 上传成功后仅回填 profileForm.avatarUrl，不会立即提交资料，避免误保存。
+                      -->
                       <el-upload
                         action="#"
                         :auto-upload="false"
@@ -86,8 +91,10 @@
                       >
                         <el-button type="primary" plain :loading="uploadingAvatar">本地上传头像</el-button>
                       </el-upload>
-                      <!-- 保留 URL 输入框：上传成功后自动回填，也允许用户手动覆盖 -->
-                      <el-input v-model="profileForm.avatarUrl" placeholder="上传后自动填充，也可手动输入头像链接" />
+                      <!--
+                        按需求移除“头像 URL 地址栏”输入框：
+                        用户仅通过上传方式更新头像，减少手动填写链接带来的错误地址/失效地址问题。
+                      -->
                     </div>
                   </el-form-item>
                   <el-form-item>
@@ -1381,10 +1388,6 @@ function getOrderHouseTitleWithFallback(order) {
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  width: 100%;
-}
-
-.avatar-upload-field :deep(.el-input) {
   width: 100%;
 }
 
