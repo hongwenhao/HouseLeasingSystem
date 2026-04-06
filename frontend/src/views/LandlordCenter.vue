@@ -423,8 +423,8 @@ function matchesSelectFilter(actualValue, selectedValue) {
  * - last30days：近 30 天。
  * 说明：房东端优先按 appointmentTime 判断，缺失时回退 createTime/createdAt。
  */
-function matchesOrderTimeFilter(order, selectedRange) {
-  if (!selectedRange) return true
+function matchesOrderTimeFilter(order, selectedTimeRange) {
+  if (!selectedTimeRange) return true
   const rawTime = order?.appointmentTime || order?.createTime || order?.createdAt
   if (!rawTime) return false
 
@@ -434,15 +434,15 @@ function matchesOrderTimeFilter(order, selectedRange) {
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 
-  if (selectedRange === 'today') {
+  if (selectedTimeRange === 'today') {
     const tomorrowStart = todayStart + 24 * 60 * 60 * 1000
     return targetTime >= todayStart && targetTime < tomorrowStart
   }
-  if (selectedRange === 'last7days') {
+  if (selectedTimeRange === 'last7days') {
     const rangeStart = todayStart - 6 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
-  if (selectedRange === 'last30days') {
+  if (selectedTimeRange === 'last30days') {
     const rangeStart = todayStart - 29 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }

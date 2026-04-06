@@ -633,7 +633,7 @@ function containsKeyword(keyword, candidates) {
 }
 
 /**
- * 通用枚举筛选函数：
+ * 通用下拉筛选匹配函数：
  * - 未选择筛选值时返回 true（不过滤）；
  * - 选择后要求字段值与筛选值严格相等。
  */
@@ -649,8 +649,8 @@ function matchesSelectFilter(actualValue, selectedValue) {
  * - last30days：最近 30 天（含今天）。
  * 说明：优先使用 appointmentTime，缺失时回退 createTime/createdAt，兼容历史字段。
  */
-function matchesOrderTimeFilter(order, selectedRange) {
-  if (!selectedRange) return true
+function matchesOrderTimeFilter(order, selectedTimeRange) {
+  if (!selectedTimeRange) return true
   const rawTime = order?.appointmentTime || order?.createTime || order?.createdAt
   if (!rawTime) return false
 
@@ -660,15 +660,15 @@ function matchesOrderTimeFilter(order, selectedRange) {
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 
-  if (selectedRange === 'today') {
+  if (selectedTimeRange === 'today') {
     const tomorrowStart = todayStart + 24 * 60 * 60 * 1000
     return targetTime >= todayStart && targetTime < tomorrowStart
   }
-  if (selectedRange === 'last7days') {
+  if (selectedTimeRange === 'last7days') {
     const rangeStart = todayStart - 6 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
-  if (selectedRange === 'last30days') {
+  if (selectedTimeRange === 'last30days') {
     const rangeStart = todayStart - 29 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
