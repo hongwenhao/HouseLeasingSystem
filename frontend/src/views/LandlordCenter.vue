@@ -90,13 +90,43 @@
           <!-- Orders Tab -->
           <el-tab-pane label="预约订单管理" name="orders">
             <div class="table-toolbar">
-              <!-- 预约订单搜索栏：按订单号、房源、租客、状态、时间等信息模糊匹配 -->
+              <!-- 预约订单搜索栏：仅按订单号、房源、租客文本字段搜索 -->
               <el-input
                 v-model.trim="orderSearchKeyword"
                 class="search-input"
                 clearable
-                placeholder="搜索预约订单（订单号/房源/租客/状态/时间）"
+                placeholder="搜索预约订单（订单号/房源/租客）"
               />
+              <!-- 订单筛选区：订单状态、支付状态、时间单独下拉筛选 -->
+              <div class="toolbar-filters">
+                <el-select v-model="orderStatusFilter" clearable placeholder="订单状态" class="filter-select">
+                  <el-option label="全部订单状态" value="" />
+                  <el-option
+                    v-for="option in orderStatusFilterOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
+                <el-select v-model="paymentStatusFilter" clearable placeholder="支付状态" class="filter-select">
+                  <el-option label="全部支付状态" value="" />
+                  <el-option
+                    v-for="option in paymentStatusFilterOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
+                <el-select v-model="orderTimeFilter" clearable placeholder="时间筛选" class="filter-select">
+                  <el-option label="全部时间" value="" />
+                  <el-option
+                    v-for="option in orderTimeFilterOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
+              </div>
             </div>
             <div v-if="ordersLoading">
               <el-skeleton :rows="4" animated />
@@ -168,13 +198,25 @@
           <!-- Contracts Tab -->
           <el-tab-pane label="合同管理" name="contracts">
             <div class="table-toolbar">
-              <!-- 合同搜索栏：按合同编号、租客、租期、状态做本地筛选 -->
+              <!-- 合同搜索栏：仅按合同编号、租客、租期做文本筛选 -->
               <el-input
                 v-model.trim="contractSearchKeyword"
                 class="search-input"
                 clearable
-                placeholder="搜索合同（合同编号/租客/租期/状态）"
+                placeholder="搜索合同（合同编号/租客/租期）"
               />
+              <!-- 合同筛选区：合同状态改为右侧下拉筛选 -->
+              <div class="toolbar-filters">
+                <el-select v-model="contractStatusFilter" clearable placeholder="合同状态" class="filter-select">
+                  <el-option label="全部合同状态" value="" />
+                  <el-option
+                    v-for="option in contractStatusFilterOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </el-select>
+              </div>
             </div>
             <div v-if="contractsLoading">
               <el-skeleton :rows="4" animated />
@@ -315,6 +357,12 @@ const contracts = ref([])              // 参与的合同列表
 const houseSearchKeyword = ref('')     // 我的房源搜索关键字（前端本地过滤，不触发额外请求）
 const orderSearchKeyword = ref('')     // 预约订单搜索关键字（前端本地过滤，不触发额外请求）
 const contractSearchKeyword = ref('')  // 合同搜索关键字（前端本地过滤，不触发额外请求）
+// 订单筛选状态：将订单状态、支付状态、时间从关键字搜索拆分为独立筛选项
+const orderStatusFilter = ref('')
+const paymentStatusFilter = ref('')
+const orderTimeFilter = ref('')
+// 合同筛选状态：将合同状态从关键字搜索拆分为独立筛选项
+const contractStatusFilter = ref('')
 const reviewRecords = ref([])          // 收到的评价列表
 const stats = ref({})                  // 统计数据（累计收益、在租数等）
 const rejectDialogVisible = ref(false) // 拒绝预约对话框显隐
@@ -359,6 +407,82 @@ function containsKeyword(keyword, candidates) {
 }
 
 /**
+ * 通用下拉筛选匹配：
+ * - 未选择筛选值时，默认放行；
+ * - 选择筛选值后，仅当字段值完全一致时命中。
+ */
+function matchesSelectFilter(actualValue, selectedValue) {
+  if (!selectedValue) return true
+  return actualValue === selectedValue
+}
+
+/**
+ * 预约订单时间范围筛选：
+ * - today：今日；
+ * - last7days：近 7 天；
+ * - last30days：近 30 天。
+ * 说明：房东端优先按 appointmentTime 判断，缺失时回退 createTime/createdAt。
+ */
+function matchesOrderTimeFilter(order, selectedRange) {
+  if (!selectedRange) return true
+  const rawTime = order?.appointmentTime || order?.createTime || order?.createdAt
+  if (!rawTime) return false
+
+  const targetTime = new Date(rawTime).getTime()
+  if (Number.isNaN(targetTime)) return false
+
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+
+  if (selectedRange === 'today') {
+    const tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+    return targetTime >= todayStart && targetTime < tomorrowStart
+  }
+  if (selectedRange === 'last7days') {
+    const rangeStart = todayStart - 6 * 24 * 60 * 60 * 1000
+    return targetTime >= rangeStart
+  }
+  if (selectedRange === 'last30days') {
+    const rangeStart = todayStart - 29 * 24 * 60 * 60 * 1000
+    return targetTime >= rangeStart
+  }
+  return true
+}
+
+// 订单状态筛选选项：文案与列表状态标签保持一致
+const orderStatusFilterOptions = [
+  { label: orderStatusLabel('PENDING'), value: 'PENDING' },
+  { label: orderStatusLabel('APPROVED'), value: 'APPROVED' },
+  { label: orderStatusLabel('REJECTED'), value: 'REJECTED' },
+  { label: orderStatusLabel('CANCELLED'), value: 'CANCELLED' },
+  { label: orderStatusLabel('COMPLETED'), value: 'COMPLETED' }
+]
+
+// 支付状态筛选选项：文案与支付状态标签保持一致
+const paymentStatusFilterOptions = [
+  { label: paymentStatusLabel('UNPAID'), value: 'UNPAID' },
+  { label: paymentStatusLabel('PAID'), value: 'PAID' },
+  { label: paymentStatusLabel('REFUNDED'), value: 'REFUNDED' }
+]
+
+// 订单时间筛选选项：替代搜索框中的时间关键字模糊匹配
+const orderTimeFilterOptions = [
+  { label: '今日', value: 'today' },
+  { label: '近7天', value: 'last7days' },
+  { label: '近30天', value: 'last30days' }
+]
+
+// 合同状态筛选选项：文案与合同状态标签保持一致
+const contractStatusFilterOptions = [
+  { label: contractStatusLabel('DRAFT'), value: 'DRAFT' },
+  { label: contractStatusLabel('PENDING_SIGN'), value: 'PENDING_SIGN' },
+  { label: contractStatusLabel('TENANT_SIGNED'), value: 'TENANT_SIGNED' },
+  { label: contractStatusLabel('LANDLORD_SIGNED'), value: 'LANDLORD_SIGNED' },
+  { label: contractStatusLabel('FULLY_SIGNED'), value: 'FULLY_SIGNED' },
+  { label: contractStatusLabel('CANCELLED'), value: 'CANCELLED' }
+]
+
+/**
  * 我的房源搜索结果：
  * 支持标题、城市、区县、价格、面积和状态文本过滤，方便房东快速定位目标房源。
  */
@@ -372,41 +496,47 @@ const filteredMyHouses = computed(() => myHouses.value.filter(house => containsK
 ])))
 
 /**
- * 预约订单搜索结果：
- * 支持订单号、房源名、租客名、订单状态、支付状态、预约时间等字段过滤。
+ * 预约订单搜索与筛选结果：
+ * - 搜索框仅按订单号、房源名、租客名文本字段过滤；
+ * - 订单状态、支付状态、预约时间改由独立下拉框筛选。
  * 说明：
  * - 房东在处理大量预约时，常通过订单号进行工单/聊天核对；
- * - 将 orderNo 纳入本地过滤字段，可减少人工逐条翻找成本。
+ * - 将状态/时间从关键字搜索中抽离，可降低误匹配并提升筛选效率。
  */
-const filteredLandlordOrders = computed(() => landlordOrders.value.filter(order => containsKeyword(orderSearchKeyword.value, [
-  order.orderNo,
-  getOrderHouseTitleWithFallback(order),
-  order.tenant?.realName,
-  order.tenant?.username,
-  order.tenantName,
-  order.tenantId,
-  orderStatusLabel(order.status),
-  paymentStatusLabel(order.paymentStatus),
-  formatDateTime(order.appointmentTime)
-])))
+const filteredLandlordOrders = computed(() => landlordOrders.value.filter(order => (
+  containsKeyword(orderSearchKeyword.value, [
+    order.orderNo,
+    getOrderHouseTitleWithFallback(order),
+    order.tenant?.realName,
+    order.tenant?.username,
+    order.tenantName,
+    order.tenantId
+  ]) &&
+  matchesSelectFilter(order.status, orderStatusFilter.value) &&
+  matchesSelectFilter(order.paymentStatus, paymentStatusFilter.value) &&
+  matchesOrderTimeFilter(order, orderTimeFilter.value)
+)))
 
 /**
- * 合同搜索结果：
- * 支持合同编号、租客、状态、租期时间等字段过滤，便于查找历史合同。
+ * 合同搜索与筛选结果：
+ * - 搜索框按合同编号、租客、租期文本过滤；
+ * - 合同状态使用独立下拉筛选。
  */
-const filteredContracts = computed(() => contracts.value.filter(contract => containsKeyword(contractSearchKeyword.value, [
-  contract.contractNo,
-  contract.id,
-  contract.tenantName,
-  contract.tenant?.realName,
-  contract.tenant?.username,
-  contract.tenantId,
-  contractStatusLabel(contract.status),
-  formatDate(contract.startDate),
-  formatDate(contract.endDate),
-  contract.monthlyRent,
-  contract.rent
-])))
+const filteredContracts = computed(() => contracts.value.filter(contract => (
+  containsKeyword(contractSearchKeyword.value, [
+    contract.contractNo,
+    contract.id,
+    contract.tenantName,
+    contract.tenant?.realName,
+    contract.tenant?.username,
+    contract.tenantId,
+    formatDate(contract.startDate),
+    formatDate(contract.endDate),
+    contract.monthlyRent,
+    contract.rent
+  ]) &&
+  matchesSelectFilter(contract.status, contractStatusFilter.value)
+)))
 
 onMounted(() => {
   // 房源和合同数据加载完成后再计算统计信息（computeStats 依赖这两项数据）
@@ -727,11 +857,29 @@ function getOrderHouseTitleWithFallback(order) {
 
 .table-toolbar {
   margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .search-input {
   width: 320px;
   max-width: 100%;
+}
+
+/* 搜索栏右侧筛选区：用于状态/时间下拉筛选，支持自动换行 */
+.toolbar-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.filter-select {
+  width: 140px;
 }
 
 /* 我的房源表格容器：使用三列网格布局（房源信息 / 上下架状态 / 操作） */
@@ -972,6 +1120,12 @@ function getOrderHouseTitleWithFallback(order) {
   .house-item-actions {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  /* 小屏下将筛选区展开为单独一行，确保交互控件可读可点 */
+  .toolbar-filters {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
