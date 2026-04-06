@@ -1080,17 +1080,13 @@ function contractStatusTagType(status) {
   min-width: 170px;
 }
 
-:deep(.admin-tabs .el-tabs__header .el-tabs__nav) {
+:deep(.admin-tabs .el-tabs__nav) {
   width: 100%;
 }
 
-:deep(.admin-tabs .el-tabs__header .el-tabs__nav-wrap) {
+:deep(.admin-tabs .el-tabs__nav-wrap) {
   display: flex;
   justify-content: center;
-}
-
-:deep(.admin-tabs .el-tabs__header .el-tabs__item) {
-  text-align: center;
 }
 
 .admin-tab-title {
