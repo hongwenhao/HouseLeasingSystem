@@ -217,7 +217,6 @@
                       size="small"
                       type="info"
                       plain
-                      class="refund-action"
                       @click="handleRefundOrder(order)"
                     >
                       退款
@@ -344,7 +343,7 @@
                       <span>房东：{{ review.landlordName || (review.landlordId ? `用户#${review.landlordId}` : '-') }}</span>
                       <span>租客：{{ review.tenantName || (review.tenantId ? `用户#${review.tenantId}` : '-') }}</span>
                       <!-- 评价订单标识优先展示业务 order_no，缺失时回退主键 ID 兼容历史数据 -->
-                      <span>订单ID：{{ review.orderNo || review.orderId || '-' }}</span>
+                      <span>订单编号：{{ review.orderNo || review.orderId || '-' }}</span>
                     </div>
                     <!-- 将评价时间独立为单独一行并左对齐，避免在元信息拥挤时视觉跳动 -->
                     <div class="review-item-time">评价时间：{{ formatDateTime(review.createTime) }}</div>
@@ -1276,20 +1275,18 @@ function getOrderHouseTitleWithFallback(order) {
 }
 
 .row-actions {
-  display: grid;
-  justify-content: start;
-  justify-items: start;
+  display: flex;
+  justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-/* 订单操作固定左对齐堆叠，保证“查看”“退款”等关键按钮纵向位置稳定 */
+/* 仅预约订单操作区使用纵向左对齐布局，避免影响合同等其他 tab 的操作区展示 */
 .orders-table .row-actions {
+  display: grid;
   grid-auto-flow: row;
-}
-
-/* 退款按钮要求放在“查看”下方：通过显式行定位锁定其第二行位置 */
-.orders-table .row-actions .refund-action {
-  grid-row: 2;
+  justify-content: flex-start;
+  justify-items: start;
 }
 
 /* “操作”列表头与按钮区域保持视觉居中，便于快速定位操作入口 */
