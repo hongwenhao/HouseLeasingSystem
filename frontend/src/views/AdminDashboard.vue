@@ -914,14 +914,14 @@ function contractStatusTagType(status) {
 }
 
 .page-inner {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .page-title {
   margin: 0 0 12px;
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   color: #1a1a2e;
   letter-spacing: 0.2px;
 }
