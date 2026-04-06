@@ -3,7 +3,6 @@ package com.houseleasing.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.entity.Contract;
-import com.houseleasing.entity.Order;
 import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
@@ -66,16 +65,10 @@ class ContractServiceImplTest {
         contract.setStatus("LANDLORD_SIGNED");
         when(contractMapper.selectById(1L)).thenReturn(contract);
 
-        Order order = new Order();
-        order.setId(100L);
-        order.setStatus("APPROVED");
-        when(orderMapper.selectById(100L)).thenReturn(order);
-
         contractService.signContract(1L, 10L, "TENANT");
 
         assertEquals("FULLY_SIGNED", contract.getStatus());
-        assertEquals("SIGNED", order.getStatus());
-        verify(orderMapper, times(1)).updateById(order);
+        verify(orderMapper, times(1)).markOrderSignedIfApproved(100L);
         verify(contractMapper, times(1)).updateById(contract);
     }
 
@@ -91,16 +84,10 @@ class ContractServiceImplTest {
         contract.setStatus("TENANT_SIGNED");
         when(contractMapper.selectById(1L)).thenReturn(contract);
 
-        Order order = new Order();
-        order.setId(100L);
-        order.setStatus("COMPLETED");
-        when(orderMapper.selectById(100L)).thenReturn(order);
-
         contractService.signContract(1L, 20L, "LANDLORD");
 
         assertEquals("FULLY_SIGNED", contract.getStatus());
-        assertEquals("COMPLETED", order.getStatus());
-        verify(orderMapper, never()).updateById(any(Order.class));
+        verify(orderMapper, times(1)).markOrderSignedIfApproved(100L);
         verify(contractMapper, times(1)).updateById(contract);
     }
 
@@ -119,9 +106,7 @@ class ContractServiceImplTest {
         assertDoesNotThrow(() -> contractService.signContract(1L, 10L, "TENANT"));
 
         assertEquals("FULLY_SIGNED", contract.getStatus());
-        verify(orderMapper, never()).selectById(any());
-        verify(orderMapper, never()).updateById(any(Order.class));
+        verify(orderMapper, never()).markOrderSignedIfApproved(any());
         verify(contractMapper, times(1)).updateById(contract);
     }
 }
-

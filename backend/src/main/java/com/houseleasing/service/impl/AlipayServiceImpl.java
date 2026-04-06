@@ -11,6 +11,7 @@ import com.alipay.api.request.AlipayTradeQueryRequest;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.houseleasing.common.exception.BusinessException;
+import com.houseleasing.common.utils.OrderStatusUtil;
 import com.houseleasing.config.AlipayProperties;
 import com.houseleasing.dto.AlipaySyncVerifyResponse;
 import com.houseleasing.entity.Contract;
@@ -227,7 +228,7 @@ public class AlipayServiceImpl implements AlipayService {
     private void validateOrderCanPay(Order order) {
         // 与 OrderServiceImpl.payOrder 保持一致：
         // 签约后订单会被标记为 SIGNED，因此支付前置状态需同时兼容 APPROVED/SIGNED。
-        if (!"APPROVED".equals(order.getStatus()) && !"SIGNED".equals(order.getStatus())) {
+        if (!OrderStatusUtil.isPayableStatus(order.getStatus())) {
             throw new BusinessException(400, "仅已确认或已签约订单可支付");
         }
         if ("PAID".equals(order.getPaymentStatus())) {

@@ -6,6 +6,7 @@ import com.houseleasing.entity.Order;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 /**
  * 订单数据访问层接口
@@ -42,5 +43,19 @@ public interface OrderMapper extends BaseMapper<Order> {
      */
     @Select("SELECT COUNT(*) FROM orders WHERE status = 'COMPLETED'")
     long countCompletedOrders();
+
+    /**
+     * 将订单状态从 APPROVED 原子更新为 SIGNED。
+     * 仅当当前状态仍为 APPROVED 时才会更新成功（返回 1），
+     * 可避免并发场景下“先查后改”带来的竞态覆盖问题。
+     */
+    @Update("""
+            UPDATE orders
+            SET status = 'SIGNED',
+                update_time = CURRENT_TIMESTAMP
+            WHERE id = #{orderId}
+              AND status = 'APPROVED'
+            """)
+    int markOrderSignedIfApproved(@Param("orderId") Long orderId);
 
 }
