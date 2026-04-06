@@ -665,12 +665,12 @@ function matchesOrderTimeFilter(order, selectedTimeRange) {
     return targetTime >= todayStart && targetTime < tomorrowStart
   }
   if (selectedTimeRange === 'last7days') {
-    // “近7天（含今天）”按自然日计算：今天 + 往前 6 天，共 7 天。
+    // “近7天（含今天）”按自然日窗口计算：起点=6天前00:00，终点=当前时刻。
     const rangeStart = todayStart - 6 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
   if (selectedTimeRange === 'last30days') {
-    // “近30天（含今天）”按自然日计算：今天 + 往前 29 天，共 30 天。
+    // “近30天（含今天）”按自然日窗口计算：起点=29天前00:00，终点=当前时刻。
     const rangeStart = todayStart - 29 * 24 * 60 * 60 * 1000
     return targetTime >= rangeStart
   }
