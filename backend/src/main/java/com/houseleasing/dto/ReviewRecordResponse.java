@@ -13,6 +13,11 @@ public class ReviewRecordResponse {
     private Long id;
     /** 关联订单 ID */
     private Long orderId;
+    /**
+     * 关联订单编号（order_no）。
+     * 说明：前端“评价管理”优先展示业务单号，便于客服沟通与人工核对。
+     */
+    private String orderNo;
     /** 关联房源 ID */
     private Long houseId;
     /** 房源标题（展示用） */
