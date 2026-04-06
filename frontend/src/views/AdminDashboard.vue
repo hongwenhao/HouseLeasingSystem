@@ -6,7 +6,10 @@
         <h2 class="page-title">管理后台</h2>
         <el-tabs v-model="activeTab" class="admin-tabs">
           <!-- User Management Tab -->
-          <el-tab-pane label="用户管理" name="users">
+          <el-tab-pane name="users">
+            <template #label>
+              <span class="admin-tab-title">用户管理</span>
+            </template>
             <!--
               用户管理搜索区：
               1) 左侧关键字输入：按用户名/手机号模糊过滤；
@@ -82,7 +85,10 @@
           </el-tab-pane>
 
           <!-- House Management Tab -->
-          <el-tab-pane label="房源管理" name="houseMgmt">
+          <el-tab-pane name="houseMgmt">
+            <template #label>
+              <span class="admin-tab-title">房源管理</span>
+            </template>
             <div class="tab-toolbar toolbar-row">
               <el-input
                 v-model="houseMgmtKeyword"
@@ -145,7 +151,10 @@
           </el-tab-pane>
 
           <!-- Order Management Tab -->
-          <el-tab-pane label="订单管理" name="orders">
+          <el-tab-pane name="orders">
+            <template #label>
+              <span class="admin-tab-title">预约订单管理</span>
+            </template>
             <!--
               管理员订单搜索栏：
               1) 关键字与状态下拉并列展示；
@@ -223,7 +232,10 @@
           </el-tab-pane>
 
           <!-- Contract Management Tab -->
-          <el-tab-pane label="合同管理" name="contracts">
+          <el-tab-pane name="contracts">
+            <template #label>
+              <span class="admin-tab-title">合同管理</span>
+            </template>
             <!--
               管理员合同搜索栏：
               1) 关键字与状态下拉并列展示；
@@ -1066,6 +1078,25 @@ function contractStatusTagType(status) {
 
 :deep(.contract-table .table-action-group) {
   min-width: 170px;
+}
+
+:deep(.admin-tabs .el-tabs__header .el-tabs__nav) {
+  width: 100%;
+}
+
+:deep(.admin-tabs .el-tabs__header .el-tabs__nav-wrap) {
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.admin-tabs .el-tabs__header .el-tabs__item) {
+  text-align: center;
+}
+
+.admin-tab-title {
+  display: inline-block;
+  min-width: 84px;
+  text-align: center;
 }
 
 .empty-audit {
