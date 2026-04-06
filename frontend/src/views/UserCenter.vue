@@ -590,6 +590,13 @@ const profileForm = reactive({
   gender: userInfo.value.gender ?? 0
 })
 
+// 中国大陆身份证号码基础格式：18 位，前 17 位数字，最后 1 位数字或 X
+const CHINA_ID_CARD_REGEX = /^\d{17}[\dXx]$/
+// 身份证校验位计算权重（国家标准 GB 11643）
+const ID_CARD_WEIGHTS = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+// 身份证校验位映射表：sum % 11 后对应的最后一位字符
+const ID_CARD_CHECK_CODES = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
+
 // 实名认证表单
 const realNameForm = reactive({
   realName: userInfo.value.realName || '',
@@ -698,18 +705,87 @@ async function loadOrders() {
   finally { ordersLoading.value = false }
 }
 
+/**
+ * 校验身份证中的出生日期是否为有效自然日（如 20240229 合法，20230229 非法）。
+ * 说明：
+ * 1) 先按 yyyy-MM-dd 构造 Date，若结果为 Invalid Date 直接判无效；
+ * 2) 再反向比对年月日，防止 JS 自动进位把非法日期“纠正”为下个月日期。
+ */
+function isValidBirthDateInIdCard(birthText) {
+  const year = Number(birthText.slice(0, 4))
+  const month = Number(birthText.slice(4, 6))
+  const day = Number(birthText.slice(6, 8))
+  // 使用 new Date(year, monthIndex, day) 避免字符串日期受时区解析影响。
+  const date = new Date(year, month - 1, day)
+  return !Number.isNaN(date.getTime()) &&
+    date.getFullYear() === year &&
+    date.getMonth() + 1 === month &&
+    date.getDate() === day
+}
+
+/**
+ * 根据身份证前 17 位计算校验位（国家标准 GB 11643）。
+ * @param {string} base17 - 身份证前 17 位数字字符串
+ * @returns {string} 计算出的校验位字符（0-9 或 X）
+ */
+function calculateIdCardCheckCode(base17) {
+  const sum = base17
+    .split('')
+    .reduce((acc, digit, index) => acc + Number(digit) * ID_CARD_WEIGHTS[index], 0)
+  return ID_CARD_CHECK_CODES[sum % 11]
+}
+
+/**
+ * 实名认证身份证号校验（格式 + 出生日期 + 校验位）。
+ * 返回统一结构，便于在提交前给出明确、可读的错误提示。
+ */
+function validateChineseIdCard(idCard) {
+  const normalized = normalizeIdCard(idCard)
+  if (!CHINA_ID_CARD_REGEX.test(normalized)) {
+    return { valid: false, message: '身份证号格式不正确，请输入18位身份证号' }
+  }
+  const birthText = normalized.slice(6, 14)
+  if (!isValidBirthDateInIdCard(birthText)) {
+    return { valid: false, message: '身份证号中的出生日期无效，请检查后重试' }
+  }
+  const expectedCode = calculateIdCardCheckCode(normalized.slice(0, 17))
+  if (normalized[17] !== expectedCode) {
+    return { valid: false, message: '身份证号校验位不正确，请检查后重试' }
+  }
+  return { valid: true, normalized }
+}
+
+/** 统一身份证号归一化：去除首尾空格并将校验位字符转为大写。 */
+function normalizeIdCard(idCard) {
+  return String(idCard ?? '').trim().toUpperCase()
+}
+
+/** 统一真实姓名归一化：去除首尾空格，避免保存无意义空白字符。 */
+function normalizeRealName(realName) {
+  return String(realName ?? '').trim()
+}
+
 /** 提交实名认证 */
 async function submitRealNameAuth() {
   if (isRealNameAuth.value) return
-  if (!realNameForm.realName || !realNameForm.idCard) {
+  const realName = normalizeRealName(realNameForm.realName)
+  const idCard = normalizeIdCard(realNameForm.idCard)
+  if (!realName || !idCard) {
     ElMessage.warning('请输入真实姓名和身份证号')
+    return
+  }
+  // 提交前做前端预校验，及时反馈错误，减少无效请求打到后端。
+  const idCardValidation = validateChineseIdCard(idCard)
+  if (!idCardValidation.valid) {
+    ElMessage.warning(idCardValidation.message)
     return
   }
   submittingRealName.value = true
   try {
     await realNameAuthApi({
-      realName: realNameForm.realName,
-      idCard: realNameForm.idCard
+      realName,
+      // 统一转大写，保证 X/x 表示的一致性，便于后端落库与后续比对。
+      idCard: idCardValidation.normalized
     })
     await userStore.fetchProfile()
     Object.assign(realNameForm, {
@@ -1283,10 +1359,18 @@ function getOrderHouseTitleWithFallback(order) {
 
 /* 仅预约订单操作区使用纵向左对齐布局，避免影响合同等其他 tab 的操作区展示 */
 .orders-table .row-actions {
-  display: grid;
-  grid-auto-flow: row;
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 8px;
+  column-gap: 8px;
+  align-items: center;
   justify-content: flex-start;
-  justify-items: start;
+}
+
+/* 统一按钮宽度与外边距，避免不同操作组合下出现“挤压/错行/不齐”的观感 */
+.orders-table .row-actions :deep(.el-button) {
+  min-width: 88px;
+  margin-left: 0;
 }
 
 /* “操作”列表头与按钮区域保持视觉居中，便于快速定位操作入口 */
