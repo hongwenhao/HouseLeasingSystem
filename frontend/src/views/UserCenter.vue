@@ -237,7 +237,7 @@
                   <span class="center-head">预约时间</span>
                   <span class="center-head">创建时间</span>
                   <span class="center-head">订单状态</span>
-                  <span>支付状态</span>
+                  <span class="center-head">支付状态</span>
                   <span class="action-head">操作</span>
                 </div>
                 <div
@@ -246,16 +246,16 @@
                   class="table-row"
                 >
                   <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
-                  <span class="title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
-                  <span>{{ formatDateTime(order.appointmentTime) }}</span>
+                  <span class="title-cell center-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
+                  <span class="center-cell">{{ formatDateTime(order.appointmentTime) }}</span>
                   <!-- 兼容后端实际字段 createTime 与历史字段 createdAt -->
-                  <span>{{ formatDate(order.createTime || order.createdAt) }}</span>
-                  <span>
+                  <span class="center-cell">{{ formatDate(order.createTime || order.createdAt) }}</span>
+                  <span class="center-tag-cell">
                     <el-tag :type="orderStatusType(order.status)" size="small">
                       {{ orderStatusLabel(order.status) }}
                     </el-tag>
                   </span>
-                  <span>
+                  <span class="center-tag-cell">
                     <el-tag :type="paymentStatusType(order.paymentStatus)" size="small">
                       {{ paymentStatusLabel(order.paymentStatus) }}
                     </el-tag>
@@ -360,10 +360,10 @@
                   :key="contract.id"
                   class="table-row"
                 >
-                  <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
-                  <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                  <span>¥{{ contract.monthlyRent ?? contract.rent }}</span>
-                  <span>
+                  <span class="title-cell center-cell">{{ contract.contractNo || contract.id }}</span>
+                  <span class="center-cell">{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
+                  <span class="center-cell">¥{{ contract.monthlyRent ?? contract.rent }}</span>
+                  <span class="center-tag-cell">
                     <el-tag :type="contractStatusType(contract.status)" size="small">
                       {{ contractStatusLabel(contract.status) }}
                     </el-tag>
@@ -1641,6 +1641,16 @@ function getOrderHouseTitleWithFallback(order) {
 
 .center-head {
   text-align: center;
+}
+
+.center-cell {
+  text-align: center;
+}
+
+.center-tag-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .credit-section {

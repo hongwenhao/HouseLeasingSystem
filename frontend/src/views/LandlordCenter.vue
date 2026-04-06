@@ -133,11 +133,11 @@
             </div>
             <div v-else-if="filteredLandlordOrders.length > 0" class="table-card orders-table">
               <div class="table-head">
-                <span>预约房源</span>
-                <span>租客</span>
-                <span>预约时间</span>
-                <span>订单状态</span>
-                <span>支付状态</span>
+                <span class="center-head">预约房源</span>
+                <span class="center-head">租客</span>
+                <span class="center-head">预约时间</span>
+                <span class="center-head">订单状态</span>
+                <span class="center-head">支付状态</span>
                 <span class="action-head">操作</span>
               </div>
               <div
@@ -146,15 +146,15 @@
                 class="table-row"
               >
                 <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
-                <span class="title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
-                <span>{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
-                <span>{{ formatDateTime(order.appointmentTime) }}</span>
-                <span>
+                <span class="title-cell center-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
+                <span class="center-cell">{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
+                <span class="center-cell">{{ formatDateTime(order.appointmentTime) }}</span>
+                <span class="center-tag-cell">
                   <el-tag :type="orderStatusType(order.status)" size="small">
                     {{ orderStatusLabel(order.status) }}
                   </el-tag>
                 </span>
-                <span>
+                <span class="center-tag-cell">
                   <el-tag :type="paymentStatusType(order.paymentStatus)" size="small">
                     {{ paymentStatusLabel(order.paymentStatus) }}
                   </el-tag>
@@ -223,11 +223,11 @@
             </div>
             <div v-else-if="filteredContracts.length > 0" class="table-card contracts-table">
               <div class="table-head">
-                <span>合同编号</span>
-                <span>租客</span>
-                <span>租期</span>
-                <span>月租</span>
-                <span>状态</span>
+                <span class="center-head">合同编号</span>
+                <span class="center-head">租客</span>
+                <span class="center-head">租期</span>
+                <span class="center-head">月租</span>
+                <span class="center-head">状态</span>
                 <span class="action-head">操作</span>
               </div>
               <div
@@ -235,11 +235,11 @@
                 :key="contract.id"
                 class="table-row"
               >
-                <span class="title-cell">{{ contract.contractNo || contract.id }}</span>
-                <span>{{ contract.tenantName || contract.tenant?.realName || contract.tenant?.username || contract.tenantId }}</span>
-                <span>{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
-                <span>¥{{ contract.monthlyRent ?? contract.rent }}</span>
-                <span>
+                <span class="title-cell center-cell">{{ contract.contractNo || contract.id }}</span>
+                <span class="center-cell">{{ contract.tenantName || contract.tenant?.realName || contract.tenant?.username || contract.tenantId }}</span>
+                <span class="center-cell">{{ formatDate(contract.startDate) }} 至 {{ formatDate(contract.endDate) }}</span>
+                <span class="center-cell">¥{{ contract.monthlyRent ?? contract.rent }}</span>
+                <span class="center-tag-cell">
                   <el-tag :type="contractStatusType(contract.status)" size="small">
                     {{ contractStatusLabel(contract.status) }}
                   </el-tag>
@@ -1062,6 +1062,20 @@ function getOrderHouseTitleWithFallback(order) {
 /* “操作”列标题保持居中，与按钮区域对齐 */
 .action-head {
   text-align: center;
+}
+
+.center-head {
+  text-align: center;
+}
+
+.center-cell {
+  text-align: center;
+}
+
+.center-tag-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .order-actions {
