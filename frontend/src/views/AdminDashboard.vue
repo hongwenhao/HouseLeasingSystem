@@ -666,6 +666,8 @@ function handleViewHouseDetail(house) {
  */
 function formatDateTime(dateTime) {
   if (!dateTime) return '-'
+  // 为保持模板语义清晰，这里保留 formatDateTime 命名：
+  // 对 ISO 字符串做标准化处理，输出更符合中文后台展示习惯的日期时间文本。
   const raw = String(dateTime).trim()
   // 仅在标准 ISO 时间字符串场景下执行“T”替换与毫秒裁剪，避免对非时间文本误处理。
   if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {

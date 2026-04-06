@@ -158,10 +158,13 @@ public class AdminController {
         // 1) 若 keyword 命中状态枚举，则按状态精确匹配（大小写不敏感）；
         // 2) 否则按订单号模糊匹配，覆盖客服/工单按编号定位场景；
         // 3) 关键词为空时不加筛选条件，保持历史行为不变。
+        boolean hasExplicitStatusFilter = StringUtils.hasText(status);
         if (StringUtils.hasText(keyword)) {
             String trimmedKeyword = keyword.trim();
             String normalizedStatusKeyword = trimmedKeyword.toUpperCase(Locale.ROOT);
-            if (ORDER_STATUS_KEYWORDS.contains(normalizedStatusKeyword)) {
+            // 兼容历史行为：仅当“未显式传入 status 下拉参数”时，才允许 keyword 触发状态过滤。
+            // 若显式 status 已存在，则 keyword 一律按订单号处理，避免出现 status=APPROVED 且 keyword=CANCELLED 这种冲突条件。
+            if (!hasExplicitStatusFilter && ORDER_STATUS_KEYWORDS.contains(normalizedStatusKeyword)) {
                 wrapper.eq(Order::getStatus, normalizedStatusKeyword);
             } else {
                 wrapper.like(Order::getOrderNo, trimmedKeyword);
