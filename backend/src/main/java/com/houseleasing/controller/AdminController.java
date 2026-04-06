@@ -79,9 +79,9 @@ public class AdminController {
     );
     /**
      * 后台房源状态白名单：
-     * 仅允许按 ONLINE/OFFLINE/REJECTED 进行筛选，避免非法参数导致查询语义不清晰。
+     * 仅允许按 ONLINE/OFFLINE 进行筛选，管理端统一为“已上架/已下架”两种状态。
      */
-    private static final Set<String> HOUSE_STATUS_KEYWORDS = Set.of("ONLINE", "OFFLINE", "REJECTED");
+    private static final Set<String> HOUSE_STATUS_KEYWORDS = Set.of("ONLINE", "OFFLINE");
 
     private static final String CREDIT_RANGE_CASE_SQL =
             "CASE " +
@@ -551,8 +551,8 @@ public class AdminController {
     /**
      * 管理员审核房源上线状态：
      * status=APPROVED/ONLINE 视为通过并上线；
-     * status=REJECTED 视为明确驳回（落库为 REJECTED，便于管理端区分“驳回”和“手动下架”）；
-     * status=OFFLINE 视为普通下线（落库为 OFFLINE）。
+     * status=REJECTED/OFFLINE 统一视为下线（落库为 OFFLINE），
+     * 与管理端“仅上架/下架两种状态”的展示口径保持一致。
      *
      * @param id   房源 ID
      * @param body 审核请求体，示例：{"status":"APPROVED","reason":"..."}
@@ -571,12 +571,8 @@ public class AdminController {
             throw new BusinessException(400, "审核状态不能为空");
         }
         boolean approved = "APPROVED".equalsIgnoreCase(status) || "ONLINE".equalsIgnoreCase(status);
-        boolean rejected = "REJECTED".equalsIgnoreCase(status);
-        // 细分审核结果：
-        // 1) 通过 => ONLINE；
-        // 2) 明确驳回 => REJECTED（用于管理端“已拒绝”状态筛选）；
-        // 3) 其余下线语义（如 OFFLINE）=> OFFLINE。
-        house.setStatus(approved ? "ONLINE" : (rejected ? "REJECTED" : "OFFLINE"));
+        // 管理端房源管理口径仅保留 ONLINE/OFFLINE，两类下线语义统一写入 OFFLINE。
+        house.setStatus(approved ? "ONLINE" : "OFFLINE");
         house.setUpdateTime(LocalDateTime.now());
         houseMapper.updateById(house);
         // 审核动作后通知房东，便于房东及时感知房源状态变化
