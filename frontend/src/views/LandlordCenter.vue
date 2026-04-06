@@ -6,7 +6,10 @@
         <h2 class="page-title">房东中心</h2>
         <el-tabs v-model="activeTab" class="center-tabs">
           <!-- My Houses Tab -->
-          <el-tab-pane label="我的房源" name="houses">
+          <el-tab-pane name="houses">
+            <template #label>
+              <span class="center-tab-label">我的房源</span>
+            </template>
             <div class="tab-toolbar">
               <el-button type="primary" @click="router.push('/publish-house')">
                 <el-icon><Plus /></el-icon> 发布新房源
@@ -133,9 +136,9 @@
             </div>
             <div v-else-if="filteredLandlordOrders.length > 0" class="table-card orders-table">
               <div class="table-head">
-                <span>预约房源</span>
-                <span>租客</span>
-                <span>预约时间</span>
+                <span class="center-cell">预约房源</span>
+                <span class="center-cell">租客</span>
+                <span class="center-cell">预约时间</span>
                 <span>订单状态</span>
                 <span>支付状态</span>
                 <span class="action-head">操作</span>
@@ -223,11 +226,11 @@
             </div>
             <div v-else-if="filteredContracts.length > 0" class="table-card contracts-table">
               <div class="table-head">
-                <span>合同编号</span>
-                <span>租客</span>
-                <span>租期</span>
-                <span>月租</span>
-                <span>状态</span>
+                <span class="center-cell">合同编号</span>
+                <span class="center-cell">租客</span>
+                <span class="center-cell">租期</span>
+                <span class="center-cell">月租</span>
+                <span class="center-cell">状态</span>
                 <span class="action-head">操作</span>
               </div>
               <div
@@ -850,6 +853,13 @@ function getOrderHouseTitleWithFallback(order) {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
+/* “我的房源”tab 标题居中 */
+.center-tabs :deep(.center-tab-label) {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+}
+
 .tab-toolbar {
   margin-bottom: 16px;
   display: flex;
@@ -1027,6 +1037,11 @@ function getOrderHouseTitleWithFallback(order) {
   font-weight: 700;
   padding: 12px 14px;
   border-bottom: 1px solid #edf0f5;
+}
+
+/* 指定业务表头居中（预约房源/租客/预约时间、合同编号/租客/租期/月租/状态） */
+.table-head .center-cell {
+  text-align: center;
 }
 
 .table-row {
