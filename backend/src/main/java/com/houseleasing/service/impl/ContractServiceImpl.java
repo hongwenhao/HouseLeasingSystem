@@ -580,19 +580,29 @@ public class ContractServiceImpl implements ContractService {
      */
     private void savePdfAndUpdatePath(Contract contract, byte[] pdfBytes) {
         try {
-            // 确保 contracts 子目录存在
+            // 确保 contracts 子目录存在。
+            // 不依赖 exists() 预检查（避免 TOCTOU 竞态），直接调用 mkdirs()；
+            // mkdirs() 在目录已存在时返回 false，需再判断是否为合法目录。
             File contractsDir = new File(uploadDir, CONTRACT_PDF_SUBDIR).getAbsoluteFile();
-            if (!contractsDir.exists() && !contractsDir.mkdirs()) {
-                log.warn("PDF 目录创建失败，跳过落盘：{}", contractsDir.getAbsolutePath());
+            contractsDir.mkdirs();
+            if (!contractsDir.isDirectory()) {
+                log.warn("PDF 目录不可用，跳过落盘：{}", contractsDir.getAbsolutePath());
                 return;
             }
-            // 文件名使用合同编号，保证唯一且可溯源
-            String filename = contract.getContractNo() + ".pdf";
+            // 对合同编号做路径安全过滤：仅保留字母、数字、连字符和下划线，
+            // 防止 contractNo 中含有 '/'、'\' 或 '..' 等路径穿越字符写到目标目录之外
+            String safeContractNo = contract.getContractNo().replaceAll("[^A-Za-z0-9_\\-]", "_");
+            String filename = safeContractNo + ".pdf";
             File pdfFile = new File(contractsDir, filename);
+            // 校验最终路径仍在 contractsDir 内部，防御符号链接等绕过手段
+            if (!pdfFile.getCanonicalPath().startsWith(contractsDir.getCanonicalPath())) {
+                log.warn("合同 {} 路径异常，跳过落盘：{}", contract.getContractNo(), pdfFile.getAbsolutePath());
+                return;
+            }
             try (FileOutputStream fos = new FileOutputStream(pdfFile)) {
                 fos.write(pdfBytes);
             }
-            // 相对路径格式为 "contracts/{contractNo}.pdf"，与上传图片的存储约定保持一致
+            // 相对路径格式为 "contracts/{safeContractNo}.pdf"，与上传图片的存储约定保持一致
             String relativePath = CONTRACT_PDF_SUBDIR + "/" + filename;
             contract.setPdfPath(relativePath);
             contract.setUpdateTime(LocalDateTime.now());
