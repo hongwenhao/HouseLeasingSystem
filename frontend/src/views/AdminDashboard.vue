@@ -479,6 +479,7 @@ const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
 const overviewChartsInitialized = ref(false) // 概览图表是否已完成首次懒初始化
+let overviewChartRenderTimerId = null // 概览图表渲染延迟定时器 id
 let resizeRafId = null // resize 事件节流帧 id
 // 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
 const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
@@ -534,15 +535,18 @@ watch(
 // 在后台内部切换标签时，同步 query.tab，确保与顶部导航双向联动。
 watch(
   activeTab,
-  async (tab) => {
+  (tab) => {
     syncAdminTabToRouteQuery(tab)
     if (tab === 'overview') {
       scheduleOverviewChartRender()
+      return
     }
+    clearOverviewChartRenderTimer()
   }
 )
 
 onUnmounted(() => {
+  clearOverviewChartRenderTimer()
   window.removeEventListener('resize', scheduleResizeCharts)
   if (resizeRafId !== null) {
     cancelAnimationFrame(resizeRafId)
@@ -754,10 +758,20 @@ function ensureOverviewChartsReady() {
 /** 概览图表渲染调度：等待 DOM 与 tab 布局稳定后再初始化/重排。 */
 async function scheduleOverviewChartRender() {
   await nextTick()
-  setTimeout(() => {
+  clearOverviewChartRenderTimer()
+  overviewChartRenderTimerId = setTimeout(() => {
+    overviewChartRenderTimerId = null
+    if (activeTab.value !== 'overview') return
     ensureOverviewChartsReady()
     resizeCharts()
   }, CHART_INIT_DELAY)
+}
+
+/** 清理概览图表渲染定时器，避免组件卸载后误触发。 */
+function clearOverviewChartRenderTimer() {
+  if (overviewChartRenderTimerId === null) return
+  clearTimeout(overviewChartRenderTimerId)
+  overviewChartRenderTimerId = null
 }
 
 /** 在容器尺寸变化或 tab 切换后统一触发图表重算，避免图表显示不完整。 */
