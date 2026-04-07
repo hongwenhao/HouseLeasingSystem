@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -113,6 +114,8 @@ class AdminControllerTest {
         assertEquals("CANCELLED", latestContract.getStatus());
         verify(orderMapper).updateById(order);
         verify(contractMapper).updateById(latestContract);
+        verify(messageProducer, times(2)).sendOrderStatusChange(any(), any());
+        verify(messageProducer, times(2)).sendContractStatusChange(any(), any());
     }
 
     @Test
@@ -143,5 +146,7 @@ class AdminControllerTest {
         assertEquals("CANCELLED", order.getStatus());
         verify(contractMapper).updateById(contract);
         verify(orderMapper).updateById(order);
+        verify(messageProducer, times(2)).sendOrderStatusChange(any(), any());
+        verify(messageProducer, times(2)).sendContractStatusChange(any(), any());
     }
 }

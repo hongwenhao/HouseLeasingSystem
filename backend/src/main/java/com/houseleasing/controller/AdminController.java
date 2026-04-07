@@ -1,5 +1,6 @@
 package com.houseleasing.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.Result;
 import com.houseleasing.common.exception.BusinessException;
@@ -309,17 +310,24 @@ public class AdminController {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        // 双向联动一致性说明：
-        // 管理员取消订单时，必须同步取消该订单关联的“最新合同”。
-        // 这样可避免出现“订单已取消但合同仍有效”的数据不一致问题。
-        // 若关联到双方已签合同（FULLY_SIGNED），按合同规则禁止取消并整体回滚。
-        cancelLatestContractForOrderByAdmin(order);
         if ("CANCELLED".equals(order.getStatus())) {
             return Result.success();
         }
+        // 双向联动一致性说明：
+        // 管理员取消订单时，必须同步取消该订单关联的“最新合同”。
+        // 这里先做“可取消性预校验”（遇到 FULLY_SIGNED 直接失败），
+        // 预校验阶段若抛出异常，本方法不会写入订单状态，事务整体回滚保持原子性。
+        // 再执行“订单取消 -> 合同取消”，保证顺序统一且失败可回滚。
+        Contract latestContract = findCancellableLatestContractForOrderByAdmin(order);
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        if (latestContract != null) {
+            latestContract.setStatus("CANCELLED");
+            latestContract.setUpdateTime(LocalDateTime.now());
+            contractMapper.updateById(latestContract);
+            notifyContractCancelledByAdmin(latestContract);
+        }
         // 管理员取消订单属于关键业务动作：
         // 通过 MQ 异步推送给订单双方（租客+房东），确保双方及时在消息中心看到状态变化。
         notifyOrderCancelledByAdmin(order);
@@ -365,26 +373,28 @@ public class AdminController {
     }
 
     /**
-     * 管理员取消订单时，联动取消该订单关联的最新合同（若存在）。
+     * 管理员取消订单前，校验该订单关联的最新合同是否允许被联动取消。
      *
      * 设计要点：
      * 1) 只处理“最新合同”，与订单详情页展示口径保持一致；
      * 2) 若最新合同已取消，直接忽略，保证幂等；
      * 3) 若最新合同已双方签署（FULLY_SIGNED），按业务规则禁止取消，
      *    抛出异常终止本次管理员取消订单操作，避免出现“订单已取消、合同未取消”的不一致状态。
+     *
+     * @return 可被联动取消的最新合同；若无需处理返回 null
      */
-    private void cancelLatestContractForOrderByAdmin(Order order) {
+    private Contract findCancellableLatestContractForOrderByAdmin(Order order) {
         Contract latestContract = findLatestContractByOrderId(order.getId());
         if (latestContract == null || "CANCELLED".equals(latestContract.getStatus())) {
-            return;
+            return null;
         }
         if ("FULLY_SIGNED".equals(latestContract.getStatus())) {
-            throw new BusinessException("已签署的合同不可取消");
+            String contractIdentifier = StringUtils.hasText(latestContract.getContractNo())
+                    ? latestContract.getContractNo()
+                    : safeIdentifier(latestContract.getId());
+            throw new BusinessException(String.format("合同[%s]已签署，不可取消", contractIdentifier));
         }
-        latestContract.setStatus("CANCELLED");
-        latestContract.setUpdateTime(LocalDateTime.now());
-        contractMapper.updateById(latestContract);
-        notifyContractCancelledByAdmin(latestContract);
+        return latestContract;
     }
 
     /**
@@ -417,8 +427,7 @@ public class AdminController {
         if (orderId == null) {
             return null;
         }
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> wrapper =
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        LambdaQueryWrapper<Contract> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Contract::getOrderId, orderId)
                 .orderByDesc(Contract::getCreateTime)
                 .last("LIMIT 1");
