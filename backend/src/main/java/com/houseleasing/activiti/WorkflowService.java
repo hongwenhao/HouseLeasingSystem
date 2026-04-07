@@ -39,11 +39,15 @@ public class WorkflowService {
      */
     public String startContractSigningProcess(Long contractId, Long tenantId, Long landlordId) {
         Map<String, Object> variables = new HashMap<>();
-        // 组装流程变量，供后续用户任务节点读取使用
+        // 组装流程变量，供后续用户任务节点读取使用：
+        // - contractId：用于在签署回调时反查业务合同；
+        // - tenantId / landlordId：驱动 BPMN 中两个 userTask 的 assignee 绑定。
         variables.put("contractId", contractId);
         variables.put("tenantId", tenantId);
         variables.put("landlordId", landlordId);
-        // 启动流程，并设置业务主键为 CONTRACT-{id}，方便后续关联查询
+        // 启动流程，并设置业务主键为 CONTRACT-{id}：
+        // - 业务侧可按 businessKey 直接追溯流程实例；
+        // - 避免仅靠流程实例 ID（随机值）导致排障时难以定位具体合同。
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(
                 "contractSigningProcess",
                 "CONTRACT-" + contractId,
@@ -74,7 +78,10 @@ public class WorkflowService {
             throw new BusinessException(404, "未找到合同签署任务");
         }
         // 3. 准备流程变量
-        // 用于在完成任务时回写给工作流引擎，驱动流程流转或更新流程状态
+        // 用于在完成任务时回写给工作流引擎，驱动流程流转或更新流程状态。
+        // 约定：
+        // - approved = false 表示本次签署拒绝，流程可在网关中走驳回/结束分支；
+        // - approved = true  表示当前节点签署同意，流程继续推进到下一节点。
         Map<String, Object> vars = new HashMap<>();
         // 设置通用的审批结果变量，供流程网关判断走向（如：通过则进入下一节点，拒绝则结束或驳回）
         vars.put("approved", approved);
@@ -101,12 +108,16 @@ public class WorkflowService {
      * @return true 表示已结束
      */
     public boolean isProcessFinished(String processInstanceId) {
+        // 优先查 runtime：只要还能查到实例，说明流程仍在运行（包括待办/并行分支未结束）。
         ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
                 .processInstanceId(processInstanceId)
                 .singleResult();
         if (runtime != null) {
             return false;
         }
+        // runtime 查不到时再查 history.finished：
+        // - 命中表示流程已自然结束；
+        // - 未命中通常表示 processInstanceId 非法或历史清理后不可见。
         HistoricProcessInstance history = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(processInstanceId)
                 .finished()
