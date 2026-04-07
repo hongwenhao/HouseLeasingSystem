@@ -17,6 +17,7 @@ import com.houseleasing.mq.MessageProducer;
 import com.houseleasing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -187,13 +188,47 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(404, "用户不存在");
         }
         // 仅更新非空字段（支持部分更新）
-        if (StringUtils.hasText(request.getPhone())) user.setPhone(request.getPhone());
-        if (StringUtils.hasText(request.getEmail())) user.setEmail(request.getEmail());
+        if (StringUtils.hasText(request.getPhone())) {
+            User existingByPhone = userMapper.selectByPhone(request.getPhone());
+            if (existingByPhone != null && !existingByPhone.getId().equals(userId)) {
+                throw new BusinessException("手机号已被注册");
+            }
+            user.setPhone(request.getPhone());
+        }
+        if (StringUtils.hasText(request.getEmail())) {
+            User existingByEmail = userMapper.selectByEmail(request.getEmail());
+            if (existingByEmail != null && !existingByEmail.getId().equals(userId)) {
+                throw new BusinessException("邮箱已被注册");
+            }
+            user.setEmail(request.getEmail());
+        }
         if (StringUtils.hasText(request.getAvatar())) user.setAvatar(request.getAvatar());
-        if (StringUtils.hasText(request.getUsername())) user.setUsername(request.getUsername());
+        if (StringUtils.hasText(request.getUsername())) {
+            User existingByUsername = userMapper.selectByUsername(request.getUsername());
+            if (existingByUsername != null && !existingByUsername.getId().equals(userId)) {
+                throw new BusinessException("用户名已存在");
+            }
+            user.setUsername(request.getUsername());
+        }
         if (request.getGender() != null) user.setGender(request.getGender());
         user.setUpdateTime(LocalDateTime.now());
-        userMapper.updateById(user);
+        try {
+            userMapper.updateById(user);
+        } catch (DuplicateKeyException e) {
+            String message = e.getMessage();
+            if (message != null) {
+                if (message.contains("users.username")) {
+                    throw new BusinessException("用户名已存在");
+                }
+                if (message.contains("users.phone")) {
+                    throw new BusinessException("手机号已被注册");
+                }
+                if (message.contains("users.email")) {
+                    throw new BusinessException("邮箱已被注册");
+                }
+            }
+            throw new BusinessException("资料更新失败，存在重复数据");
+        }
         user.setPassword(null);
         // 更新资料接口复用用户对象直接返回，需要解密身份证以保持接口输出语义稳定。
         user.setIdCard(idCardCryptoService.decryptFromStorage(user.getIdCard()));
