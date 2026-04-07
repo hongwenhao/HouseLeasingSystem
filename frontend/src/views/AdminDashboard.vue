@@ -1058,7 +1058,8 @@ function contractStatusTagType(status) {
 /* 合同编号/关联订单号完整展示（仅作用于合同管理 tab）。 */
 :deep(.contract-table .contract-id-full-cell .cell) {
   white-space: normal;
-  word-break: break-all;
+  word-break: normal;
+  overflow-wrap: anywhere;
   text-overflow: clip;
   overflow: visible;
   line-height: 1.4;
