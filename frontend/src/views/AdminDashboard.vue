@@ -479,7 +479,7 @@ const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
 const overviewChartsInitialized = ref(false) // 概览图表是否已完成首次懒初始化
-let resizeRafId = 0 // resize 事件节流帧 id
+let resizeRafId = null // resize 事件节流帧 id
 // 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
 const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
 
@@ -552,9 +552,9 @@ watch(
 
 onUnmounted(() => {
   window.removeEventListener('resize', scheduleResizeCharts)
-  if (resizeRafId) {
+  if (resizeRafId !== null) {
     cancelAnimationFrame(resizeRafId)
-    resizeRafId = 0
+    resizeRafId = null
   }
   disposeCharts()
 })
@@ -770,9 +770,13 @@ function resizeCharts() {
 
 /** 使用 requestAnimationFrame 对 resize 进行轻量节流，避免高频重算。 */
 function scheduleResizeCharts() {
-  if (resizeRafId) return
+  if (resizeRafId !== null) return
   resizeRafId = requestAnimationFrame(() => {
-    resizeRafId = 0
+    if (!overviewChartsInitialized.value) {
+      resizeRafId = null
+      return
+    }
+    resizeRafId = null
     resizeCharts()
   })
 }
