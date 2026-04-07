@@ -39,15 +39,15 @@ public class WorkflowService {
      */
     public String startContractSigningProcess(Long contractId, Long tenantId, Long landlordId) {
         Map<String, Object> variables = new HashMap<>();
-        // 组装流程变量，供后续用户任务节点读取使用：
-        // - contractId：用于在签署回调时反查业务合同；
-        // - tenantId / landlordId：驱动 BPMN 中两个 userTask 的 assignee 绑定。
+        //组装流程变量，供后续用户任务节点读取使用：
+        //contractId：用于在签署回调时反查业务合同；
+        //tenantId / landlordId：驱动 BPMN 中两个 userTask 的 assignee 绑定。
         variables.put("contractId", contractId);
         variables.put("tenantId", tenantId);
         variables.put("landlordId", landlordId);
-        // 启动流程，并设置业务主键为 CONTRACT-{id}：
-        // - 业务侧可按 businessKey 直接追溯流程实例；
-        // - 避免仅靠流程实例 ID（随机值）导致排障时难以定位具体合同。
+        //启动流程，并设置业务主键为 CONTRACT-{id}：
+        //业务侧可按 businessKey 直接追溯流程实例；
+        //避免仅靠流程实例 ID（随机值）导致排障时难以定位具体合同。
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(
                 "contractSigningProcess",
                 "CONTRACT-" + contractId,
