@@ -106,6 +106,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { CircleCheckFilled } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import SearchBar from '../components/SearchBar.vue'

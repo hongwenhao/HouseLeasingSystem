@@ -187,16 +187,20 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
 // 导航头像显示值：优先取 avatar，再回退 avatarUrl，避免字段名不一致导致头像丢失
 const displayAvatar = computed(() => userInfo.value.avatar || userInfo.value.avatarUrl || '')
+// 本地缓存用户名在组件初始化时仅解析一次，避免渲染期重复 JSON.parse 带来的无谓开销
+const cachedUsername = (() => {
+  try {
+    const cached = JSON.parse(localStorage.getItem(USER_INFO_STORAGE_KEY) || '{}')
+    return (cached?.username || '').trim()
+  } catch (e) {
+    return ''
+  }
+})()
 // 导航用户名显示值：刷新时先读 store，缺失时回退本地缓存，避免短暂空白
 const displayUsername = computed(() => {
   const fromStore = (userInfo.value.username || '').trim()
   if (fromStore) return fromStore
-  try {
-    const cached = JSON.parse(localStorage.getItem(USER_INFO_STORAGE_KEY) || '{}')
-    return (cached?.username || '').trim() || '用户'
-  } catch (e) {
-    return '用户'
-  }
+  return cachedUsername || '用户'
 })
 // 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
 const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
