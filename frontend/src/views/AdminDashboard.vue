@@ -50,7 +50,7 @@
               border
               class="data-table management-table"
             >
-              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="id" label="ID" width="70" />
               <el-table-column prop="username" label="用户名" width="130" />
               <el-table-column prop="phone" label="手机号" width="140" />
               <el-table-column prop="role" label="角色" width="100">
@@ -284,7 +284,8 @@
               <el-table-column
                 prop="contractNo"
                 label="合同编号"
-                min-width="150"
+                min-width="130"
+                show-overflow-tooltip
                 header-cell-class-name="contract-compact-header"
                 cell-class-name="contract-compact-cell"
               />
@@ -295,20 +296,21 @@
               <el-table-column
                 prop="orderNo"
                 label="关联订单"
-                min-width="140"
+                min-width="120"
+                show-overflow-tooltip
                 header-cell-class-name="contract-compact-header"
                 cell-class-name="contract-compact-cell"
               />
-              <el-table-column label="房源" min-width="160">
+              <el-table-column label="房源" min-width="140" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.house?.title || '-' }}</template>
               </el-table-column>
-              <el-table-column label="租客" width="120">
+              <el-table-column label="租客" width="100">
                 <template #default="{ row }">{{ row.tenant?.username || row.tenantId || '-' }}</template>
               </el-table-column>
-              <el-table-column label="房东" width="120">
+              <el-table-column label="房东" width="100">
                 <template #default="{ row }">{{ row.landlord?.username || row.landlordId || '-' }}</template>
               </el-table-column>
-              <el-table-column label="状态" width="120">
+              <el-table-column label="状态" width="100">
                 <template #default="{ row }">
                   <el-tag :type="contractStatusTagType(row.status)" size="small">{{ contractStatusLabel(row.status) }}</el-tag>
                 </template>
@@ -317,7 +319,7 @@
                 创建时间列：适当增大最小宽度并开启溢出提示，
                 防止时间字符串被截断或在紧凑布局下显示不全。
               -->
-              <el-table-column label="创建时间" min-width="170" show-overflow-tooltip>
+              <el-table-column label="创建时间" width="160" show-overflow-tooltip>
                 <template #default="{ row }">{{ formatDateTime(row.createTime) }}</template>
               </el-table-column>
               <!--
@@ -328,9 +330,9 @@
                 1) 给“查看/取消”留出稳定展示空间，避免在中等分辨率下被压缩遮挡；
                 2) 保持非 fixed 布局，继续规避 fixed 列覆盖相邻列的问题。
               -->
-              <el-table-column label="操作" min-width="220" class-name="contract-actions-column">
+              <el-table-column label="操作" width="160" class-name="contract-actions-column">
                 <template #default="{ row }">
-                  <div class="table-action-group">
+                  <div class="table-action-group contract-action-group">
                     <el-button size="small" text @click="handleViewContractDetail(row)">查看</el-button>
                     <el-button
                       size="small"
@@ -1105,7 +1107,7 @@ function contractStatusTagType(status) {
 }
 
 :deep(.contract-table .table-action-group) {
-  min-width: 170px;
+  min-width: 0;
 }
 
 /*
@@ -1116,7 +1118,7 @@ function contractStatusTagType(status) {
 :deep(.contract-table .contract-action-group) {
   justify-content: flex-start;
   padding-left: 0;
-  padding-right: 18px;
+  padding-right: 0;
 }
 
 .empty-audit {
