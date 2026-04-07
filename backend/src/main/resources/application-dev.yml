@@ -7,11 +7,15 @@
 spring:
   # ---- 开发环境数据源配置（连接本地 house_leasing_dev 数据库） ----
   datasource:
+    # JDBC 连接串：默认使用本机 MySQL 开发库，关闭 SSL 以降低本地调试复杂度
     url: jdbc:mysql://localhost:3306/house_leasing_dev?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    # 开发环境数据库账号（仅本地使用，不建议用于生产）
     username: root
+    # 开发环境数据库密码（建议通过本地环境变量覆盖）
     password: root
 
 # ---- 开发环境日志级别（更详细，输出 DEBUG 级别业务日志） ----
 logging:
   level:
+    # 项目主包开启 debug，便于本地联调接口、排查业务分支逻辑
     com.houseleasing: debug

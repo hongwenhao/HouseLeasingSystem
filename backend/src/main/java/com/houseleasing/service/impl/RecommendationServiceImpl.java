@@ -39,6 +39,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     public List<House> getRecommendedHouses(Long userId, int limit) {
         try {
             // 第一步：获取当前用户有过交互的所有房源集合
+            // 交互行为由 UserBehaviorMapper 统一维护（浏览/收藏等），此处不区分行为权重
             List<Long> userHouseIds = userBehaviorMapper.selectHouseIdsByUserId(userId);
             Set<Long> userHouseSet = new HashSet<>(userHouseIds);
 
@@ -75,7 +76,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 wrapper.in(House::getId, recommendedIds)
                         .eq(House::getStatus, "ONLINE");
                 recommended = houseMapper.selectList(wrapper);
-            }//…（查询并返回，降级保底：异常时直接返回热门房源）
+            }
 
             // 第五步：如果推荐数量不足，用热门房源补充到指定数量
             if (recommended.size() < limit) {
@@ -90,13 +91,14 @@ public class RecommendationServiceImpl implements RecommendationService {
                 com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> page =
                         new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, limit - recommended.size());
                 List<House> popular = houseMapper.selectPage(page, popularWrapper).getRecords();
+                // 使用 addAll 追加热门结果，保持“个性化推荐在前、热门兜底在后”的展示顺序
                 recommended.addAll(popular);
             }
 
             return recommended;
         } catch (Exception e) {
             log.error("Recommendation failed: {}", e.getMessage());
-            // 异常降级：推荐失败时直接返回热门房源
+            // 异常降级：推荐失败时直接返回热门房源，保障接口可用性
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(House::getStatus, "ONLINE").orderByDesc(House::getViewCount);
             com.baomidou.mybatisplus.extension.plugins.pagination.Page<House> page =
