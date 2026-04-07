@@ -149,7 +149,7 @@
                 class="table-row"
               >
                 <!-- 预约房源优先展示真实房源标题，兼容不同接口结构 -->
-                <span class="title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
+                <span class="title-cell house-title-cell">{{ getOrderHouseTitleWithFallback(order) }}</span>
                 <span>{{ order.tenant?.realName || order.tenant?.username || order.tenantName || order.tenantId }}</span>
                 <span>{{ formatDateTime(order.appointmentTime) }}</span>
                 <span>
@@ -1053,6 +1053,14 @@ function getOrderHouseTitleWithFallback(order) {
 .title-cell {
   color: #1f2937;
   font-weight: 600;
+}
+
+.house-title-cell {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .row-actions {

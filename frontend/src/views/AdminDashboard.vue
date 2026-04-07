@@ -122,7 +122,7 @@
             </div>
             <el-table :data="houseManagementList" v-loading="houseManagementLoading" stripe border class="data-table management-table">
               <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="title" label="房源标题" min-width="220" />
+              <el-table-column prop="title" label="房源标题" min-width="220" show-overflow-tooltip />
               <el-table-column prop="city" label="城市" width="110" />
               <el-table-column prop="district" label="区域" width="130" />
               <el-table-column prop="price" label="租金(元/月)" width="130" />
@@ -198,7 +198,7 @@
             <el-table :data="orders" v-loading="ordersLoading" stripe border class="data-table management-table order-table">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="orderNo" label="订单编号" min-width="160" />
-              <el-table-column label="房源" min-width="180">
+              <el-table-column label="房源" min-width="180" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.house?.title || '-' }}</template>
               </el-table-column>
               <el-table-column label="租客" width="120">
@@ -277,29 +277,19 @@
             -->
             <el-table :data="contracts" v-loading="contractsLoading" stripe border class="data-table management-table contract-table">
               <el-table-column prop="id" label="ID" width="80" />
-              <!--
-                合同编号列：通过 header/cell class 单独缩小字体，
-                让长编号在同等宽度下展示更多字符，减少操作列被挤压概率。
-              -->
+              <!-- 合同编号列：按需求完整展示长编号，不做省略截断。 -->
               <el-table-column
                 prop="contractNo"
                 label="合同编号"
                 min-width="130"
-                show-overflow-tooltip
-                header-cell-class-name="contract-compact-header"
-                cell-class-name="contract-compact-cell"
+                cell-class-name="contract-id-full-cell"
               />
-              <!--
-                关联订单列：与合同编号列保持一致的紧凑字体策略，
-                统一视觉密度并降低表格横向挤压。
-              -->
+              <!-- 关联订单列：按需求完整展示长编号，不做省略截断。 -->
               <el-table-column
                 prop="orderNo"
                 label="关联订单"
                 min-width="120"
-                show-overflow-tooltip
-                header-cell-class-name="contract-compact-header"
-                cell-class-name="contract-compact-cell"
+                cell-class-name="contract-id-full-cell"
               />
               <el-table-column label="房源" min-width="140" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.house?.title || '-' }}</template>
@@ -1065,17 +1055,13 @@ function contractStatusTagType(status) {
   gap: 6px;
 }
 
-/*
-  合同表格紧凑字体样式（仅作用于合同管理 tab）：
-  - 目的：缩小“合同编号/关联订单”字号，减少横向空间占用；
-  - 范围：通过 .contract-table 前缀限定，避免影响用户、订单等其它表格。
-*/
-:deep(.contract-table .contract-compact-header .cell) {
-  font-size: 12px;
-}
-
-:deep(.contract-table .contract-compact-cell .cell) {
-  font-size: 12px;
+/* 合同编号/关联订单号完整展示（仅作用于合同管理 tab）。 */
+:deep(.contract-table .contract-id-full-cell .cell) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  overflow: visible;
+  line-height: 1.4;
 }
 
 /*
