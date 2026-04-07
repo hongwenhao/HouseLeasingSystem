@@ -323,11 +323,11 @@
               <el-table-column label="操作" width="160" class-name="contract-actions-column">
                 <template #default="{ row }">
                   <div class="table-action-group contract-action-group">
-                    <el-button size="small" text @click="handleViewContractDetail(row)">查看</el-button>
+                    <el-button size="small" @click="handleViewContractDetail(row)">查看</el-button>
                     <el-button
                       size="small"
                       type="danger"
-                      text
+                      plain
                       :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
                       @click="handleCancelContractByAdmin(row)"
                     >取消</el-button>
@@ -401,7 +401,7 @@
 
 <script setup>
 // 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源管理、订单、合同管理功能
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
@@ -428,6 +428,7 @@ const activeTab = ref('overview')        // 当前激活 tab
 const router = useRouter()               // 路由实例（用于跳转房源详情页）
 const route = useRoute()                 // 当前路由对象（用于读取/同步 ?tab=xxx）
 const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
+const CHART_INIT_DELAY = 160              // 图表初始化/重绘延迟，等待 tab 切换后的布局稳定再计算尺寸
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
@@ -477,6 +478,9 @@ const contractStatusOptions = [          // 合同状态下拉选项（文案与
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
+const overviewChartsInitialized = ref(false) // 概览图表是否已完成首次懒初始化
+let overviewChartRenderTimerId = null // 概览图表渲染延迟定时器 id
+let resizeRafId = null // resize 事件节流帧 id
 // 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
 const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
 
@@ -500,11 +504,11 @@ onMounted(async () => {
   loadHouseManagementList()
   loadOrders()
   loadContracts()
-  // 等待 DOM 渲染完成后再初始化 ECharts 图表（避免容器尺寸为 0）
-  await nextTick()
-  setTimeout(() => {
-    initCharts()
-  }, 200)  // 额外延迟确保 tab 切换后 DOM 完全渲染
+  // 仅在概览 tab 激活时初始化图表，避免隐藏容器初始化导致尺寸异常
+  if (activeTab.value === 'overview') {
+    scheduleOverviewChartRender()
+  }
+  window.addEventListener('resize', scheduleResizeCharts)
 })
 
 /**
@@ -533,8 +537,23 @@ watch(
   activeTab,
   (tab) => {
     syncAdminTabToRouteQuery(tab)
+    if (tab === 'overview') {
+      scheduleOverviewChartRender()
+      return
+    }
+    clearOverviewChartRenderTimer()
   }
 )
+
+onUnmounted(() => {
+  clearOverviewChartRenderTimer()
+  window.removeEventListener('resize', scheduleResizeCharts)
+  if (resizeRafId !== null) {
+    cancelAnimationFrame(resizeRafId)
+    resizeRafId = null
+  }
+  disposeCharts()
+})
 
 /** 加载平台整体数据概览统计 */
 async function loadStats() {
@@ -649,7 +668,7 @@ async function initCharts() {
 
     // 初始化城市房源数量柱状图
     if (areaChartRef.value) {
-      const areaChart = echarts.init(areaChartRef.value)
+      const areaChart = echarts.getInstanceByDom(areaChartRef.value) || echarts.init(areaChartRef.value)
       const areaData = areaRes.status === 'fulfilled' ? (areaRes.value || []) : []
       areaChart.setOption({
         tooltip: { trigger: 'axis' },
@@ -671,7 +690,7 @@ async function initCharts() {
 
     // 初始化近6个月租金均价折线图
     if (priceChartRef.value) {
-      const priceChart = echarts.init(priceChartRef.value)
+      const priceChart = echarts.getInstanceByDom(priceChartRef.value) || echarts.init(priceChartRef.value)
       const priceData = priceRes.status === 'fulfilled' ? (priceRes.value || []) : []
       priceChart.setOption({
         tooltip: { trigger: 'axis' },
@@ -693,7 +712,7 @@ async function initCharts() {
 
     // 初始化用户信用分分布饼图（环形图）
     if (creditChartRef.value) {
-      const creditChart = echarts.init(creditChartRef.value)
+      const creditChart = echarts.getInstanceByDom(creditChartRef.value) || echarts.init(creditChartRef.value)
       const creditData = creditRes.status === 'fulfilled' ? (creditRes.value || []) : []
       creditChart.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
@@ -718,7 +737,7 @@ async function initCharts() {
   } catch (e) {
     // 图表初始化失败时使用兜底示例数据渲染城市柱状图
     if (areaChartRef.value) {
-      const areaChart = echarts.init(areaChartRef.value)
+      const areaChart = echarts.getInstanceByDom(areaChartRef.value) || echarts.init(areaChartRef.value)
       areaChart.setOption({
         tooltip: { trigger: 'axis' },
         xAxis: { type: 'category', data: ['北京', '上海', '广州', '深圳', '杭州', '成都'] },
@@ -727,6 +746,66 @@ async function initCharts() {
       })
     }
   }
+}
+
+/** 仅首次进入概览时拉取并初始化图表，后续切换只需 resize。 */
+function ensureOverviewChartsReady() {
+  if (overviewChartsInitialized.value) return
+  overviewChartsInitialized.value = true
+  initCharts()
+}
+
+/** 概览图表渲染调度：等待 DOM 与 tab 布局稳定后再初始化/重排。 */
+async function scheduleOverviewChartRender() {
+  await nextTick()
+  clearOverviewChartRenderTimer()
+  overviewChartRenderTimerId = setTimeout(() => {
+    overviewChartRenderTimerId = null
+    if (activeTab.value !== 'overview') return
+    ensureOverviewChartsReady()
+    resizeCharts()
+  }, CHART_INIT_DELAY)
+}
+
+/** 清理概览图表渲染定时器，避免组件卸载后误触发。 */
+function clearOverviewChartRenderTimer() {
+  if (overviewChartRenderTimerId === null) return
+  clearTimeout(overviewChartRenderTimerId)
+  overviewChartRenderTimerId = null
+}
+
+/** 在容器尺寸变化或 tab 切换后统一触发图表重算，避免图表显示不完整。 */
+function resizeCharts() {
+  getChartDoms().forEach((dom) => {
+    if (!dom) return
+    const chart = echarts.getInstanceByDom(dom)
+    chart?.resize()
+  })
+}
+
+/** 使用 requestAnimationFrame 对 resize 进行轻量节流，避免高频重算。 */
+function scheduleResizeCharts() {
+  if (!overviewChartsInitialized.value) return
+  if (resizeRafId !== null) return
+  resizeRafId = requestAnimationFrame(() => {
+    resizeRafId = null
+    resizeCharts()
+  })
+}
+
+/** 页面卸载时释放图表实例，避免内存泄漏。 */
+function disposeCharts() {
+  getChartDoms().forEach((dom) => {
+    if (!dom) return
+    const chart = echarts.getInstanceByDom(dom)
+    chart?.dispose()
+  })
+  overviewChartsInitialized.value = false
+}
+
+/** 统一收敛概览页三张图表的容器引用。 */
+function getChartDoms() {
+  return [areaChartRef.value, priceChartRef.value, creditChartRef.value]
 }
 
 /**
