@@ -268,7 +268,7 @@
 
 <script setup>
 // 说明：发布/编辑房源页逻辑，根据路由是否携带 id 参数判断是发布新房源还是编辑已有房源
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { regionData } from 'element-china-area-data'
@@ -372,8 +372,26 @@ const feeLabels = {
   internetFee: '网络费'
 }
 
-/** 配套设施选项列表（通过复选框多选） */
-const amenityOptions = ['洗衣机', '空调', '冰箱', '热水器', 'WiFi', '停车位', '电梯', '床', '衣柜', '沙发', '电视', '微波炉', '天然气', '暖气']
+/**
+ * 配套设施选项列表（通过复选框多选）
+ * 新增三个业务标签：
+ * 1) 近地铁
+ * 2) 可养宠物
+ * 3) 拎包入住（选择后会自动补齐基础居住设施）
+ */
+const amenityOptions = [
+  '洗衣机', '空调', '冰箱', '热水器', 'WiFi',
+  '停车位', '电梯', '床', '衣柜', '沙发', '电视', '微波炉', '天然气', '暖气',
+  '近地铁', '可养宠物', '拎包入住'
+]
+
+/** “拎包入住”标签文案常量，避免散落字符串导致维护困难 */
+const MOVE_IN_READY_TAG = '拎包入住'
+/**
+ * 当勾选“拎包入住”时需要自动补齐的基础设施
+ * 业务约束来源：产品要求“拎包入住”必须包含以下 6 项
+ */
+const MOVE_IN_READY_REQUIRED_AMENITIES = ['洗衣机', '空调', '热水器', '床', '衣柜', '沙发']
 
 // 房源表单数据（发布时为默认值，编辑时从接口加载）
 const form = reactive({
@@ -406,6 +424,25 @@ const form = reactive({
   amenities: [],  // 配套设施列表（字符串数组，提交时转为 tags）
   images: []      // 图片 URL 列表（提交时转为 JSON 字符串）
 })
+
+/**
+ * 监听“拎包入住”勾选状态：
+ * - 当用户刚勾选“拎包入住”时，自动补齐要求的基础设施；
+ * - 仅在“未选 -> 已选”这个瞬间执行，避免用户后续手动调整时被反复覆盖；
+ * - 不会在取消“拎包入住”时反向删除设施，防止误删用户主动勾选的项。
+ */
+watch(
+  () => form.amenities.includes(MOVE_IN_READY_TAG),
+  (isChecked, wasChecked) => {
+    // 仅在“未勾选 -> 勾选”时触发自动补齐；wasChecked 可能为 undefined，需显式判 true
+    if (!isChecked || wasChecked === true) return
+    MOVE_IN_READY_REQUIRED_AMENITIES.forEach((amenity) => {
+      if (!form.amenities.includes(amenity)) {
+        form.amenities.push(amenity)
+      }
+    })
+  }
+)
 
 // 表单必填项校验规则
 const rules = {
