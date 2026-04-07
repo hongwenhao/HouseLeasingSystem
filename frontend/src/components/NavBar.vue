@@ -171,6 +171,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
 import { getUnreadCount } from '../api/message.js'
+import { USER_INFO_STORAGE_KEY } from '../constants/storageKeys.js'
 import { UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -191,7 +192,7 @@ const displayUsername = computed(() => {
   const fromStore = (userInfo.value.username || '').trim()
   if (fromStore) return fromStore
   try {
-    const cached = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    const cached = JSON.parse(localStorage.getItem(USER_INFO_STORAGE_KEY) || '{}')
     return (cached?.username || '').trim() || '用户'
   } catch (e) {
     return '用户'

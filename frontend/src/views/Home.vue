@@ -77,7 +77,7 @@
           <div class="advantage-item">
             <el-icon class="adv-icon"><Shield /></el-icon>
             <h3 class="adv-title-with-icon">
-              <!-- 补充标题级安全图标：当主图标在个别环境渲染异常时，仍有清晰视觉提示 -->
+              <!-- 补充标题级安全图标：强化“安全保障”语义识别，提升信息可见性 -->
               <el-icon class="adv-title-icon"><CircleCheckFilled /></el-icon>
               <span>安全保障</span>
             </h3>

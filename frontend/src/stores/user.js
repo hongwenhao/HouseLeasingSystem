@@ -15,9 +15,7 @@
 
 import { defineStore } from 'pinia'
 import { login as loginApi, logout as logoutApi, getProfile, updateProfile as updateProfileApi } from '../api/auth.js'
-
-// 本地缓存 key：用于刷新后快速恢复用户名/头像，减少导航栏闪烁与空白
-const USER_INFO_STORAGE_KEY = 'userInfo'
+import { USER_INFO_STORAGE_KEY } from '../constants/storageKeys.js'
 
 /**
  * 统一用户对象字段：
@@ -103,7 +101,10 @@ export const useUserStore = defineStore('user', {
         // 忽略后端登出失败，继续清除本地状态
       }
       this.token = ''
-      this.userInfo = { ...getDefaultUserInfo(), role: '' }
+      // 登出后必须清空角色，避免旧角色残留造成路由/导航误判
+      const clearedUserInfo = getDefaultUserInfo()
+      clearedUserInfo.role = ''
+      this.userInfo = clearedUserInfo
       this.isLoggedIn = false
       // 清除本地存储中的认证信息
       localStorage.removeItem('token')
