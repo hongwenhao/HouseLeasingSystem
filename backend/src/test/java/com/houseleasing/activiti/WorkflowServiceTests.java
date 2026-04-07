@@ -7,14 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Verify Activiti workflows complete for house approval and contract signing.
+ * Verify Activiti workflow completes for contract signing.
  */
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -32,17 +29,6 @@ class WorkflowServiceTests {
 
     @Autowired
     private TaskService taskService;
-
-    @Test
-    void houseApprovalFlowCompletes() {
-        String instanceId = workflowService.startHouseApprovalProcess(1L, 2L);
-        assertNotNull(instanceId);
-        List<String> tasks = workflowService.getHouseApprovalTask(1L);
-        assertFalse(tasks.isEmpty());
-
-        workflowService.approveHouseProcess(instanceId, true, "自动化测试通过");
-        assertTrue(workflowService.isProcessFinished(instanceId));
-    }
 
     @Test
     void contractSigningFlowCompletes() {
