@@ -28,7 +28,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessageMapper messageMapper;
 
     /**
-     * 发送站内消息，创建消息记录并保存到数据库
+     * 发送站内消息，创建消息记录并保存到数据库（不关联具体业务对象）
      *
      * @param userId  接收者用户 ID
      * @param title   消息标题
@@ -38,12 +38,30 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public void sendMessage(Long userId, String title, String content, String type) {
+        // 无关联业务对象时，relatedId 传 null
+        sendMessage(userId, title, content, type, null);
+    }
+
+    /**
+     * 发送站内消息，创建消息记录并保存到数据库（关联具体业务对象）
+     * relatedId 存储关联的订单/合同/房源 ID，前端可据此直接跳转到对应详情页
+     *
+     * @param userId    接收者用户 ID
+     * @param title     消息标题
+     * @param content   消息内容
+     * @param type      消息类型
+     * @param relatedId 关联业务对象 ID（可为 null）
+     */
+    @Override
+    @Transactional
+    public void sendMessage(Long userId, String title, String content, String type, Long relatedId) {
         Message message = new Message();
         message.setUserId(userId);
         message.setTitle(title);
         message.setContent(content);
         message.setType(type);
         message.setIsRead(false); // 新消息默认为未读
+        message.setRelatedId(relatedId); // 记录关联业务对象 ID，便于前端跳转
         message.setCreateTime(LocalDateTime.now());
         messageMapper.insert(message);
     }

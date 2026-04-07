@@ -130,8 +130,8 @@ public class OrderServiceImpl implements OrderService {
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.insert(order);
-        // 通知房东有新意向订单
-        messageProducer.sendOrderStatusChange(house.getOwnerId(), "新的意向订单");
+        // 通知房东有新意向订单，关联当前订单 ID 方便房东在消息中心直接跳转查看
+        messageProducer.sendOrderStatusChange(house.getOwnerId(), "新的意向订单", order.getId());
         return order;
     }
 
@@ -181,9 +181,9 @@ public class OrderServiceImpl implements OrderService {
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.insert(order);
-        // 通知租客预约已提交，通知房东有新预约订单
-        messageProducer.sendAppointmentConfirmation(tenantId, house.getTitle());
-        messageProducer.sendOrderStatusChange(house.getOwnerId(), "新的预约订单");
+        // 通知租客预约已提交，通知房东有新预约订单，均关联订单 ID 方便跳转
+        messageProducer.sendAppointmentConfirmation(tenantId, house.getTitle(), order.getId());
+        messageProducer.sendOrderStatusChange(house.getOwnerId(), "新的预约订单", order.getId());
         return order;
     }
 
@@ -208,9 +208,9 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(approved ? "APPROVED" : "REJECTED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
-        // 通知租客审批结果
+        // 通知租客审批结果，关联订单 ID 方便跳转
         messageProducer.sendOrderStatusChange(order.getTenantId(),
-                approved ? "您的订单已被批准" : "您的订单已被拒绝");
+                approved ? "您的订单已被批准" : "您的订单已被拒绝", order.getId());
     }
 
     /**
@@ -250,12 +250,13 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.updateById(order);
         // 订单取消属于关键业务事件：同时通知租客与房东，确保双方都能第一时间在消息中心看到状态变化。
         // 这里统一复用“订单状态通知”渠道，消息内容根据操作人身份区分，便于双方理解取消原因。
+        // 关联 orderId 方便接收方在消息中心直接跳转到对应订单详情页
         if (tenantCancelling) {
-            messageProducer.sendOrderStatusChange(order.getTenantId(), TENANT_CANCEL_SELF_MESSAGE);
-            messageProducer.sendOrderStatusChange(order.getLandlordId(), TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE);
+            messageProducer.sendOrderStatusChange(order.getTenantId(), TENANT_CANCEL_SELF_MESSAGE, orderId);
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE, orderId);
         } else {
-            messageProducer.sendOrderStatusChange(order.getLandlordId(), LANDLORD_CANCEL_SELF_MESSAGE);
-            messageProducer.sendOrderStatusChange(order.getTenantId(), LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE);
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), LANDLORD_CANCEL_SELF_MESSAGE, orderId);
+            messageProducer.sendOrderStatusChange(order.getTenantId(), LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE, orderId);
         }
 
         // 满足扣分条件时执行信用分扣减（下限为 0）
@@ -421,8 +422,8 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("COMPLETED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
-        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单支付成功，订单已完成");
-        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已完成支付，订单已完成");
+        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单支付成功，订单已完成", order.getId());
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已完成支付，订单已完成", order.getId());
     }
 
     /**
@@ -449,8 +450,8 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
-        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消");
-        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消");
+        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消", order.getId());
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消", order.getId());
     }
 
     /**
@@ -513,8 +514,8 @@ public class OrderServiceImpl implements OrderService {
             userMapper.updateById(landlord);
         }
         // 评价属于关键闭环事件：通知房东“收到评价”、通知租客“提交成功”，便于双方在消息中心追踪。
-        messageProducer.sendOrderStatusChange(order.getLandlordId(), String.format(REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE, rating));
-        messageProducer.sendOrderStatusChange(order.getTenantId(), REVIEW_NOTIFY_TO_TENANT);
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), String.format(REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE, rating), order.getId());
+        messageProducer.sendOrderStatusChange(order.getTenantId(), REVIEW_NOTIFY_TO_TENANT, order.getId());
     }
 
     /**

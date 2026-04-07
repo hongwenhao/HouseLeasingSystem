@@ -777,7 +777,7 @@ public class AdminController {
             return;
         }
         String content = String.format("您的房源《%s》%s", safeHouseTitle(house), actionMessage);
-        messageProducer.sendAdminHouseManagementNotification(house.getOwnerId(), actionLabel, content);
+        messageProducer.sendAdminHouseManagementNotification(house.getOwnerId(), actionLabel, content, house.getId());
     }
 
     /**
@@ -798,7 +798,7 @@ public class AdminController {
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
         tenantIds.forEach(tenantId ->
-                messageProducer.sendAdminHouseManagementNotification(tenantId, HOUSE_ACTION_OFFLINE, "房源状态变更提醒：" + content));
+                messageProducer.sendAdminHouseManagementNotification(tenantId, HOUSE_ACTION_OFFLINE, "房源状态变更提醒：" + content, house.getId()));
     }
 
     /**
@@ -822,10 +822,10 @@ public class AdminController {
         String orderNo = StringUtils.hasText(order.getOrderNo()) ? order.getOrderNo() : safeIdentifier(order.getId());
         String message = String.format("管理员已取消订单（订单号：%s），如有疑问请联系平台客服。", orderNo);
         if (order.getTenantId() != null) {
-            messageProducer.sendOrderStatusChange(order.getTenantId(), message);
+            messageProducer.sendOrderStatusChange(order.getTenantId(), message, order.getId());
         }
         if (order.getLandlordId() != null) {
-            messageProducer.sendOrderStatusChange(order.getLandlordId(), message);
+            messageProducer.sendOrderStatusChange(order.getLandlordId(), message, order.getId());
         }
     }
 
@@ -840,10 +840,10 @@ public class AdminController {
         String contractNo = StringUtils.hasText(contract.getContractNo()) ? contract.getContractNo() : safeIdentifier(contract.getId());
         String message = String.format("管理员已取消合同（合同编号：%s），如有疑问请联系平台客服。", contractNo);
         if (contract.getTenantId() != null) {
-            messageProducer.sendContractStatusChange(contract.getTenantId(), message);
+            messageProducer.sendContractStatusChange(contract.getTenantId(), message, contract.getId());
         }
         if (contract.getLandlordId() != null) {
-            messageProducer.sendContractStatusChange(contract.getLandlordId(), message);
+            messageProducer.sendContractStatusChange(contract.getLandlordId(), message, contract.getId());
         }
     }
 

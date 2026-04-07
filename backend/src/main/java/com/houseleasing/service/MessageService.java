@@ -12,14 +12,26 @@ import com.houseleasing.entity.Message;
 public interface MessageService {
 
     /**
-     * 向指定用户发送站内消息
+     * 向指定用户发送站内消息（不关联具体业务对象）
      *
      * @param userId  接收消息的用户 ID
      * @param title   消息标题
      * @param content 消息内容
-     * @param type    消息类型（APPOINTMENT/CONTRACT/ORDER）
+     * @param type    消息类型（APPOINTMENT/CONTRACT/ORDER/SYSTEM）
      */
     void sendMessage(Long userId, String title, String content, String type);
+
+    /**
+     * 向指定用户发送站内消息，并关联具体业务对象（如订单 ID、合同 ID、房源 ID）
+     * 前端可通过 relatedId 跳转到对应的业务详情页，提升消息可读性与可操作性
+     *
+     * @param userId    接收消息的用户 ID
+     * @param title     消息标题
+     * @param content   消息内容
+     * @param type      消息类型（APPOINTMENT/CONTRACT/ORDER/SYSTEM）
+     * @param relatedId 关联的业务对象 ID（如订单 ID、合同 ID、房源 ID），可为 null
+     */
+    void sendMessage(Long userId, String title, String content, String type, Long relatedId);
 
     /**
      * 分页查询用户的消息列表（按创建时间降序）

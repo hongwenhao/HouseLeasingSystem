@@ -24,12 +24,14 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,12 +42,19 @@ import java.util.List;
  *
  * @author HouseLeasingSystem开发团队
  * @description 实现租赁合同相关的所有业务逻辑，包括自动生成合同文本、风险分析、
- *              电子签署、PDF 导出和合同取消，支持中文字体的 PDF 导出
+ *              电子签署、PDF 导出（落盘保存路径）和合同取消，支持中文字体的 PDF 导出
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ContractServiceImpl implements ContractService {
+
+    /** PDF 文件存储子目录，位于上传根目录下的 contracts/ 文件夹 */
+    private static final String CONTRACT_PDF_SUBDIR = "contracts";
+
+    /** 从 application.yml 读取文件上传根目录，默认为 uploads */
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
 
     /** 固定正文条款数量（不含补充条款） */
     private static final int BASE_ARTICLE_COUNT = 13;
@@ -385,17 +394,21 @@ public class ContractServiceImpl implements ContractService {
             throw new BusinessException("合同已被取消");
         }
 
-        // 根据角色设置对应的签署状态
+        // 根据角色设置对应的签署状态和签署时间
         if ("TENANT".equals(role)) {
             if (!contract.getTenantId().equals(userId)) {
                 throw new BusinessException(403, "无权以租客身份签署合同");
             }
             contract.setTenantSigned(true);
+            // 记录租客的实际签署时间，该时间将持久化到 contracts.tenant_sign_time
+            contract.setTenantSignTime(LocalDateTime.now());
         } else if ("LANDLORD".equals(role)) {
             if (!contract.getLandlordId().equals(userId)) {
                 throw new BusinessException(403, "无权以房东身份签署合同");
             }
             contract.setLandlordSigned(true);
+            // 记录房东的实际签署时间，该时间将持久化到 contracts.landlord_sign_time
+            contract.setLandlordSignTime(LocalDateTime.now());
         } else {
             throw new BusinessException("角色无效: " + role);
         }
@@ -414,8 +427,8 @@ public class ContractServiceImpl implements ContractService {
                 // 该场景属于幂等可接受结果，无需抛错中断合同签署流程。
                 orderMapper.markOrderSignedIfApproved(contract.getOrderId());
             }
-            messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成");
-            messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成");
+            messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成", contract.getId());
+            messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成", contract.getId());
         } else {
             // 只有一方签署时，根据签署方设置明确状态，便于前端清晰展示流程
             if ("TENANT".equals(role)) {
@@ -501,7 +514,10 @@ public class ContractServiceImpl implements ContractService {
     }
 
     /**
-     * 将合同导出为 PDF 文件，优先使用中文字体
+     * 将合同导出为 PDF 文件，优先使用中文字体。
+     * 生成后将 PDF 落盘保存至 {uploadDir}/contracts/ 目录，
+     * 并将相对路径写入数据库 contracts.pdf_path，供前端通过 /api/uploads/ 直接下载。
+     * 若相同合同已有 PDF 文件，则重新生成覆盖（保证内容为最新签署状态）。
      *
      * @param contractId 合同 ID
      * @return PDF 文件的字节数组
@@ -540,10 +556,61 @@ public class ContractServiceImpl implements ContractService {
             }
 
             document.close();
-            return baos.toByteArray();
+            byte[] pdfBytes = baos.toByteArray();
+
+            // 将 PDF 保存到磁盘，并把相对路径写入数据库的 pdf_path 字段，
+            // 以便后续可通过 /api/uploads/contracts/{filename} 直接下载，无需重新生成
+            savePdfAndUpdatePath(contract, pdfBytes);
+
+            return pdfBytes;
         } catch (Exception e) {
             log.error("PDF 生成失败：{}", e.getMessage(), e);
             throw new BusinessException("PDF 生成失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 将 PDF 字节数组落盘保存，并回写 contracts.pdf_path 字段。
+     * 文件保存路径：{uploadDir}/contracts/{contractNo}.pdf
+     * 数据库存储的相对路径：contracts/{contractNo}.pdf
+     * 前端访问 URL（经 WebMvcConfig 映射）：/api/uploads/contracts/{contractNo}.pdf
+     *
+     * @param contract 合同对象（需含 contractNo 和 id）
+     * @param pdfBytes PDF 文件内容
+     */
+    private void savePdfAndUpdatePath(Contract contract, byte[] pdfBytes) {
+        try {
+            // 确保 contracts 子目录存在。
+            // 不依赖 exists() 预检查（避免 TOCTOU 竞态），直接调用 mkdirs()；
+            // mkdirs() 在目录已存在时返回 false，需再判断是否为合法目录。
+            File contractsDir = new File(uploadDir, CONTRACT_PDF_SUBDIR).getAbsoluteFile();
+            contractsDir.mkdirs();
+            if (!contractsDir.isDirectory()) {
+                log.warn("PDF 目录不可用，跳过落盘：{}", contractsDir.getAbsolutePath());
+                return;
+            }
+            // 对合同编号做路径安全过滤：仅保留字母、数字、连字符和下划线，
+            // 防止 contractNo 中含有 '/'、'\' 或 '..' 等路径穿越字符写到目标目录之外
+            String safeContractNo = contract.getContractNo().replaceAll("[^A-Za-z0-9_\\-]", "_");
+            String filename = safeContractNo + ".pdf";
+            File pdfFile = new File(contractsDir, filename);
+            // 校验最终路径仍在 contractsDir 内部，防御符号链接等绕过手段
+            if (!pdfFile.getCanonicalPath().startsWith(contractsDir.getCanonicalPath())) {
+                log.warn("合同 {} 路径异常，跳过落盘：{}", contract.getContractNo(), pdfFile.getAbsolutePath());
+                return;
+            }
+            try (FileOutputStream fos = new FileOutputStream(pdfFile)) {
+                fos.write(pdfBytes);
+            }
+            // 相对路径格式为 "contracts/{safeContractNo}.pdf"，与上传图片的存储约定保持一致
+            String relativePath = CONTRACT_PDF_SUBDIR + "/" + filename;
+            contract.setPdfPath(relativePath);
+            contract.setUpdateTime(LocalDateTime.now());
+            contractMapper.updateById(contract);
+            log.info("合同 {} PDF 已保存至：{}，path 已更新至数据库", contract.getContractNo(), pdfFile.getAbsolutePath());
+        } catch (Exception e) {
+            // PDF 落盘失败不应阻断下载流程，仅记录警告日志
+            log.warn("合同 {} PDF 落盘失败，pdf_path 未更新：{}", contract.getContractNo(), e.getMessage());
         }
     }
 
