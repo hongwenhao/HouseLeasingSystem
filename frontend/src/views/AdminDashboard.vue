@@ -506,7 +506,6 @@ onMounted(async () => {
     await nextTick()
     setTimeout(() => {
       initCharts()
-      resizeCharts()
     }, CHART_INIT_DELAY)
   }
   window.addEventListener('resize', resizeCharts)
@@ -542,7 +541,6 @@ watch(
       await nextTick()
       setTimeout(() => {
         initCharts()
-        resizeCharts()
       }, CHART_INIT_DELAY)
     }
   }
@@ -550,6 +548,7 @@ watch(
 
 onUnmounted(() => {
   window.removeEventListener('resize', resizeCharts)
+  disposeCharts()
 })
 
 /** 加载平台整体数据概览统计 */
@@ -752,6 +751,16 @@ function resizeCharts() {
     if (!dom) return
     const chart = echarts.getInstanceByDom(dom)
     chart?.resize()
+  })
+}
+
+/** 页面卸载时释放图表实例，避免内存泄漏。 */
+function disposeCharts() {
+  const chartDoms = [areaChartRef.value, priceChartRef.value, creditChartRef.value]
+  chartDoms.forEach((dom) => {
+    if (!dom) return
+    const chart = echarts.getInstanceByDom(dom)
+    chart?.dispose()
   })
 }
 
