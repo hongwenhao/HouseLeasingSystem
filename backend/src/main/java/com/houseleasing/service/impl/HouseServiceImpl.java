@@ -2,7 +2,6 @@ package com.houseleasing.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -42,7 +41,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HouseServiceImpl implements HouseService {
 
-    private final WorkflowService workflowService;
     private final HouseMapper houseMapper;
     private final HouseImageMapper houseImageMapper;
     private final UserBehaviorMapper userBehaviorMapper;
