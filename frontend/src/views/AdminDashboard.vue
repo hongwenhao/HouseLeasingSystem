@@ -505,11 +505,7 @@ onMounted(async () => {
   loadContracts()
   // 仅在概览 tab 激活时初始化图表，避免隐藏容器初始化导致尺寸异常
   if (activeTab.value === 'overview') {
-    await nextTick()
-    setTimeout(() => {
-      ensureOverviewChartsReady()
-      resizeCharts()
-    }, CHART_INIT_DELAY)
+    scheduleOverviewChartRender()
   }
   window.addEventListener('resize', scheduleResizeCharts)
 })
@@ -541,11 +537,7 @@ watch(
   async (tab) => {
     syncAdminTabToRouteQuery(tab)
     if (tab === 'overview') {
-      await nextTick()
-      setTimeout(() => {
-        ensureOverviewChartsReady()
-        resizeCharts()
-      }, CHART_INIT_DELAY)
+      scheduleOverviewChartRender()
     }
   }
 )
@@ -759,6 +751,15 @@ function ensureOverviewChartsReady() {
   initCharts()
 }
 
+/** 概览图表渲染调度：等待 DOM 与 tab 布局稳定后再初始化/重排。 */
+async function scheduleOverviewChartRender() {
+  await nextTick()
+  setTimeout(() => {
+    ensureOverviewChartsReady()
+    resizeCharts()
+  }, CHART_INIT_DELAY)
+}
+
 /** 在容器尺寸变化或 tab 切换后统一触发图表重算，避免图表显示不完整。 */
 function resizeCharts() {
   getChartDoms().forEach((dom) => {
@@ -770,12 +771,9 @@ function resizeCharts() {
 
 /** 使用 requestAnimationFrame 对 resize 进行轻量节流，避免高频重算。 */
 function scheduleResizeCharts() {
+  if (!overviewChartsInitialized.value) return
   if (resizeRafId !== null) return
   resizeRafId = requestAnimationFrame(() => {
-    if (!overviewChartsInitialized.value) {
-      resizeRafId = null
-      return
-    }
     resizeRafId = null
     resizeCharts()
   })
