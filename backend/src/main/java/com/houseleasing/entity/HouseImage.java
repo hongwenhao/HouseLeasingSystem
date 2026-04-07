@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  *
  * @author HouseLeasingSystem开发团队
  * @description 对应数据库 house_images 表，存储房源的图片信息，
- *              每个房源可关联多张图片，支持自定义排序
+ *              每个房源可关联多张图片
  */
 @Data
 @TableName("house_images")

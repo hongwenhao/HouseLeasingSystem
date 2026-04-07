@@ -37,14 +37,14 @@ public class House {
     private BigDecimal price;
     /**
      * 押金月数（以月数计，例如 1 表示押一个月租金）。
-     * 实际押金金额需在业务层计算：depositMonths × price。
+     * 实际押金金额在业务层计算：depositMonths × price。
      */
     private BigDecimal deposit;
-    /** 房屋类型（如：整租、合租） */
+    /** 房屋类型 */
     private String houseType;
-    /** 出租方类型（如：个人、中介） */
+    /** 房东类型（如：一手房东、二手房东、中介） */
     private String ownerType;
-    /** 状态：ONLINE（已上线）、REJECTED（已拒绝）、OFFLINE（已下架），兼容历史的 PENDING/APPROVED */
+    /** 状态：ONLINE（已上线）、OFFLINE（已下架） */
     private String status = "ONLINE";
     /** 水费单价 */
     private BigDecimal waterFee;
