@@ -23,9 +23,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    /** JWT Subject 使用用户 ID 时的前缀，格式需与 JwtUtil 保持一致 */
-    private static final String USER_ID_SUBJECT_PREFIX = "uid:";
-
     private final UserMapper userMapper;
 
     /**
@@ -62,8 +59,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * @return 命中的用户，未命中返回 null
      */
     private User resolveUser(String identifier) {
-        if (identifier != null && identifier.startsWith(USER_ID_SUBJECT_PREFIX)) {
-            String userIdText = identifier.substring(USER_ID_SUBJECT_PREFIX.length());
+        if (identifier != null && identifier.startsWith(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX)) {
+            String userIdText = identifier.substring(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX.length());
             try {
                 Long userId = Long.valueOf(userIdText);
                 return userMapper.selectById(userId);

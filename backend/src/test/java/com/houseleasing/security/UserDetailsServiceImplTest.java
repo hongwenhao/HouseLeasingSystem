@@ -60,4 +60,3 @@ class UserDetailsServiceImplTest {
         return user;
     }
 }
-

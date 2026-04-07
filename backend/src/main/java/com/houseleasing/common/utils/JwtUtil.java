@@ -1,5 +1,6 @@
 package com.houseleasing.common.utils;
 
+import com.houseleasing.security.JwtSubjectConstants;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -45,9 +46,6 @@ public class JwtUtil {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    /** JWT Subject 前缀：表示 Subject 使用用户主键 ID（稳定标识） */
-    private static final String USER_ID_SUBJECT_PREFIX = "uid:";
-
     /**
      * 生成 JWT Token。
      * <p>
@@ -65,7 +63,7 @@ public class JwtUtil {
         claims.put("username", username); // 用户名用于日志追踪（非认证主键）
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(USER_ID_SUBJECT_PREFIX + userId)                    // 认证主体使用稳定用户 ID
+                .setSubject(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX + userId) // 认证主体使用稳定用户 ID
                 .setIssuedAt(new Date())                                        // 签发时间
                 .setExpiration(new Date(System.currentTimeMillis() + expiration)) // 过期时间
                 .signWith(signingKey, SignatureAlgorithm.HS256)                 // 使用 HMAC-SHA256 签名
