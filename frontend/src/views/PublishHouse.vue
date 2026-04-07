@@ -434,7 +434,8 @@ const form = reactive({
 watch(
   () => form.amenities.includes(MOVE_IN_READY_TAG),
   (isChecked, wasChecked) => {
-    if (!isChecked || wasChecked) return
+    // 仅在“未勾选 -> 勾选”时触发自动补齐；wasChecked 可能为 undefined，需显式判 true
+    if (!isChecked || wasChecked === true) return
     MOVE_IN_READY_REQUIRED_AMENITIES.forEach((amenity) => {
       if (!form.amenities.includes(amenity)) {
         form.amenities.push(amenity)
