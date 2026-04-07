@@ -38,11 +38,6 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<House> getRecommendedHouses(Long userId, int limit) {
         try {
-            // 边界保护：limit 非法时直接返回空集合，避免出现负分页参数或无意义查询
-            if (limit <= 0) {
-                return Collections.emptyList();
-            }
-
             // 第一步：获取当前用户有过交互的所有房源集合
             // 交互行为由 UserBehaviorMapper 统一维护（浏览/收藏等），此处不区分行为权重
             List<Long> userHouseIds = userBehaviorMapper.selectHouseIdsByUserId(userId);
