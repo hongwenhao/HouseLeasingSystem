@@ -75,12 +75,8 @@
         <h2 class="section-title center">我们的优势</h2>
         <div class="advantage-grid">
           <div class="advantage-item">
-            <el-icon class="adv-icon"><Shield /></el-icon>
-            <h3 class="adv-title-with-icon">
-              <!-- 补充标题级安全图标：强化“安全保障”语义识别，提升信息可见性 -->
-              <el-icon class="adv-title-icon"><CircleCheckFilled /></el-icon>
-              <span>安全保障</span>
-            </h3>
+            <el-icon class="adv-icon"><Lock /></el-icon>
+            <h3>安全保障</h3>
             <p>合同风险智能检测，资金安全有保障，让您租房更放心</p>
           </div>
           <div class="advantage-item">
@@ -106,7 +102,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { CircleCheckFilled } from '@element-plus/icons-vue'
+import { Lock, House, Lightning } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import SearchBar from '../components/SearchBar.vue'
@@ -498,18 +494,6 @@ function handleSearch(searchFilters) {
   font-weight: 600;
   margin-bottom: 12px;
   color: #1a1a2e;
-}
-
-/* “安全保障”标题图标样式：作为主图标的冗余补充，提升可识别性 */
-.adv-title-with-icon {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.adv-title-icon {
-  font-size: 16px;
-  color: #67c23a;
 }
 
 .advantage-item p {
