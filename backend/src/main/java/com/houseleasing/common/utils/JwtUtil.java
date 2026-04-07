@@ -45,19 +45,27 @@ public class JwtUtil {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
+    /** JWT Subject 前缀：表示 Subject 使用用户主键 ID（稳定标识） */
+    private static final String USER_ID_SUBJECT_PREFIX = "uid:";
+
     /**
-     * 生成 JWT Token
+     * 生成 JWT Token。
+     * <p>
+     * 说明：用户名是可修改字段，若直接放入 Subject，用户改名后旧 Token 会因“按旧用户名查不到人”而失效。
+     * 因此这里将 Subject 设计为稳定不变的用户 ID（带 uid: 前缀），并额外携带 username 便于排查日志。
      *
-     * @param username 用户名（作为 Subject）
-     * @param role     用户角色（存入 Claims）
+     * @param userId   用户主键 ID（作为稳定 Subject）
+     * @param username 当前用户名（写入 Claims，便于追踪）
+     * @param role     用户角色（写入 Claims）
      * @return 生成的 JWT Token 字符串
      */
-    public String generateToken(String username, String role) {
+    public String generateToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role); // 将角色信息写入 JWT 载荷
+        claims.put("role", role); // 角色用于权限判断/审计
+        claims.put("username", username); // 用户名用于日志追踪（非认证主键）
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(username)                                           // 设置主题为用户名
+                .setSubject(USER_ID_SUBJECT_PREFIX + userId)                    // 认证主体使用稳定用户 ID
                 .setIssuedAt(new Date())                                        // 签发时间
                 .setExpiration(new Date(System.currentTimeMillis() + expiration)) // 过期时间
                 .signWith(signingKey, SignatureAlgorithm.HS256)                 // 使用 HMAC-SHA256 签名
@@ -84,10 +92,12 @@ public class JwtUtil {
     }
 
     /**
-     * 从 JWT Token 中提取用户名
+     * 从 JWT Token 中提取 Subject。
+     * <p>
+     * 新版 Token 返回形如 uid:123 的稳定用户标识；旧版 Token 可能仍是用户名/手机号。
      *
      * @param token JWT Token 字符串
-     * @return 用户名
+     * @return Subject 原始值
      */
     public String getUsernameFromToken(String token) {
         return getClaims(token).getSubject();
