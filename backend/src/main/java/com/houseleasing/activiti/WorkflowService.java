@@ -51,9 +51,9 @@ public class WorkflowService {
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(
                 "contractSigningProcess",
                 "CONTRACT-" + contractId,
-                variables);
-        log.info("Started contractSigningProcess instance {} for contract {}", instance.getProcessInstanceId(), contractId);
-        return instance.getProcessInstanceId();
+                variables);//启动流程实例，传入流程定义 key、业务主键和流程变量
+        log.info("Started contractSigningProcess instance {} for contract {}", instance.getProcessInstanceId(), contractId);//记录流程启动日志，便于后续审计和问题追踪
+        return instance.getProcessInstanceId(); //返回流程实例ID，供后续任务完成和状态查询使用
     }
 
     /**
@@ -95,7 +95,7 @@ public class WorkflowService {
         }
         // 5. 完成任务
         // 调用工作流服务，传入任务ID和流程变量集合，正式结束当前任务节点
-        taskService.complete(task.getId(), vars);
+        taskService.complete(task.getId(), vars);//完成任务，传入任务ID和流程变量集合
         // 6. 记录操作日志
         // 记录用户ID、任务ID和角色，便于后续审计和问题追踪
         log.info("User {} completed contract task {} with role {}", userId, task.getId(), role);
@@ -111,7 +111,7 @@ public class WorkflowService {
         // 优先查 runtime：只要还能查到实例，说明流程仍在运行（包括待办/并行分支未结束）。
         ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
                 .processInstanceId(processInstanceId)
-                .singleResult();
+                .singleResult();//在运行时表中根据流程实例ID查询运行中的流程实例，如果能查到结果说明流程仍在运行，返回false；如果查不到结果则继续查询历史表
         if (runtime != null) {
             return false;
         }
@@ -121,7 +121,7 @@ public class WorkflowService {
         HistoricProcessInstance history = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(processInstanceId)
                 .finished()
-                .singleResult();
-        return history != null;
+                .singleResult();//在历史表中根据流程实例ID查询历史流程实例，并且要求该实例已经结束（finished()），如果能查到结果说明流程已完成
+        return history != null; //如果历史中能查到已结束的实例，说明流程已完成，返回true；否则可能是无效的流程实例ID，返回false
     }
 }
