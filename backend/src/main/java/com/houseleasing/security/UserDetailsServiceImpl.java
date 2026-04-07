@@ -34,8 +34,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String usernameOrPhone) throws UsernameNotFoundException {
-        // 为了兼容使用手机号登录的场景，这里同时支持用户名与手机号的查询
-        User user = userMapper.selectByUsernameOrPhone(usernameOrPhone);
+        // 为了兼容历史 Token 与手机号登录，这里支持三类输入：
+        // 1) uid:123（新版 JWT Subject，稳定标识，用户名变更后仍可识别同一用户）
+        // 2) username（用户名登录或旧版 Token）
+        // 3) phone（手机号登录）
+        User user = resolveUser(usernameOrPhone);
         if (user == null) {
             throw new UsernameNotFoundException("用户不存在: " + usernameOrPhone);
         }
@@ -45,5 +48,26 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 user.getPassword(),
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
         );
+    }
+
+    /**
+     * 根据认证标识解析用户：
+     * - 若为 uid: 前缀，按主键 ID 查询（稳定且不受用户名修改影响）；
+     * - 否则回退到“用户名/手机号”双通道查询，兼容历史行为。
+     *
+     * @param identifier 认证标识
+     * @return 命中的用户，未命中返回 null
+     */
+    private User resolveUser(String identifier) {
+        if (identifier != null && identifier.startsWith(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX)) {
+            String userIdText = identifier.substring(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX.length());
+            try {
+                Long userId = Long.valueOf(userIdText);
+                return userMapper.selectById(userId);
+            } catch (NumberFormatException ex) {
+                throw new UsernameNotFoundException("无效的用户标识: " + identifier);
+            }
+        }
+        return userMapper.selectByUsernameOrPhone(identifier);
     }
 }

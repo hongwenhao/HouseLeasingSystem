@@ -51,11 +51,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7); // 截取 "Bearer " 后的 Token 部分
             try {
                 if (jwtUtil.validateToken(token)) {
-                    // Token 有效，从 Token 中提取用户名
-                    String username = jwtUtil.getUsernameFromToken(token);
+                    // Token 有效，从 Token 中提取 Subject（新版为 uid:用户ID，旧版可能是用户名/手机号）
+                    String principalIdentifier = jwtUtil.getUsernameFromToken(token);
                     // 通过 UserDetailsService 加载完整的 UserDetails 对象，
                     // 确保 @AuthenticationPrincipal 能正确注入 UserDetails
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(principalIdentifier);
                     // 构建 Spring Security 认证对象
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(

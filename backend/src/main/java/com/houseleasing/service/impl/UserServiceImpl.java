@@ -146,8 +146,10 @@ public class UserServiceImpl implements UserService {
             // 文案明确“已登录但不重复加分”，避免用户误解积分规则。
             messageProducer.sendLoginNotification(user.getId(), DAILY_LOGIN_REPEAT_MESSAGE);
         }
-        // 生成 JWT Token（包含用户名和角色）
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+        // 生成 JWT Token：
+        // 1) Subject 使用稳定 userId，避免“用户名修改后旧 Token 立即失效”；
+        // 2) Claims 保留当前用户名与角色，便于审计与问题排查。
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
         user.setPassword(null); // 清空密码后放入返回结果
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
