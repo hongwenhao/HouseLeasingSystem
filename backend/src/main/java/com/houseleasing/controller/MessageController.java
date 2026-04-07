@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 消息管理控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供站内消息相关的 REST API，包括查询消息列表、未读消息计数和标记已读，
  *              所有接口均需要 JWT 认证
  */

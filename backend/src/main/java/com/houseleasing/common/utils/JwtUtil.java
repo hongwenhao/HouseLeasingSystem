@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * JWT 工具类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供 JWT Token 的生成、验证和解析功能，用于无状态的接口鉴权认证
  */
 @Slf4j

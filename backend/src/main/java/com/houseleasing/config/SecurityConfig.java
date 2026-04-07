@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Spring Security 安全配置类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 配置系统的安全策略，包括 JWT 过滤器集成、接口权限规则、CORS 跨域配置、
  *              无状态 Session 策略和密码编码器
  */

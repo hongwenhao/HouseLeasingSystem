@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 创建订单请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装创建租房订单（预约看房）所需的请求参数
  */
 @Data

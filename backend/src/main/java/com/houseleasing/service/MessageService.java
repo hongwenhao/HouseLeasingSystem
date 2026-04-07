@@ -6,7 +6,7 @@ import com.houseleasing.entity.Message;
 /**
  * 消息服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义站内消息相关的业务操作，包括发送消息、查询、标记已读等
  */
 public interface MessageService {

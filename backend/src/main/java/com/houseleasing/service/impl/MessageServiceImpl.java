@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 /**
  * 消息服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 实现站内消息的发送、分页查询、已读标记等业务逻辑
  */
 @Slf4j

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 /**
  * 消息生产者
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 负责向 RabbitMQ 发送各类业务通知消息。
  *              当 RabbitMQ 不可用时，自动降级为直接写入数据库，保证消息可靠性
  */

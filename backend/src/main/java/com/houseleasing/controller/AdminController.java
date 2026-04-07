@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 /**
  * 后台管理控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供系统管理员专用的后台管理 REST API，包括用户管理、房源审核、
  * 订单查看、合同查看和系统统计，所有接口仅限 ADMIN 角色访问
  */

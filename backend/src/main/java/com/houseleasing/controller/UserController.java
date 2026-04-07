@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * 用户管理控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供用户个人信息相关的 REST API，包括查询个人信息、更新资料、
  *              实名认证和查询指定用户，所有接口均需要 JWT 认证
  */

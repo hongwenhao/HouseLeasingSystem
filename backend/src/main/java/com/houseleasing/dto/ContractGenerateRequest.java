@@ -7,7 +7,7 @@ import java.time.LocalDate;
 /**
  * 生成合同请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装根据订单生成租赁合同所需的请求参数
  */
 @Data

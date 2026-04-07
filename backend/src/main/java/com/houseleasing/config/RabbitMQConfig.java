@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * RabbitMQ 消息队列配置类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 配置 RabbitMQ 的交换机、队列和绑定关系，使用 Topic 交换机路由消息，
  *              消息使用 JSON 序列化格式
  */

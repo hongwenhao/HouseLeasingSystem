@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 /**
  * 密码工具类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装 Spring Security 的 PasswordEncoder，提供密码加密和匹配功能，
  *              使用 BCrypt 算法对用户密码进行单向哈希加密
  */

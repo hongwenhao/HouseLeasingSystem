@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 用户行为记录实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 user_behaviors 表，记录用户与房源的交互行为，
  *              用于推荐系统的协同过滤算法数据来源
  */

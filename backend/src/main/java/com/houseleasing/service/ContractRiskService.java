@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * 合同风险分析服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义合同风险分析的业务操作，通过规则引擎对合同条款进行风险识别和评估
  */
 public interface ContractRiskService {

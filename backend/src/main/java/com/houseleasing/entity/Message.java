@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 站内消息实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 messages 表，存储系统发送给用户的站内通知消息，
  *              支持预约通知、合同通知、订单通知等多种类型
  */

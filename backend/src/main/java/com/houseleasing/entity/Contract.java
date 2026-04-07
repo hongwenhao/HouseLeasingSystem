@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 /**
  * 租赁合同实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 contracts 表，存储房屋租赁合同的完整信息，
  *              包括合同内容、双方签署状态、风险评估结果等
  */

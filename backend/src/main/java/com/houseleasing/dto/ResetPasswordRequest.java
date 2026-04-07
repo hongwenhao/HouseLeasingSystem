@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 重置密码请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装忘记密码时重置密码所需的请求参数，通过用户名和手机号验证身份
  */
 @Data

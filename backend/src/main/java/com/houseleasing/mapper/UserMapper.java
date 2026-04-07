@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Select;
 /**
  * 用户数据访问层接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 继承 MyBatis-Plus BaseMapper，提供用户的基础 CRUD 操作，
  *              并扩展了按用户名和手机号查询的方法
  */

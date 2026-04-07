@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 房源服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义房源相关的业务操作，包括发布、更新、搜索、审核、收藏和统计
  */
 public interface HouseService {

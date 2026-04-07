@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 /**
  * RabbitMQ 消息消费者
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 监听 RabbitMQ 各类消息队列，消费消息后将通知写入数据库，
  *              仅在 spring.rabbitmq.listener.simple.auto-startup=true 时启用
  */

@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 用户详情服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 实现 Spring Security 的 UserDetailsService 接口，
  *              通过用户名从数据库加载用户信息用于认证，
  *              角色转换为 Spring Security 的 GrantedAuthority 格式（ROLE_前缀）

@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 房源推荐服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义房源推荐的业务操作，基于协同过滤算法为用户提供个性化推荐
  */
 public interface RecommendationService {

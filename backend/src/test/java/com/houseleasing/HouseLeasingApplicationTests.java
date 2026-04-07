@@ -7,7 +7,7 @@ import org.springframework.test.context.TestPropertySource;
 /**
  * 房屋租赁系统应用程序测试类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 使用 H2 内存数据库进行 Spring Boot 上下文加载测试，
  *              禁用 RabbitMQ 监听器和 Redis 仓库以简化测试环境
  */

@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 用户服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 实现用户相关的所有业务逻辑，包括注册、登录、信息更新、实名认证、
  *              信用评分管理及管理员对用户的封禁/解封操作
  */

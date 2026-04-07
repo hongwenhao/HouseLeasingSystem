@@ -25,7 +25,7 @@ import java.time.Duration;
 /**
  * Redis 配置类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 配置 Redis 连接模板和缓存管理器，使用 Jackson 序列化，
  *              支持 Java 8 时间类型，默认缓存 TTL 为 30 分钟
  */

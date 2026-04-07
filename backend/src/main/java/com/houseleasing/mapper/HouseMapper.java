@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Update;
 /**
  * 房源数据访问层接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 继承 MyBatis-Plus BaseMapper，提供房源的基础 CRUD 操作，
  *              并扩展了按条件分页查询和更新浏览量的方法
  */

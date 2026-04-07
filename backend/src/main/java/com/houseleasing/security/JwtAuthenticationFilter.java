@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * JWT 认证过滤器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 每次 HTTP 请求执行一次的过滤器，从请求头中提取 JWT Token，
  *              验证有效性后将认证信息注入 Spring Security 上下文
  */

@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 房源图片数据访问层接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 继承 MyBatis-Plus BaseMapper，提供房源图片的基础 CRUD 操作，
  *              并扩展了按房源 ID 查询图片列表的方法
  */

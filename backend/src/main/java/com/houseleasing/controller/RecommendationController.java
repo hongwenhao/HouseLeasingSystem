@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * 推荐系统控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供个性化房源推荐的 REST API，基于用户行为数据进行协同过滤推荐，
  *              需要 JWT 认证
  */

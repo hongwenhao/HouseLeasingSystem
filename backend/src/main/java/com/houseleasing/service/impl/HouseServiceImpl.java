@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  * 房源服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 实现房源相关的所有业务逻辑，包括房源的发布、更新、搜索、审核、
  * 收藏和浏览量统计，热门房源使用 Redis 缓存提高查询性能
  */
