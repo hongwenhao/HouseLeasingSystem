@@ -428,6 +428,7 @@ const activeTab = ref('overview')        // 当前激活 tab
 const router = useRouter()               // 路由实例（用于跳转房源详情页）
 const route = useRoute()                 // 当前路由对象（用于读取/同步 ?tab=xxx）
 const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
+const CHART_INIT_DELAY = 160              // 图表初始化/重绘延迟，等待 tab 面板布局稳定后再计算尺寸
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
@@ -506,7 +507,7 @@ onMounted(async () => {
     setTimeout(() => {
       initCharts()
       resizeCharts()
-    }, 200)
+    }, CHART_INIT_DELAY)
   }
   window.addEventListener('resize', resizeCharts)
 })
@@ -542,7 +543,7 @@ watch(
       setTimeout(() => {
         initCharts()
         resizeCharts()
-      }, 100)
+      }, CHART_INIT_DELAY)
     }
   }
 )
