@@ -187,20 +187,16 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
 // 导航头像显示值：优先取 avatar，再回退 avatarUrl，避免字段名不一致导致头像丢失
 const displayAvatar = computed(() => userInfo.value.avatar || userInfo.value.avatarUrl || '')
-// 本地缓存用户名在组件初始化时仅解析一次，避免渲染期重复 JSON.parse 带来的无谓开销
-const cachedUsername = (() => {
-  try {
-    const cached = JSON.parse(localStorage.getItem(USER_INFO_STORAGE_KEY) || '{}')
-    return (cached?.username || '').trim()
-  } catch (e) {
-    return ''
-  }
-})()
 // 导航用户名显示值：刷新时先读 store，缺失时回退本地缓存，避免短暂空白
 const displayUsername = computed(() => {
   const fromStore = (userInfo.value.username || '').trim()
   if (fromStore) return fromStore
-  return cachedUsername || '用户'
+  try {
+    const cached = JSON.parse(localStorage.getItem(USER_INFO_STORAGE_KEY) || '{}')
+    return (cached?.username || '').trim() || '当前用户'
+  } catch (e) {
+    return '当前用户'
+  }
 })
 // 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
 const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
@@ -254,7 +250,7 @@ onMounted(async () => {
   // 已登录时并行做两件事：
   // 1) 刷新未读消息角标；2) 兜底拉取用户资料，修复刷新后头像/用户名偶发不显示。
   if (!isLoggedIn.value) return
-  await Promise.allSettled([loadUnreadCount(), ensureNavProfileReady()])
+  await Promise.all([loadUnreadCount(), ensureNavProfileReady()])
 })
 
 /**
@@ -284,6 +280,9 @@ async function ensureNavProfileReady() {
     await userStore.fetchProfile()
   } catch (e) {
     // 静默降级：此处不打断导航栏渲染，保留本地缓存显示
+    if (import.meta.env.DEV) {
+      console.warn('[NavBar] fetchProfile fallback failed:', e)
+    }
   }
 }
 

@@ -614,13 +614,13 @@ async function handleLocalImageChange(uploadFile) {
 .owner-type-group {
   /*
     房东身份三选项重新布局（核心修复）：
-    1) PC 端固定为三列网格，一行展示三个身份卡片，天然保证三项同排对齐；
+    1) 桌面端固定为三列网格，一行展示三个身份卡片，天然保证三项同排对齐；
     2) 每个选项强制拉伸为等高（align-items: stretch + 统一 min-height），
        避免说明文字长度差异造成视觉错位；
     3) 移动端会在媒体查询中降级为单列，保证可读性与可点击面积。
   */
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
   gap: 12px;
   align-items: stretch;
   width: 100%;

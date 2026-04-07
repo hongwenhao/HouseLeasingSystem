@@ -1113,13 +1113,10 @@ function contractStatusTagType(status) {
   1) 将操作按钮组固定左对齐，避免在列宽波动时向右挤压导致“取消”半遮挡；
   2) 通过减少左内边距并增加右留白，让按钮组远离右侧边界与滚动遮罩区域。
 */
-:deep(.contract-table .contract-actions-column .cell) {
-  padding-left: 8px;
-  padding-right: 18px;
-}
-
 :deep(.contract-table .contract-action-group) {
   justify-content: flex-start;
+  padding-left: 0;
+  padding-right: 18px;
 }
 
 .empty-audit {

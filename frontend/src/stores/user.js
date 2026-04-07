@@ -42,7 +42,7 @@ function getDefaultUserInfo() {
     username: '',
     phone: '',
     email: '',
-    role: localStorage.getItem('role') || '', // 角色：TENANT / LANDLORD / ADMIN
+    role: '', // 角色：TENANT / LANDLORD / ADMIN
     avatar: '',
     avatarUrl: '',
     creditScore: 100
@@ -64,7 +64,10 @@ function getCachedUserInfo() {
   }
 }
 
-const initialUserInfo = getCachedUserInfo() || getDefaultUserInfo()
+const initialUserInfo = getCachedUserInfo() || {
+  ...getDefaultUserInfo(),
+  role: localStorage.getItem('role') || ''
+}
 
 export const useUserStore = defineStore('user', {
   /** 初始化状态：优先从 localStorage 恢复 token 和 role（刷新后保持登录态） */
@@ -102,9 +105,7 @@ export const useUserStore = defineStore('user', {
       }
       this.token = ''
       // 登出后必须清空角色，避免旧角色残留造成路由/导航误判
-      const clearedUserInfo = getDefaultUserInfo()
-      clearedUserInfo.role = ''
-      this.userInfo = clearedUserInfo
+      this.userInfo = getDefaultUserInfo()
       this.isLoggedIn = false
       // 清除本地存储中的认证信息
       localStorage.removeItem('token')
