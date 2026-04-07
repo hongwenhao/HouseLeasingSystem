@@ -7,7 +7,7 @@ import com.houseleasing.entity.Contract;
 /**
  * 合同服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义租赁合同相关的业务操作，包括生成合同、签署、查询、导出和取消
  */
 public interface ContractService {

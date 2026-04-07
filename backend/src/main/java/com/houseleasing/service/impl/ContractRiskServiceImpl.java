@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 合同风险分析服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 基于规则引擎实现合同文本的风险识别，通过关键词匹配和数值计算
  *              检测押金比例、维修条款、解约条款、违约金和费用约定等风险点
  */

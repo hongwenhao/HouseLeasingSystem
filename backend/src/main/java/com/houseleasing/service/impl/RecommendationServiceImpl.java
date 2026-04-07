@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * 房源推荐服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 基于协同过滤算法实现个性化房源推荐。
  *              算法流程：获取用户历史行为 → 找到相似用户 → 推荐相似用户感兴趣的房源 → 不足时补充热门房源
  */

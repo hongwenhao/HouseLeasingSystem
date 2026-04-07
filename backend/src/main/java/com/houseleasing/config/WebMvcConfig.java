@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Spring MVC 扩展配置类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 注册静态资源处理器，将本地磁盘的上传图片目录
  *              映射到 /api/uploads/** URL，使前端可通过 HTTP 访问已上传的图片。
  *

@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * 认证控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 处理用户注册和登录请求，提供公开访问的认证相关接口
  */
 @Tag(name = "Authentication", description = "Auth endpoints")

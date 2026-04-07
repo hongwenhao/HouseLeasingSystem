@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Swagger/OpenAPI 文档配置类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 配置 SpringDoc OpenAPI 文档，包括 API 基本信息和 Bearer Token 认证方案，
  *              访问地址：/swagger-ui.html 或 /v3/api-docs
  */

@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 统一响应结果封装类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 用于统一封装 API 接口的响应结果，包含状态码、消息和数据
  * @param <T> 响应数据的类型
  */

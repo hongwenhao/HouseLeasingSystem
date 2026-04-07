@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 用户行为数据访问层接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 继承 MyBatis-Plus BaseMapper，提供用户行为记录的基础 CRUD 操作，
  *              并扩展了用于协同过滤推荐算法的数据查询方法
  */

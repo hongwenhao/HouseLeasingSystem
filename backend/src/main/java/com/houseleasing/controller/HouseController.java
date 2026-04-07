@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * 房源管理控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供房源相关的 REST API，包括公开的搜索查询接口和需要认证的房源发布、更新、收藏接口
  */
 @Tag(name = "House", description = "House management")

@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Select;
 /**
  * 合同数据访问层接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 继承 MyBatis-Plus BaseMapper，提供租赁合同的基础 CRUD 操作
  */
 @Mapper

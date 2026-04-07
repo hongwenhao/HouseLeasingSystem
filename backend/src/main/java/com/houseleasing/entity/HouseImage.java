@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 房源图片实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 house_images 表，存储房源的图片信息，
  *              每个房源可关联多张图片
  */

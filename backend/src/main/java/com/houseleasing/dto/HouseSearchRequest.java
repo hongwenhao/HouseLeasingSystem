@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 /**
  * 房源搜索请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装房源搜索的筛选条件和分页参数，支持多维度组合查询
  */
 @Data

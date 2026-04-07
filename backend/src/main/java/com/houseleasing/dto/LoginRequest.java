@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 用户登录请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装用户登录所需的请求参数，包括用户名和密码
  */
 @Data

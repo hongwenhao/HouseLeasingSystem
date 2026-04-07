@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 /**
  * 消息数据访问层接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 继承 MyBatis-Plus BaseMapper，提供站内消息的基础 CRUD 操作
  */
 @Mapper

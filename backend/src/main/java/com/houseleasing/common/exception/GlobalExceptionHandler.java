@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * 全局异常处理器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 统一处理控制器层抛出的各类异常，将异常信息转换为标准响应格式返回给客户端，
  *              涵盖业务异常、参数校验异常、认证异常、权限异常及未知异常
  */

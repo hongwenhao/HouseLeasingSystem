@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 /**
  * 房屋租赁系统主启动类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description Spring Boot 应用程序入口，启用缓存和异步处理功能
  */
 @SpringBootApplication

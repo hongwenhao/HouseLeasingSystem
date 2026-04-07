@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 /**
  * 订单服务实现类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 实现订单相关的所有业务逻辑，包括创建意向订单和预约订单、
  *              订单审批、取消、完成等操作，通过 RabbitMQ 发送状态变更通知
  */

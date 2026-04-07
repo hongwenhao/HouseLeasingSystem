@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * 合同管理控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 提供租赁合同相关的 REST API，包括合同生成、签署、查询、PDF 导出、
  *              风险分析和取消，所有接口均需要 JWT 认证
  */

@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 /**
  * 房源实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 houses 表，存储房源的详细信息，
  *              包括基本属性、费用信息、审核状态和统计数据
  */

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 /**
  * 修改密码请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装已登录用户修改密码所需的请求参数，需提供旧密码进行身份验证
  */
 @Data

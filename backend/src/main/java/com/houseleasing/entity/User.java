@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 /**
  * 用户实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 users 表，存储系统用户的基本信息，
  *              包括普通租客、房东和管理员三种角色
  */

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 /**
  * 订单实体类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 对应数据库 orders 表，存储租房订单信息，
  *              支持意向订单和预约看房订单两种类型
  */

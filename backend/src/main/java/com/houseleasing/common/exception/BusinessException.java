@@ -5,7 +5,7 @@ import lombok.Getter;
 /**
  * 业务逻辑异常类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 用于表示业务逻辑异常，携带自定义的 HTTP 状态码和错误消息，
  *              由全局异常处理器捕获并返回给客户端
  */

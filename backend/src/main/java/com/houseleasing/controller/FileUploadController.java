@@ -17,7 +17,7 @@ import java.util.UUID;
 /**
  * 文件上传控制器
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 处理图片文件的上传请求，将图片保存到服务器磁盘，
  *              返回可供前端访问的图片 URL，避免将图片二进制数据存入数据库。
  *

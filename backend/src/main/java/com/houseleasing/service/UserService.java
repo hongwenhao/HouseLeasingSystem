@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * 用户服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义用户相关的业务操作，包括注册、登录、信息管理、实名认证及管理员操作
  */
 public interface UserService {

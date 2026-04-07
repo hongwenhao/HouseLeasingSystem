@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * 用户注册请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装用户注册所需的请求参数，包括账号信息和用户角色。
  *              手机号、邮箱均为必填项且在数据库中保持唯一约束。
  */

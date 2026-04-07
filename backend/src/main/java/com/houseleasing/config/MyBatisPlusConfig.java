@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * MyBatis-Plus 配置类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 配置 MyBatis-Plus 插件，包括分页插件（针对 MySQL），
  *              并扫描 Mapper 接口所在的包路径
  */

@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 分页查询结果封装类
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 用于封装分页查询的结果，包含总记录数、当前页数据、页码和页大小
  * @param <T> 分页数据的类型
  */

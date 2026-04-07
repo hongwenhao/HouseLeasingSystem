@@ -9,7 +9,7 @@ import com.houseleasing.entity.Order;
 /**
  * 订单服务接口
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 定义订单相关的业务操作，包括创建意向订单、预约看房订单、审批、取消和查询
  */
 public interface OrderService {

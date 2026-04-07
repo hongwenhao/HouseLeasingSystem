@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 更新用户信息请求数据传输对象
  *
- * @author HouseLeasingSystem开发团队
+ * @author hongwenhao
  * @description 封装用户修改个人资料所需的请求参数，所有字段均为可选
  */
 @Data
