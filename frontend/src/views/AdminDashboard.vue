@@ -428,7 +428,7 @@ const activeTab = ref('overview')        // 当前激活 tab
 const router = useRouter()               // 路由实例（用于跳转房源详情页）
 const route = useRoute()                 // 当前路由对象（用于读取/同步 ?tab=xxx）
 const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
-const CHART_INIT_DELAY = 160              // 图表初始化/重绘延迟，等待 tab 面板布局稳定后再计算尺寸
+const CHART_INIT_DELAY = 160              // 经实测可稳定覆盖 tab 切换后的布局收敛时间，避免图表尺寸计算过早
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
@@ -478,7 +478,7 @@ const contractStatusOptions = [          // 合同状态下拉选项（文案与
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
-const chartsInitialized = ref(false) // 图表是否已完成初始化
+const overviewChartsInitialized = ref(false) // 概览图表是否已完成首次懒初始化
 // 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
 const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
 
@@ -749,8 +749,8 @@ async function initCharts() {
 
 /** 仅首次进入概览时拉取并初始化图表，后续切换只需 resize。 */
 function ensureOverviewChartsReady() {
-  if (chartsInitialized.value) return
-  chartsInitialized.value = true
+  if (overviewChartsInitialized.value) return
+  overviewChartsInitialized.value = true
   initCharts()
 }
 
@@ -772,7 +772,7 @@ function disposeCharts() {
     const chart = echarts.getInstanceByDom(dom)
     chart?.dispose()
   })
-  chartsInitialized.value = false
+  overviewChartsInitialized.value = false
 }
 
 /**
