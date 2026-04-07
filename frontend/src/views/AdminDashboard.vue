@@ -323,11 +323,11 @@
               <el-table-column label="操作" width="160" class-name="contract-actions-column">
                 <template #default="{ row }">
                   <div class="table-action-group contract-action-group">
-                    <el-button size="small" text @click="handleViewContractDetail(row)">查看</el-button>
+                    <el-button size="small" @click="handleViewContractDetail(row)">查看</el-button>
                     <el-button
                       size="small"
                       type="danger"
-                      text
+                      plain
                       :disabled="row.status === 'CANCELLED' || row.status === 'FULLY_SIGNED'"
                       @click="handleCancelContractByAdmin(row)"
                     >取消</el-button>
@@ -401,7 +401,7 @@
 
 <script setup>
 // 说明：管理后台页逻辑，仅限 ADMIN 角色访问，提供概览、用户、房源管理、订单、合同管理功能
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'  // ECharts 图表库（用于柱状图、折线图、饼图）
@@ -500,11 +500,15 @@ onMounted(async () => {
   loadHouseManagementList()
   loadOrders()
   loadContracts()
-  // 等待 DOM 渲染完成后再初始化 ECharts 图表（避免容器尺寸为 0）
-  await nextTick()
-  setTimeout(() => {
-    initCharts()
-  }, 200)  // 额外延迟确保 tab 切换后 DOM 完全渲染
+  // 仅在概览 tab 激活时初始化图表，避免隐藏容器初始化导致尺寸异常
+  if (activeTab.value === 'overview') {
+    await nextTick()
+    setTimeout(() => {
+      initCharts()
+      resizeCharts()
+    }, 200)
+  }
+  window.addEventListener('resize', resizeCharts)
 })
 
 /**
@@ -531,10 +535,21 @@ watch(
 // 在后台内部切换标签时，同步 query.tab，确保与顶部导航双向联动。
 watch(
   activeTab,
-  (tab) => {
+  async (tab) => {
     syncAdminTabToRouteQuery(tab)
+    if (tab === 'overview') {
+      await nextTick()
+      setTimeout(() => {
+        initCharts()
+        resizeCharts()
+      }, 100)
+    }
   }
 )
+
+onUnmounted(() => {
+  window.removeEventListener('resize', resizeCharts)
+})
 
 /** 加载平台整体数据概览统计 */
 async function loadStats() {
@@ -649,7 +664,7 @@ async function initCharts() {
 
     // 初始化城市房源数量柱状图
     if (areaChartRef.value) {
-      const areaChart = echarts.init(areaChartRef.value)
+      const areaChart = echarts.getInstanceByDom(areaChartRef.value) || echarts.init(areaChartRef.value)
       const areaData = areaRes.status === 'fulfilled' ? (areaRes.value || []) : []
       areaChart.setOption({
         tooltip: { trigger: 'axis' },
@@ -671,7 +686,7 @@ async function initCharts() {
 
     // 初始化近6个月租金均价折线图
     if (priceChartRef.value) {
-      const priceChart = echarts.init(priceChartRef.value)
+      const priceChart = echarts.getInstanceByDom(priceChartRef.value) || echarts.init(priceChartRef.value)
       const priceData = priceRes.status === 'fulfilled' ? (priceRes.value || []) : []
       priceChart.setOption({
         tooltip: { trigger: 'axis' },
@@ -693,7 +708,7 @@ async function initCharts() {
 
     // 初始化用户信用分分布饼图（环形图）
     if (creditChartRef.value) {
-      const creditChart = echarts.init(creditChartRef.value)
+      const creditChart = echarts.getInstanceByDom(creditChartRef.value) || echarts.init(creditChartRef.value)
       const creditData = creditRes.status === 'fulfilled' ? (creditRes.value || []) : []
       creditChart.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
@@ -718,7 +733,7 @@ async function initCharts() {
   } catch (e) {
     // 图表初始化失败时使用兜底示例数据渲染城市柱状图
     if (areaChartRef.value) {
-      const areaChart = echarts.init(areaChartRef.value)
+      const areaChart = echarts.getInstanceByDom(areaChartRef.value) || echarts.init(areaChartRef.value)
       areaChart.setOption({
         tooltip: { trigger: 'axis' },
         xAxis: { type: 'category', data: ['北京', '上海', '广州', '深圳', '杭州', '成都'] },
@@ -727,6 +742,16 @@ async function initCharts() {
       })
     }
   }
+}
+
+/** 在容器尺寸变化或 tab 切换后统一触发图表重算，避免图表显示不完整。 */
+function resizeCharts() {
+  const chartDoms = [areaChartRef.value, priceChartRef.value, creditChartRef.value]
+  chartDoms.forEach((dom) => {
+    if (!dom) return
+    const chart = echarts.getInstanceByDom(dom)
+    chart?.resize()
+  })
 }
 
 /**
