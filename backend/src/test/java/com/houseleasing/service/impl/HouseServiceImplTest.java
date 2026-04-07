@@ -1,7 +1,6 @@
 package com.houseleasing.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
@@ -31,7 +30,6 @@ import static org.mockito.Mockito.mock;
  */
 class HouseServiceImplTest {
 
-    private WorkflowService workflowService;
     private HouseMapper houseMapper;
     private HouseImageMapper houseImageMapper;
     private UserBehaviorMapper userBehaviorMapper;
@@ -41,7 +39,6 @@ class HouseServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        workflowService = mock(WorkflowService.class);
         houseMapper = mock(HouseMapper.class);
         houseImageMapper = mock(HouseImageMapper.class);
         userBehaviorMapper = mock(UserBehaviorMapper.class);
@@ -49,7 +46,6 @@ class HouseServiceImplTest {
         redisTemplate = mock(RedisTemplate.class);
 
         houseService = new HouseServiceImpl(
-                workflowService,
                 houseMapper,
                 houseImageMapper,
                 userBehaviorMapper,
