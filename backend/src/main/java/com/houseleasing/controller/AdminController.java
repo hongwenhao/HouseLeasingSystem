@@ -1,5 +1,6 @@
 package com.houseleasing.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.houseleasing.common.PageResult;
 import com.houseleasing.common.Result;
 import com.houseleasing.common.exception.BusinessException;
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -302,6 +304,7 @@ public class AdminController {
      */
     @Operation(summary = "Cancel order by admin")
     @PutMapping("/orders/{id}/cancel")
+    @Transactional
     public Result<Void> cancelOrderByAdmin(@PathVariable Long id) {
         Order order = orderMapper.selectById(id);
         if (order == null) {
@@ -310,9 +313,21 @@ public class AdminController {
         if ("CANCELLED".equals(order.getStatus())) {
             return Result.success();
         }
+        // 双向联动一致性说明：
+        // 管理员取消订单时，必须同步取消该订单关联的“最新合同”。
+        // 这里先做“可取消性预校验”（遇到 FULLY_SIGNED 直接失败），
+        // 预校验阶段若抛出异常，本方法不会写入订单状态，事务整体回滚保持原子性。
+        // 再执行“订单取消 -> 合同取消”，保证顺序统一且失败可回滚。
+        Contract latestContract = findCancellableLatestContractForOrderByAdmin(order);
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        if (latestContract != null) {
+            latestContract.setStatus("CANCELLED");
+            latestContract.setUpdateTime(LocalDateTime.now());
+            contractMapper.updateById(latestContract);
+            notifyContractCancelledByAdmin(latestContract);
+        }
         // 管理员取消订单属于关键业务动作：
         // 通过 MQ 异步推送给订单双方（租客+房东），确保双方及时在消息中心看到状态变化。
         notifyOrderCancelledByAdmin(order);
@@ -327,6 +342,7 @@ public class AdminController {
      */
     @Operation(summary = "Cancel contract by admin")
     @PutMapping("/contracts/{id}/cancel")
+    @Transactional
     public Result<Void> cancelContractByAdmin(@PathVariable Long id) {
         Contract contract = contractMapper.selectById(id);
         if (contract == null) {
@@ -341,6 +357,10 @@ public class AdminController {
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
+        // 双向联动一致性说明：
+        // 管理员取消合同时，必须同步取消其对应订单。
+        // 这样可避免出现“合同已取消但订单仍可继续流转”的不一致状态。
+        cancelRelatedOrderForContractByAdmin(contract);
         // 合同取消后异步通知合同双方（租客+房东），告知取消来源为管理员兜底处理，避免双方误解为对方主动取消。
         notifyContractCancelledByAdmin(contract);
         House house = houseMapper.selectById(contract.getHouseId());
@@ -350,6 +370,68 @@ public class AdminController {
             houseMapper.updateById(house);
         }
         return Result.success();
+    }
+
+    /**
+     * 管理员取消订单前，校验该订单关联的最新合同是否允许被联动取消。
+     *
+     * 设计要点：
+     * 1) 只处理“最新合同”，与订单详情页展示口径保持一致；
+     * 2) 若最新合同已取消，直接忽略，保证幂等；
+     * 3) 若最新合同已双方签署（FULLY_SIGNED），按业务规则禁止取消，
+     *    抛出异常终止本次管理员取消订单操作，避免出现“订单已取消、合同未取消”的不一致状态。
+     *
+     * @return 可被联动取消的最新合同；若无需处理返回 null
+     */
+    private Contract findCancellableLatestContractForOrderByAdmin(Order order) {
+        Contract latestContract = findLatestContractByOrderId(order.getId());
+        if (latestContract == null || "CANCELLED".equals(latestContract.getStatus())) {
+            return null;
+        }
+        if ("FULLY_SIGNED".equals(latestContract.getStatus())) {
+            String contractIdentifier = StringUtils.hasText(latestContract.getContractNo())
+                    ? latestContract.getContractNo()
+                    : safeIdentifier(latestContract.getId());
+            throw new BusinessException(String.format("合同[%s]已签署，不可取消", contractIdentifier));
+        }
+        return latestContract;
+    }
+
+    /**
+     * 管理员取消合同时，联动取消其对应订单（若存在且未取消）。
+     *
+     * 设计要点：
+     * 1) 订单不存在时直接忽略，兼容历史脏数据；
+     * 2) 订单已取消时直接返回，保证幂等；
+     * 3) 与主取消动作运行在同一事务中，确保“合同/订单”状态要么同时成功，要么同时回滚。
+     */
+    private void cancelRelatedOrderForContractByAdmin(Contract contract) {
+        if (contract.getOrderId() == null) {
+            return;
+        }
+        Order relatedOrder = orderMapper.selectById(contract.getOrderId());
+        if (relatedOrder == null || "CANCELLED".equals(relatedOrder.getStatus())) {
+            return;
+        }
+        relatedOrder.setStatus("CANCELLED");
+        relatedOrder.setUpdateTime(LocalDateTime.now());
+        orderMapper.updateById(relatedOrder);
+        notifyOrderCancelledByAdmin(relatedOrder);
+    }
+
+    /**
+     * 查询订单关联的最新合同（按创建时间倒序）。
+     * 若无合同记录，返回 null。
+     */
+    private Contract findLatestContractByOrderId(Long orderId) {
+        if (orderId == null) {
+            return null;
+        }
+        LambdaQueryWrapper<Contract> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Contract::getOrderId, orderId)
+                .orderByDesc(Contract::getCreateTime)
+                .last("LIMIT 1");
+        return contractMapper.selectOne(wrapper);
     }
 
     /**
