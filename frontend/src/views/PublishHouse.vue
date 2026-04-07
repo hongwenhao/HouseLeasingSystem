@@ -612,35 +612,51 @@ async function handleLocalImageChange(uploadFile) {
 }
 
 .owner-type-group {
-  display: flex;
-  flex-direction: column;
+  /*
+    房东身份三选项重新布局（核心修复）：
+    1) PC 端固定为三列网格，一行展示三个身份卡片，天然保证三项同排对齐；
+    2) 每个选项强制拉伸为等高（align-items: stretch + 统一 min-height），
+       避免说明文字长度差异造成视觉错位；
+    3) 移动端会在媒体查询中降级为单列，保证可读性与可点击面积。
+  */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  align-items: stretch;
+  width: 100%;
 }
 
 /*
-  房东身份三选项对齐增强：
-  1) 统一每个选项的最小高度，避免描述文字多寡导致卡片高度不一致；
-  2) 让 radio 内容区域纵向居中，确保“三个框”在视觉上整齐对齐；
-  3) 在保持现有交互的前提下，仅做样式级优化，不影响表单值绑定逻辑。
+  单个身份卡片容器：
+  - 作为网格子项占满整列宽度；
+  - 通过高度继承与内部弹性布局，保证三张卡片内容起止线统一。
+*/
+.owner-type-option {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  margin-right: 0;
+}
+
+/*
+  深度覆盖 Element Plus radio 边框卡片样式：
+  - 统一最小高度，确保三项视觉等高；
+  - 使用 flex 布局让圆点与文字区域垂直居中；
+  - 禁用默认右外边距，避免网格最后一列出现“虚假缩进”。
 */
 .owner-type-group :deep(.el-radio.is-bordered) {
-  height: auto;
-  min-height: 72px;
-  padding: 12px 16px;
+  min-height: 96px;
+  height: 100%;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-}
-
-.owner-type-option {
-  display: flex;
-  align-items: center;
-  width: 100%;
+  margin-right: 0;
 }
 
 .owner-type-group :deep(.el-radio) {
-  align-items: center;
+  align-items: stretch;
   width: 100%;
 }
 
@@ -648,14 +664,17 @@ async function handleLocalImageChange(uploadFile) {
   display: flex;
   align-items: center;
   flex: 1;
+  min-width: 0;
   white-space: normal;
 }
 
 .radio-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
+  gap: 4px;
   margin-left: 4px;
+  min-width: 0;
 }
 
 .radio-content strong {
@@ -666,6 +685,13 @@ async function handleLocalImageChange(uploadFile) {
 .radio-content span {
   font-size: 12px;
   color: #909399;
+}
+
+/* 平板及以下切换为单列，保持点击区域充足并避免拥挤 */
+@media (max-width: 992px) {
+  .owner-type-group {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 户型输入：统一项布局并允许换行，防止“卫”字在窄宽度被遮挡 */

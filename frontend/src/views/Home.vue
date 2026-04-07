@@ -76,7 +76,11 @@
         <div class="advantage-grid">
           <div class="advantage-item">
             <el-icon class="adv-icon"><Shield /></el-icon>
-            <h3>安全保障</h3>
+            <h3 class="adv-title-with-icon">
+              <!-- 补充标题级安全图标：当主图标在个别环境渲染异常时，仍有清晰视觉提示 -->
+              <el-icon class="adv-title-icon"><CircleCheckFilled /></el-icon>
+              <span>安全保障</span>
+            </h3>
             <p>合同风险智能检测，资金安全有保障，让您租房更放心</p>
           </div>
           <div class="advantage-item">
@@ -493,6 +497,18 @@ function handleSearch(searchFilters) {
   font-weight: 600;
   margin-bottom: 12px;
   color: #1a1a2e;
+}
+
+/* “安全保障”标题图标样式：作为主图标的冗余补充，提升可识别性 */
+.adv-title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adv-title-icon {
+  font-size: 16px;
+  color: #67c23a;
 }
 
 .advantage-item p {
