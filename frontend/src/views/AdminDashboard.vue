@@ -428,7 +428,7 @@ const activeTab = ref('overview')        // 当前激活 tab
 const router = useRouter()               // 路由实例（用于跳转房源详情页）
 const route = useRoute()                 // 当前路由对象（用于读取/同步 ?tab=xxx）
 const DEFAULT_ADMIN_PAGE_SIZE = 100       // 后台管理列表默认一次拉取数量
-const CHART_INIT_DELAY = 160              // 经实测可稳定覆盖 tab 切换后的布局收敛时间，避免图表尺寸计算过早
+const CHART_INIT_DELAY = 160              // 图表初始化/重绘延迟，等待 tab 切换后的布局稳定再计算尺寸
 const stats = ref({})                    // 平台概览统计数据
 const users = ref([])                    // 所有用户列表（未过滤）
 const filteredUsers = ref([])            // 关键词过滤后的用户列表（用于表格展示）
@@ -479,6 +479,7 @@ const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
 const overviewChartsInitialized = ref(false) // 概览图表是否已完成首次懒初始化
+let resizeRafId = 0 // resize 事件节流帧 id
 // 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
 const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
 
@@ -510,7 +511,7 @@ onMounted(async () => {
       resizeCharts()
     }, CHART_INIT_DELAY)
   }
-  window.addEventListener('resize', resizeCharts)
+  window.addEventListener('resize', scheduleResizeCharts)
 })
 
 /**
@@ -550,7 +551,11 @@ watch(
 )
 
 onUnmounted(() => {
-  window.removeEventListener('resize', resizeCharts)
+  window.removeEventListener('resize', scheduleResizeCharts)
+  if (resizeRafId) {
+    cancelAnimationFrame(resizeRafId)
+    resizeRafId = 0
+  }
   disposeCharts()
 })
 
@@ -756,23 +761,35 @@ function ensureOverviewChartsReady() {
 
 /** 在容器尺寸变化或 tab 切换后统一触发图表重算，避免图表显示不完整。 */
 function resizeCharts() {
-  const chartDoms = [areaChartRef.value, priceChartRef.value, creditChartRef.value]
-  chartDoms.forEach((dom) => {
+  getChartDoms().forEach((dom) => {
     if (!dom) return
     const chart = echarts.getInstanceByDom(dom)
     chart?.resize()
   })
 }
 
+/** 使用 requestAnimationFrame 对 resize 进行轻量节流，避免高频重算。 */
+function scheduleResizeCharts() {
+  if (resizeRafId) return
+  resizeRafId = requestAnimationFrame(() => {
+    resizeRafId = 0
+    resizeCharts()
+  })
+}
+
 /** 页面卸载时释放图表实例，避免内存泄漏。 */
 function disposeCharts() {
-  const chartDoms = [areaChartRef.value, priceChartRef.value, creditChartRef.value]
-  chartDoms.forEach((dom) => {
+  getChartDoms().forEach((dom) => {
     if (!dom) return
     const chart = echarts.getInstanceByDom(dom)
     chart?.dispose()
   })
   overviewChartsInitialized.value = false
+}
+
+/** 统一收敛概览页三张图表的容器引用。 */
+function getChartDoms() {
+  return [areaChartRef.value, priceChartRef.value, creditChartRef.value]
 }
 
 /**
