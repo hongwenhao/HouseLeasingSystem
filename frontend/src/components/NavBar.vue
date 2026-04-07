@@ -132,11 +132,11 @@
             <span class="user-avatar-wrap">
               <el-avatar
                 :size="32"
-                :src="userInfo.avatarUrl || ''"
+                :src="displayAvatar"
                 :icon="UserFilled"
                 class="user-avatar"
               />
-              <span class="username">{{ userInfo.username }}</span>
+              <span class="username" :title="displayUsername">{{ displayUsername }}</span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -171,6 +171,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user.js'
 import { getUnreadCount } from '../api/message.js'
+import { USER_INFO_STORAGE_KEY } from '../constants/storageKeys.js'
 import { UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -184,6 +185,19 @@ const unreadCount = ref(0)
 // 从 Pinia store 读取登录状态和用户信息
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userInfo = computed(() => userStore.userInfo)
+// 导航头像显示值：优先取 avatar，再回退 avatarUrl，避免字段名不一致导致头像丢失
+const displayAvatar = computed(() => userInfo.value.avatar || userInfo.value.avatarUrl || '')
+// 导航用户名显示值：刷新时先读 store，缺失时回退本地缓存，避免短暂空白
+const displayUsername = computed(() => {
+  const fromStore = (userInfo.value.username || '').trim()
+  if (fromStore) return fromStore
+  try {
+    const cached = JSON.parse(localStorage.getItem(USER_INFO_STORAGE_KEY) || '{}')
+    return (cached?.username || '').trim() || '当前用户'
+  } catch (e) {
+    return '当前用户'
+  }
+})
 // 读取用户角色，优先从 store，降级读取 localStorage（页面刷新时）
 const role = computed(() => userStore.userInfo.role || localStorage.getItem('role') || '')
 // 角色快捷判断：便于模板按角色精确控制导航项显示
@@ -233,17 +247,44 @@ const isAdminOrdersActive = computed(() => isAdminRoute.value && route.query.tab
 const isAdminContractsActive = computed(() => isAdminRoute.value && route.query.tab === 'contracts')
 
 onMounted(async () => {
-  // 已登录时，异步拉取未读消息数量，展示在消息角标上
-  if (isLoggedIn.value) {
-    try {
-      const res = await getUnreadCount()
-      // 兼容后端直接返回数字或 { count: n } 两种格式
-      unreadCount.value = typeof res === 'number' ? res : (res?.count ?? 0)
-    } catch (e) {
-      // 获取未读数失败时不影响页面正常使用，静默忽略
+  // 已登录时并行做两件事：
+  // 1) 刷新未读消息角标；2) 兜底拉取用户资料，修复刷新后头像/用户名偶发不显示。
+  if (!isLoggedIn.value) return
+  await Promise.all([loadUnreadCount(), ensureNavProfileReady()])
+})
+
+/**
+ * 拉取未读消息数：
+ * - 兼容后端返回 number 与 { count } 两种结构；
+ * - 失败静默降级，不阻塞导航栏其它功能。
+ */
+async function loadUnreadCount() {
+  try {
+    const res = await getUnreadCount()
+    unreadCount.value = typeof res === 'number' ? res : (res?.count ?? 0)
+  } catch (e) {
+    // 获取未读数失败时不影响页面正常使用，静默忽略
+  }
+}
+
+/**
+ * 确保导航栏基础资料（用户名/角色）可用：
+ * - 刷新后如果 store 中缺关键字段，主动补拉 profile；
+ * - 失败时保持现有缓存展示，避免用户看到“空头像 + 空用户名”。
+ */
+async function ensureNavProfileReady() {
+  const hasUsername = !!(userInfo.value.username || '').trim()
+  const hasRole = !!(userInfo.value.role || localStorage.getItem('role') || '')
+  if (hasUsername && hasRole) return
+  try {
+    await userStore.fetchProfile()
+  } catch (e) {
+    // 静默降级：此处不打断导航栏渲染，保留本地缓存显示
+    if (import.meta.env.DEV) {
+      console.warn('[NavBar] fetchProfile fallback failed:', e)
     }
   }
-})
+}
 
 /**
  * 处理用户下拉菜单命令。
@@ -357,6 +398,7 @@ async function handleCommand(cmd) {
   align-items: center;
   gap: 12px;
   margin-left: auto;
+  flex-shrink: 0; /* 防止导航项过多时右侧头像与用户名被压缩到不可见 */
 }
 
 .msg-badge {
@@ -379,11 +421,17 @@ async function handleCommand(cmd) {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  max-width: 180px;
 }
 
 .username {
+  display: inline-block;
   font-size: 14px;
   color: #303133;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 登录/注册按钮样式（现代圆角胶囊风格） */

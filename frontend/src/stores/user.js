@@ -15,6 +15,7 @@
 
 import { defineStore } from 'pinia'
 import { login as loginApi, logout as logoutApi, getProfile, updateProfile as updateProfileApi } from '../api/auth.js'
+import { USER_INFO_STORAGE_KEY } from '../constants/storageKeys.js'
 
 /**
  * 统一用户对象字段：
@@ -32,20 +33,47 @@ function normalizeUserInfo(user = {}) {
   }
 }
 
+/**
+ * 统一默认用户信息结构，避免在不同 action 中重复手写对象造成字段漂移。
+ */
+function getDefaultUserInfo() {
+  return {
+    id: null,
+    username: '',
+    phone: '',
+    email: '',
+    role: '', // 角色：TENANT / LANDLORD / ADMIN
+    avatar: '',
+    avatarUrl: '',
+    creditScore: 100
+  }
+}
+
+/**
+ * 尝试从 localStorage 恢复用户信息：
+ * - 成功：用于页面刷新后的首屏展示（头像/用户名）；
+ * - 失败：回退默认对象，不阻断应用启动流程。
+ */
+function getCachedUserInfo() {
+  try {
+    const raw = localStorage.getItem(USER_INFO_STORAGE_KEY)
+    if (!raw) return null
+    return normalizeUserInfo(JSON.parse(raw) || {})
+  } catch (e) {
+    return null
+  }
+}
+
+const initialUserInfo = getCachedUserInfo() || {
+  ...getDefaultUserInfo(),
+  role: localStorage.getItem('role') || ''
+}
+
 export const useUserStore = defineStore('user', {
   /** 初始化状态：优先从 localStorage 恢复 token 和 role（刷新后保持登录态） */
   state: () => ({
     token: localStorage.getItem('token') || '',
-    userInfo: {
-      id: null,
-      username: '',
-      phone: '',
-      email: '',
-      role: localStorage.getItem('role') || '', // 角色：TENANT / LANDLORD / ADMIN
-      avatar: '',
-      avatarUrl: '',
-      creditScore: 100  // 默认信用分 100
-    },
+    userInfo: initialUserInfo,
     isLoggedIn: !!localStorage.getItem('token') // 根据 token 是否存在判断登录态
   }),
   actions: {
@@ -61,6 +89,7 @@ export const useUserStore = defineStore('user', {
       // 持久化存储 token 和角色，供路由守卫和 axios 拦截器读取
       localStorage.setItem('token', res.token)
       localStorage.setItem('role', res.user.role)
+      localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(this.userInfo))
       this.isLoggedIn = true
     },
 
@@ -75,11 +104,13 @@ export const useUserStore = defineStore('user', {
         // 忽略后端登出失败，继续清除本地状态
       }
       this.token = ''
-      this.userInfo = { id: null, username: '', phone: '', email: '', role: '', avatar: '', avatarUrl: '', creditScore: 100 }
+      // 登出后必须清空角色，避免旧角色残留造成路由/导航误判
+      this.userInfo = getDefaultUserInfo()
       this.isLoggedIn = false
       // 清除本地存储中的认证信息
       localStorage.removeItem('token')
       localStorage.removeItem('role')
+      localStorage.removeItem(USER_INFO_STORAGE_KEY)
     },
 
     /**
@@ -89,6 +120,7 @@ export const useUserStore = defineStore('user', {
     async fetchProfile() {
       const res = await getProfile()
       this.userInfo = normalizeUserInfo(res)
+      localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(this.userInfo))
       return this.userInfo
     },
 
@@ -106,6 +138,7 @@ export const useUserStore = defineStore('user', {
       }
       const res = await updateProfileApi(payload)
       this.userInfo = normalizeUserInfo({ ...this.userInfo, ...res })
+      localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(this.userInfo))
       return this.userInfo
     }
   }

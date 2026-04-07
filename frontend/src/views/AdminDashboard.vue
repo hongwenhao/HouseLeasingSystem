@@ -217,7 +217,7 @@
               </el-table-column>
               <el-table-column label="操作" width="200">
                 <template #default="{ row }">
-                  <div class="table-action-group">
+                  <div class="table-action-group contract-action-group">
                     <el-button size="small" @click="handleViewOrderDetail(row)">查看</el-button>
                     <el-button
                       size="small"
@@ -1106,6 +1106,17 @@ function contractStatusTagType(status) {
 
 :deep(.contract-table .table-action-group) {
   min-width: 170px;
+}
+
+/*
+  合同管理“查看/取消”按钮左移修复：
+  1) 将操作按钮组固定左对齐，避免在列宽波动时向右挤压导致“取消”半遮挡；
+  2) 通过减少左内边距并增加右留白，让按钮组远离右侧边界与滚动遮罩区域。
+*/
+:deep(.contract-table .contract-action-group) {
+  justify-content: flex-start;
+  padding-left: 0;
+  padding-right: 18px;
 }
 
 .empty-audit {
