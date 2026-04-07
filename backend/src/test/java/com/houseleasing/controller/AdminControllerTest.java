@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AdminControllerTest {
@@ -83,5 +84,64 @@ class AdminControllerTest {
         assertEquals(0, result.getData().getTotal());
         assertNotNull(result.getData().getRecords());
         assertEquals(0, result.getData().getRecords().size());
+    }
+
+    @Test
+    void cancelOrderByAdmin_shouldCancelRelatedContract_whenLatestContractExists() {
+        Order order = new Order();
+        order.setId(100L);
+        order.setStatus("APPROVED");
+        order.setTenantId(10L);
+        order.setLandlordId(20L);
+        order.setOrderNo("ORD-100");
+
+        Contract latestContract = new Contract();
+        latestContract.setId(200L);
+        latestContract.setOrderId(100L);
+        latestContract.setStatus("PENDING_SIGN");
+        latestContract.setTenantId(10L);
+        latestContract.setLandlordId(20L);
+        latestContract.setContractNo("HT-200");
+
+        when(orderMapper.selectById(100L)).thenReturn(order);
+        when(contractMapper.selectOne(any())).thenReturn(latestContract);
+
+        Result<Void> result = assertDoesNotThrow(() -> adminController.cancelOrderByAdmin(100L));
+
+        assertNotNull(result);
+        assertEquals("CANCELLED", order.getStatus());
+        assertEquals("CANCELLED", latestContract.getStatus());
+        verify(orderMapper).updateById(order);
+        verify(contractMapper).updateById(latestContract);
+    }
+
+    @Test
+    void cancelContractByAdmin_shouldCancelRelatedOrder_whenOrderExists() {
+        Contract contract = new Contract();
+        contract.setId(300L);
+        contract.setOrderId(400L);
+        contract.setHouseId(500L);
+        contract.setStatus("PENDING_SIGN");
+        contract.setTenantId(30L);
+        contract.setLandlordId(40L);
+        contract.setContractNo("HT-300");
+
+        Order order = new Order();
+        order.setId(400L);
+        order.setStatus("APPROVED");
+        order.setTenantId(30L);
+        order.setLandlordId(40L);
+        order.setOrderNo("ORD-400");
+
+        when(contractMapper.selectById(300L)).thenReturn(contract);
+        when(orderMapper.selectById(400L)).thenReturn(order);
+
+        Result<Void> result = assertDoesNotThrow(() -> adminController.cancelContractByAdmin(300L));
+
+        assertNotNull(result);
+        assertEquals("CANCELLED", contract.getStatus());
+        assertEquals("CANCELLED", order.getStatus());
+        verify(contractMapper).updateById(contract);
+        verify(orderMapper).updateById(order);
     }
 }
