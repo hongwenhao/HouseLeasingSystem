@@ -24,9 +24,9 @@ public class HouseSearchRequest {
     private BigDecimal minPrice;
     /** 最高月租金（元） */
     private BigDecimal maxPrice;
-    /** 房屋类型筛选（如：整租、合租） */
+    /** 房屋类型筛选 */
     private String houseType;
-    /** 出租方类型筛选（如：个人、中介） */
+    /** 出租方类型筛选（如：一手房东、二手房东、中介） */
     private String ownerType;
     /** 房间数量筛选 */
     private Integer rooms;
