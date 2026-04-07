@@ -187,10 +187,28 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(404, "用户不存在");
         }
         // 仅更新非空字段（支持部分更新）
-        if (StringUtils.hasText(request.getPhone())) user.setPhone(request.getPhone());
-        if (StringUtils.hasText(request.getEmail())) user.setEmail(request.getEmail());
+        if (StringUtils.hasText(request.getPhone())) {
+            User existingByPhone = userMapper.selectByPhone(request.getPhone());
+            if (existingByPhone != null && !existingByPhone.getId().equals(userId)) {
+                throw new BusinessException("手机号已被注册");
+            }
+            user.setPhone(request.getPhone());
+        }
+        if (StringUtils.hasText(request.getEmail())) {
+            User existingByEmail = userMapper.selectByEmail(request.getEmail());
+            if (existingByEmail != null && !existingByEmail.getId().equals(userId)) {
+                throw new BusinessException("邮箱已被注册");
+            }
+            user.setEmail(request.getEmail());
+        }
         if (StringUtils.hasText(request.getAvatar())) user.setAvatar(request.getAvatar());
-        if (StringUtils.hasText(request.getUsername())) user.setUsername(request.getUsername());
+        if (StringUtils.hasText(request.getUsername())) {
+            User existingByUsername = userMapper.selectByUsername(request.getUsername());
+            if (existingByUsername != null && !existingByUsername.getId().equals(userId)) {
+                throw new BusinessException("用户名已存在");
+            }
+            user.setUsername(request.getUsername());
+        }
         if (request.getGender() != null) user.setGender(request.getGender());
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);

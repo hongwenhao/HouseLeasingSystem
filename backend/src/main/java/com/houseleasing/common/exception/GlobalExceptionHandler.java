@@ -2,6 +2,7 @@ package com.houseleasing.common.exception;
 
 import com.houseleasing.common.Result;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -53,6 +54,19 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         log.warn("参数校验异常: {}", message);
         return Result.error(400, message);
+    }
+
+    /**
+     * 处理唯一键冲突异常（如用户名/手机号/邮箱重复）
+     *
+     * @param e 数据库唯一键冲突异常
+     * @return 400 业务错误响应结果
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) {
+        log.warn("唯一键冲突: {}", e.getMessage());
+        return Result.error(400, "数据已存在，请检查用户名、手机号或邮箱是否重复");
     }
 
     /**
