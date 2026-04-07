@@ -478,6 +478,7 @@ const contractStatusOptions = [          // 合同状态下拉选项（文案与
 const areaChartRef = ref(null)   // 城市房源数量柱状图容器
 const priceChartRef = ref(null)  // 租金趋势折线图容器
 const creditChartRef = ref(null) // 信用分布饼图容器
+const chartsInitialized = ref(false) // 图表是否已完成初始化
 // 管理后台可切换标签白名单：用于约束 query.tab 合法值，避免异常参数污染界面状态
 const allowedAdminTabs = ['overview', 'users', 'houseMgmt', 'orders', 'contracts']
 
@@ -505,7 +506,8 @@ onMounted(async () => {
   if (activeTab.value === 'overview') {
     await nextTick()
     setTimeout(() => {
-      initCharts()
+      ensureOverviewChartsReady()
+      resizeCharts()
     }, CHART_INIT_DELAY)
   }
   window.addEventListener('resize', resizeCharts)
@@ -540,7 +542,8 @@ watch(
     if (tab === 'overview') {
       await nextTick()
       setTimeout(() => {
-        initCharts()
+        ensureOverviewChartsReady()
+        resizeCharts()
       }, CHART_INIT_DELAY)
     }
   }
@@ -744,6 +747,13 @@ async function initCharts() {
   }
 }
 
+/** 仅首次进入概览时拉取并初始化图表，后续切换只需 resize。 */
+function ensureOverviewChartsReady() {
+  if (chartsInitialized.value) return
+  chartsInitialized.value = true
+  initCharts()
+}
+
 /** 在容器尺寸变化或 tab 切换后统一触发图表重算，避免图表显示不完整。 */
 function resizeCharts() {
   const chartDoms = [areaChartRef.value, priceChartRef.value, creditChartRef.value]
@@ -762,6 +772,7 @@ function disposeCharts() {
     const chart = echarts.getInstanceByDom(dom)
     chart?.dispose()
   })
+  chartsInitialized.value = false
 }
 
 /**
