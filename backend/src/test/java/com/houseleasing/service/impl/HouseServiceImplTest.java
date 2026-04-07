@@ -5,6 +5,7 @@ import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
+import com.houseleasing.entity.UserBehavior;
 import com.houseleasing.mapper.HouseImageMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserBehaviorMapper;
@@ -146,5 +147,38 @@ class HouseServiceImplTest {
 
         houseService.addHouse(house, 1L);
         verify(houseMapper, times(1)).insert(any(House.class));
+    }
+
+    @Test
+    void collectHouse_shouldInsertCollectBehaviorWithScoreThree() {
+        when(userBehaviorMapper.selectOne(any())).thenReturn(null);
+
+        houseService.collectHouse(10L, 20L);
+
+        ArgumentCaptor<UserBehavior> behaviorCaptor = ArgumentCaptor.forClass(UserBehavior.class);
+        verify(userBehaviorMapper, times(1)).insert(behaviorCaptor.capture());
+        UserBehavior inserted = behaviorCaptor.getValue();
+        assertEquals(10L, inserted.getUserId());
+        assertEquals(20L, inserted.getHouseId());
+        assertEquals("COLLECT", inserted.getBehaviorType());
+        assertEquals(0, new java.math.BigDecimal("3.0").compareTo(inserted.getScore()));
+    }
+
+    @Test
+    void collectHouse_shouldBackfillScoreWhenExistingCollectBehaviorHasNullScore() {
+        UserBehavior existing = new UserBehavior();
+        existing.setId(99L);
+        existing.setUserId(10L);
+        existing.setHouseId(20L);
+        existing.setBehaviorType("COLLECT");
+        existing.setScore(null);
+        when(userBehaviorMapper.selectOne(any())).thenReturn(existing);
+
+        houseService.collectHouse(10L, 20L);
+
+        ArgumentCaptor<UserBehavior> behaviorCaptor = ArgumentCaptor.forClass(UserBehavior.class);
+        verify(userBehaviorMapper, times(1)).updateById(behaviorCaptor.capture());
+        UserBehavior updated = behaviorCaptor.getValue();
+        assertEquals(0, new java.math.BigDecimal("3.0").compareTo(updated.getScore()));
     }
 }

@@ -24,6 +24,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,11 @@ public class HouseServiceImpl implements HouseService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String BEHAVIOR_COLLECT = "COLLECT";
+    /**
+     * 收藏行为分值（用于推荐系统行为权重）：
+     * 规则约定为 VIEW=1、COLLECT=3、ORDER=5，这里固定 COLLECT=3。
+     */
+    private static final BigDecimal BEHAVIOR_COLLECT_SCORE = new BigDecimal("3.0");
     private static final String HOUSE_STATUS_ONLINE = "ONLINE";
     private static final String HOUSE_STATUS_OFFLINE = "OFFLINE";
     private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0;
@@ -419,13 +425,22 @@ public class HouseServiceImpl implements HouseService {
                 .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
         UserBehavior existing = userBehaviorMapper.selectOne(wrapper);
         if (existing == null) {
-            // 未收藏过，新增收藏行为记录
+            // 未收藏过：新增一条收藏行为，并显式写入 score=3。
+            // 之前未写 score 会导致推荐行为权重丢失，本次统一补齐。
             UserBehavior behavior = new UserBehavior();
             behavior.setUserId(userId);
             behavior.setHouseId(houseId);
             behavior.setBehaviorType(BEHAVIOR_COLLECT);
+            behavior.setScore(BEHAVIOR_COLLECT_SCORE);
             behavior.setCreateTime(LocalDateTime.now());
             userBehaviorMapper.insert(behavior);
+            return;
+        }
+        // 已收藏过：保持接口幂等（不新增重复记录）。
+        // 但为了兼容历史数据，若旧记录 score 为空或非 3，则在本次请求中修正为 3。
+        if (existing.getScore() == null || existing.getScore().compareTo(BEHAVIOR_COLLECT_SCORE) != 0) {
+            existing.setScore(BEHAVIOR_COLLECT_SCORE);
+            userBehaviorMapper.updateById(existing);
         }
     }
 
