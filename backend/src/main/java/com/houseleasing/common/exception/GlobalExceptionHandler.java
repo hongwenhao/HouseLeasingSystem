@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) {
         log.warn("唯一键冲突: {}", e.getMessage());
-        return Result.error(400, "数据已存在，请检查用户名、手机号或邮箱是否重复");
+        return Result.error(400, "数据已存在，请检查输入是否重复");
     }
 
     /**
