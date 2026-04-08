@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -204,10 +205,10 @@ public class HouseServiceImpl implements HouseService {
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限删除该房源");
         }
-        long relatedContracts = contractMapper.selectCount(
+        long relatedContractCount = contractMapper.selectCount(
                 new LambdaQueryWrapper<Contract>().eq(Contract::getHouseId, id)
         );
-        if (relatedContracts > 0) {
+        if (relatedContractCount > 0) {
             throw new BusinessException(400, "该房源存在关联合同，无法删除");
         }
         // 清理关联的图片明细记录
@@ -220,7 +221,11 @@ public class HouseServiceImpl implements HouseService {
                 .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
         userBehaviorMapper.delete(behaviorWrapper);
         // 删除房源主记录
-        houseMapper.deleteById(id);
+        try {
+            houseMapper.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(400, "该房源存在关联合同，无法删除");
+        }
         log.info("House {} deleted by owner {}", id, ownerId);
     }
 

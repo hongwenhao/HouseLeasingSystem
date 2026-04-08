@@ -15,6 +15,7 @@ import com.houseleasing.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.List;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 
 /**
  * HouseServiceImpl 图片同步逻辑单元测试
@@ -194,6 +196,20 @@ class HouseServiceImplTest {
         existing.setOwnerId(2L);
         when(houseMapper.selectById(9L)).thenReturn(existing);
         when(contractMapper.selectCount(any())).thenReturn(1L);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> houseService.deleteHouse(9L, 2L));
+        assertEquals(400, exception.getCode());
+        assertEquals("该房源存在关联合同，无法删除", exception.getMessage());
+    }
+
+    @Test
+    void deleteHouse_shouldConvertIntegrityViolationToBusinessException() {
+        House existing = new House();
+        existing.setId(9L);
+        existing.setOwnerId(2L);
+        when(houseMapper.selectById(9L)).thenReturn(existing);
+        when(contractMapper.selectCount(any())).thenReturn(0L);
+        doThrow(new DataIntegrityViolationException("fk")).when(houseMapper).deleteById(9L);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> houseService.deleteHouse(9L, 2L));
         assertEquals(400, exception.getCode());
