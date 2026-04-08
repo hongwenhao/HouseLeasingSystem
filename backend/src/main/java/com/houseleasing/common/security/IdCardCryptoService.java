@@ -22,9 +22,9 @@ import java.util.Base64;
  * 2) 出库后按需解密（兼容既有业务展示与脱敏流程）；
  */
 @Slf4j
-@Component
+@Component // 声明为身份证加解密组件
 @lombok.RequiredArgsConstructor
-public class IdCardCryptoService {
+public class IdCardCryptoService { // 身份证入库加密/出库解密实现
 
     /**
      * 默认演示密钥（仅开发环境可用）。
@@ -53,8 +53,8 @@ public class IdCardCryptoService {
     @Value("${app.security.id-card-secret:" + DEFAULT_SECRET + "}")
     private String idCardSecret;
 
-    private final SecureRandom secureRandom = new SecureRandom();
-    private final Environment environment;
+    private final SecureRandom secureRandom = new SecureRandom(); // 安全随机数生成器（用于 IV）
+    private final Environment environment; // 运行环境信息（用于生产环境密钥校验）
 
     /**
      * 启动时执行安全兜底：
@@ -62,7 +62,7 @@ public class IdCardCryptoService {
      * - 防止“默认弱密钥误上线”导致的敏感数据可预测解密风险。
      */
     @jakarta.annotation.PostConstruct
-    public void validateSecret() {
+    public void validateSecret() { // 启动时校验密钥安全性
         if (!DEFAULT_SECRET.equals(idCardSecret)) {
             return;
         }
@@ -79,7 +79,7 @@ public class IdCardCryptoService {
      * - 若已是密文格式（带前缀），直接返回（幂等保护）；
      * - 其他情况执行 AES-GCM 加密并返回前缀密文。
      */
-    public String encryptForStorage(String plainIdCard) {
+    public String encryptForStorage(String plainIdCard) { // 将身份证号加密为可存储密文
         if (!StringUtils.hasText(plainIdCard)) {
             return plainIdCard;
         }
@@ -109,7 +109,7 @@ public class IdCardCryptoService {
      * - 密文格式按 AES-GCM 解密；
      * - 若解密失败，记录告警并返回原值，避免影响历史脏数据读取链路。
      */
-    public String decryptFromStorage(String storedIdCard) {
+    public String decryptFromStorage(String storedIdCard) { // 将存储密文解密为明文
         if (!StringUtils.hasText(storedIdCard)) {
             return storedIdCard;
         }

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler { // 全局异常出口：把异常统一转换为 Result
 
     /**
      * 处理业务逻辑异常
@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Void> handleBusinessException(BusinessException e) {
+    public Result<Void> handleBusinessException(BusinessException e) { // 处理业务异常并透传业务状态码
         log.warn("业务异常: {}", e.getMessage());
         return Result.error(e.getCode(), e.getMessage());
     }
@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Void> handleValidationException(MethodArgumentNotValidException e) {
+    public Result<Void> handleValidationException(MethodArgumentNotValidException e) { // 处理参数校验失败异常
         // 收集所有字段校验错误消息并用逗号分隔
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DuplicateKeyException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) {
+    public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) { // 处理数据库唯一键冲突异常
         log.warn("唯一键冲突: {}", e.getMessage());
         return Result.error(400, "数据已存在，请检查输入是否重复");
     }
@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public Result<Void> handleAuthenticationException(AuthenticationException e) {
+    public Result<Void> handleAuthenticationException(AuthenticationException e) { // 处理未登录或鉴权失败异常
         log.warn("认证异常: {}", e.getMessage());
         return Result.error(401, "认证失败，请重新登录");
     }
@@ -90,7 +90,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Result<Void> handleAccessDeniedException(AccessDeniedException e) {
+    public Result<Void> handleAccessDeniedException(AccessDeniedException e) { // 处理无权限访问异常
         log.warn("权限不足: {}", e.getMessage());
         return Result.error(403, "无权访问");
     }
@@ -103,7 +103,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Result<Void> handleException(Exception e) {
+    public Result<Void> handleException(Exception e) { // 兜底处理未预期异常
         log.error("未预期的系统异常", e);
         return Result.error(500, "服务器内部错误，请稍后重试");
     }

@@ -10,7 +10,7 @@ import lombok.Data;
  * @param <T> 响应数据的类型
  */
 @Data
-public class Result<T> {
+public class Result<T> { // 统一 API 响应模型
     /** HTTP 状态码 */
     private int code;
     /** 响应消息 */
@@ -37,7 +37,7 @@ public class Result<T> {
      * @param <T> 数据类型
      * @return 成功的响应结果
      */
-    public static <T> Result<T> success() {
+    public static <T> Result<T> success() { // 返回“成功且无数据”响应
         return new Result<>(200, "success", null);
     }
 
@@ -48,7 +48,7 @@ public class Result<T> {
      * @param data 响应数据
      * @return 成功的响应结果
      */
-    public static <T> Result<T> success(T data) {
+    public static <T> Result<T> success(T data) { // 返回“成功且携带数据”响应
         return new Result<>(200, "success", data);
     }
 
@@ -60,7 +60,7 @@ public class Result<T> {
      * @param data    响应数据
      * @return 成功的响应结果
      */
-    public static <T> Result<T> success(String message, T data) {
+    public static <T> Result<T> success(String message, T data) { // 返回“成功且自定义文案”响应
         return new Result<>(200, message, data);
     }
 
@@ -71,7 +71,7 @@ public class Result<T> {
      * @param message 错误消息
      * @return 失败的响应结果
      */
-    public static <T> Result<T> error(String message) {
+    public static <T> Result<T> error(String message) { // 返回默认 500 的失败响应
         return new Result<>(500, message, null);
     }
 
@@ -83,7 +83,7 @@ public class Result<T> {
      * @param message 错误消息
      * @return 失败的响应结果
      */
-    public static <T> Result<T> error(int code, String message) {
+    public static <T> Result<T> error(int code, String message) { // 返回自定义状态码失败响应
         return new Result<>(code, message, null);
     }
 }

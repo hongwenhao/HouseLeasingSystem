@@ -5,7 +5,7 @@ package com.houseleasing.common.utils;
  *
  * <p>用于沉淀跨服务复用的订单状态判定逻辑，避免各处重复硬编码状态值导致口径不一致。</p>
  */
-public final class OrderStatusUtil {
+public final class OrderStatusUtil { // 订单状态判定工具（沉淀跨模块统一口径）
 
     private static final String STATUS_APPROVED = "APPROVED";//已通过审批
     private static final String STATUS_SIGNED = "SIGNED";   //已签约
@@ -22,7 +22,7 @@ public final class OrderStatusUtil {
      * @param status 订单状态
      * @return true 表示允许进入支付前置校验
      */
-    public static boolean isPayableStatus(String status) {
+    public static boolean isPayableStatus(String status) { // 判断当前状态是否允许进入支付链路
         return STATUS_APPROVED.equals(status) || STATUS_SIGNED.equals(status);
     }
 }

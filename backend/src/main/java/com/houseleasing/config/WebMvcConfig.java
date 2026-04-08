@@ -17,13 +17,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *              - 图片读取访问：GET /api/uploads/{filename}（公开访问）
  */
 @Configuration
-public class WebMvcConfig implements WebMvcConfigurer {
+public class WebMvcConfig implements WebMvcConfigurer { // Web MVC 扩展：本地上传目录静态映射
 
     /**
      * 图片上传根目录，与 FileUploadController 使用同一配置项，保持路径一致
      */
     @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    private String uploadDir; // 上传根目录（与上传控制器共用配置）
 
     /**
      * 注册静态资源处理器
@@ -41,7 +41,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
      * @param registry Spring MVC 资源处理器注册表
      */
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(ResourceHandlerRegistry registry) { // 注册 /api/uploads/** 到本地目录映射
         // 规范化路径：确保以 "/" 结尾，以便 Spring 正确拼接文件名
         String location = uploadDir.endsWith("/") ? uploadDir : uploadDir + "/";
         registry.addResourceHandler("/api/uploads/**")
