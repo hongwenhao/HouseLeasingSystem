@@ -127,7 +127,7 @@ async function handleLogin() {
 /* ===== 登录页全屏背景：渐变色 + 装饰性几何光圈 ===== */
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #99f6e4 100%);
   display: flex;
   align-items: center;
   justify-content: center;

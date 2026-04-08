@@ -164,7 +164,7 @@ async function handleReset() {
 /* ===== 忘记密码页背景：与登录页统一的渐变风格 ===== */
 .forgot-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #99f6e4 100%);
   display: flex;
   align-items: center;
   justify-content: center;
