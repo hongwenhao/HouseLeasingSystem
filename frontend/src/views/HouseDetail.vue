@@ -353,8 +353,8 @@ const houseTypeLabel = computed(() => {
   }
   const houseType = house.value?.houseType
   if (!houseType) return '-'
-  // 明确区分“已知枚举映射”与“未知新枚举兜底展示”，提升可读性与可维护性。
-  return Object.prototype.hasOwnProperty.call(map, houseType) ? map[houseType] : houseType
+  // map 中存在时返回中文标签；不存在时回退为后端原始值，避免新枚举上线后页面空白。
+  return map[houseType] ?? houseType
 })
 
 /**
