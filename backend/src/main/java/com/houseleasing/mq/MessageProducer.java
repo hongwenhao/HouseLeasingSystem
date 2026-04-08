@@ -14,16 +14,16 @@ import org.springframework.stereotype.Service;
  *              当 RabbitMQ 不可用时，自动降级为直接写入数据库，保证消息可靠性
  */
 @Slf4j
-@Service
-public class MessageProducer {
+@Service // 声明为消息生产服务
+public class MessageProducer { // MQ 生产入口：发送通知并提供降级落库
 
     /** RabbitMQ 模板，用于发送消息到队列（可选注入，不可用时降级） */
     @Autowired(required = false)
-    private RabbitTemplate rabbitTemplate;
+    private RabbitTemplate rabbitTemplate; // RabbitMQ 发送模板（可为空）
 
     /** 消息服务，RabbitMQ 不可用时直接调用此服务保存消息 */
     @Autowired
-    private MessageService messageService;
+    private MessageService messageService; // 站内消息服务（降级直写数据库）
 
     /**
      * 发送预约确认通知消息
@@ -33,7 +33,7 @@ public class MessageProducer {
      * @param houseTitle 预约的房源标题
      * @param relatedId  关联的订单 ID，前端可据此跳转到订单详情页
      */
-    public void sendAppointmentConfirmation(Long userId, String houseTitle, Long relatedId) {
+    public void sendAppointmentConfirmation(Long userId, String houseTitle, Long relatedId) { // 发送预约确认通知
         String content = "您的预约申请已提交，房源：" + houseTitle + "，请等待房东确认。";
         try {
             if (rabbitTemplate != null) {
@@ -59,7 +59,7 @@ public class MessageProducer {
      * @param contractStatus 合同状态描述
      * @param relatedId      关联的合同 ID，前端可据此跳转到合同详情页
      */
-    public void sendContractStatusChange(Long userId, String contractStatus, Long relatedId) {
+    public void sendContractStatusChange(Long userId, String contractStatus, Long relatedId) { // 发送合同状态变更通知
         String content = "合同状态更新：" + contractStatus;
         try {
             if (rabbitTemplate != null) {
@@ -84,7 +84,7 @@ public class MessageProducer {
      * @param orderStatus 订单状态描述
      * @param relatedId   关联的订单 ID，前端可据此跳转到订单详情页
      */
-    public void sendOrderStatusChange(Long userId, String orderStatus, Long relatedId) {
+    public void sendOrderStatusChange(Long userId, String orderStatus, Long relatedId) { // 发送订单状态变更通知
         String content = "订单状态更新：" + orderStatus;
         try {
             if (rabbitTemplate != null) {
@@ -108,7 +108,7 @@ public class MessageProducer {
      * @param userId  接收通知的用户 ID
      * @param content 登录提醒正文
      */
-    public void sendLoginNotification(Long userId, String content) {
+    public void sendLoginNotification(Long userId, String content) { // 发送登录提醒通知
         try {
             if (rabbitTemplate != null) {
                 // 登录提醒使用独立路由键 login.*，便于按消息类型解耦与监控。
@@ -132,7 +132,7 @@ public class MessageProducer {
      * @param content     具体通知正文
      * @param relatedId   关联的房源 ID，前端可据此跳转到房源详情页
      */
-    public void sendAdminHouseManagementNotification(Long userId, String actionLabel, String content, Long relatedId) {
+    public void sendAdminHouseManagementNotification(Long userId, String actionLabel, String content, Long relatedId) { // 发送后台房源管理通知
         String title = "房源" + actionLabel + "通知";
         try {
             if (rabbitTemplate != null) {
@@ -157,7 +157,7 @@ public class MessageProducer {
      * @param type      消息类型
      * @param relatedId 关联业务对象 ID（可为 null）
      */
-    private void saveMessageDirectly(Long userId, String title, String content, String type, Long relatedId) {
+    private void saveMessageDirectly(Long userId, String title, String content, String type, Long relatedId) { // 降级：直接持久化消息
         try {
             messageService.sendMessage(userId, title, content, type, relatedId);
         } catch (Exception e) {
@@ -175,7 +175,7 @@ public class MessageProducer {
      * @param relatedId 关联业务对象 ID（可为 null）
      * @return 包含消息数据的 Map
      */
-    private java.util.Map<String, Object> buildMessage(Long userId, String title, String content, Long relatedId) {
+    private java.util.Map<String, Object> buildMessage(Long userId, String title, String content, Long relatedId) { // 组装统一消息体
         java.util.Map<String, Object> msg = new java.util.HashMap<>();
         msg.put("userId", userId);
         msg.put("title", title);

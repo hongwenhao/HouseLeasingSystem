@@ -15,7 +15,7 @@ import java.util.List;
  *              并扩展了按房源 ID 查询图片列表的方法
  */
 @Mapper
-public interface HouseImageMapper extends BaseMapper<HouseImage> {
+public interface HouseImageMapper extends BaseMapper<HouseImage> { // 房源图片数据访问接口
 
     /**
      * 根据房源 ID 查询该房源的所有图片，按 sort 字段升序排列
@@ -24,5 +24,5 @@ public interface HouseImageMapper extends BaseMapper<HouseImage> {
      * @return 该房源的图片列表（按排序字段升序）
      */
     @Select("SELECT * FROM house_images WHERE house_id = #{houseId} ORDER BY sort ASC")
-    List<HouseImage> selectByHouseId(Long houseId);
+    List<HouseImage> selectByHouseId(Long houseId); // 按房源 ID 查询图片列表
 }

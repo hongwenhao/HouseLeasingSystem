@@ -5,7 +5,7 @@ package com.houseleasing.security;
  * <p>
  * 统一维护 Subject 前缀，避免生成与解析两端写死不同字符串导致认证失败。
  */
-public final class JwtSubjectConstants {
+public final class JwtSubjectConstants { // JWT Subject 约定常量集合
 
     private JwtSubjectConstants() {
     }
