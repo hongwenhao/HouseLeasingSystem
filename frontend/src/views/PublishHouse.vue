@@ -281,6 +281,13 @@ const router = useRouter()
 const formRef = ref(null)      // 表单实例引用
 const submitting = ref(false)  // 提交按钮 loading 状态
 
+/**
+ * 单张图片最大允许大小（5MB）。
+ * 说明：前端先做一次体积校验，可在发起网络请求前给出即时提示；
+ * 后端仍会再次校验，保证规则不会被绕过。
+ */
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+
 /** 通过路由参数判断当前是编辑模式（有 id）还是发布新房源模式 */
 const isEdit = computed(() => !!route.params.id)
 
@@ -583,10 +590,19 @@ async function handleSubmit() {
 async function handleLocalImageChange(uploadFile) {
   const rawFile = uploadFile?.raw
   if (!rawFile) return
+
+  // 先校验 MIME 类型，避免非图片文件进入上传流程
   if (!rawFile.type?.startsWith('image/')) {
     ElMessage.warning('仅支持上传图片文件')
     return
   }
+
+  // 文件大小限制：单张图片不超过 5MB
+  if (rawFile.size > MAX_IMAGE_SIZE_BYTES) {
+    ElMessage.warning('图片大小不能超过 5MB')
+    return
+  }
+
   try {
     // 将文件上传到服务端，接口返回图片访问 URL
     const imageUrl = await uploadHouseImage(rawFile)

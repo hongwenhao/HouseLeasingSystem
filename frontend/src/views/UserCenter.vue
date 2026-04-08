@@ -529,6 +529,13 @@ const savingProfile = ref(false)      // 保存资料按钮 loading 状态
 const uploadingAvatar = ref(false)    // 头像上传按钮 loading 状态
 const changingPwd = ref(false)        // 修改密码按钮 loading 状态
 const submittingRealName = ref(false) // 实名认证按钮 loading 状态
+
+/**
+ * 单张头像图片最大允许大小（5MB）。
+ * 与后端上传接口限制保持一致，避免用户在前端无感知地提交超大文件。
+ */
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+
 const ordersLoading = ref(false)      // 订单列表加载状态
 const contractsLoading = ref(false)   // 合同列表加载状态
 const collectionsLoading = ref(false) // 收藏列表加载状态
@@ -1099,6 +1106,10 @@ async function handleAvatarFileChange(uploadFile) {
   }
   if (!rawFile.type?.startsWith('image/')) {
     ElMessage.warning('仅支持上传图片文件')
+    return
+  }
+  if (rawFile.size > MAX_IMAGE_SIZE_BYTES) {
+    ElMessage.warning('图片大小不能超过 5MB')
     return
   }
   uploadingAvatar.value = true

@@ -31,6 +31,15 @@ import java.util.UUID;
 public class FileUploadController {
 
     /**
+     * 单张图片允许的最大大小：5 MB。
+     * 说明：
+     * 1) 该限制用于接口层兜底校验，给前端返回明确业务提示；
+     * 2) 同时在 application.yml 中通过 spring.servlet.multipart 做请求级限制，
+     *    两者配合可兼顾“安全拦截”和“友好错误信息”。
+     */
+    private static final long MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024L;
+
+    /**
      * 图片上传根目录，从 application.yml 的 app.upload.dir 读取，
      * 默认为相对路径 "uploads"（即应用运行目录下的 uploads 文件夹）
      */
@@ -44,7 +53,7 @@ public class FileUploadController {
      * 执行格式校验和大小限制后保存到磁盘，返回可访问的图片 URL。</p>
      *
      * <p>支持的图片格式：jpg / jpeg / png / gif / webp</p>
-     * <p>最大文件大小：10 MB（由 Spring multipart 配置限制）</p>
+     * <p>最大文件大小：5 MB</p>
      *
      * @param file 前端上传的图片文件（表单字段名 "file"）
      * @return 上传成功后的图片访问 URL（如 /api/uploads/abc123.jpg）
@@ -55,6 +64,11 @@ public class FileUploadController {
         // 校验文件是否为空
         if (file == null || file.isEmpty()) {
             return Result.error("上传文件不能为空");
+        }
+
+        // 业务层大小校验：限制单张图片最大 5MB，避免超大文件占用带宽与磁盘
+        if (file.getSize() > MAX_IMAGE_SIZE_BYTES) {
+            return Result.error("图片大小不能超过 5MB");
         }
 
         // 获取原始文件名，校验合法性
