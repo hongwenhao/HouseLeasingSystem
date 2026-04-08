@@ -7,10 +7,12 @@ import com.houseleasing.common.exception.BusinessException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.dto.HouseSearchRequest;
+import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
 import com.houseleasing.entity.UserBehavior;
+import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseImageMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserBehaviorMapper;
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +46,7 @@ import java.util.stream.Collectors;
 public class HouseServiceImpl implements HouseService {
 
     private final HouseMapper houseMapper;
+    private final ContractMapper contractMapper;
     private final HouseImageMapper houseImageMapper;
     private final UserBehaviorMapper userBehaviorMapper;
     private final UserMapper userMapper;
@@ -201,6 +205,12 @@ public class HouseServiceImpl implements HouseService {
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限删除该房源");
         }
+        long relatedContractCount = contractMapper.selectCount(
+                new LambdaQueryWrapper<Contract>().eq(Contract::getHouseId, id)
+        );
+        if (relatedContractCount > 0) {
+            throw new BusinessException(400, "该房源存在关联合同，无法删除");
+        }
         // 清理关联的图片明细记录
         LambdaQueryWrapper<HouseImage> imageWrapper = new LambdaQueryWrapper<>();
         imageWrapper.eq(HouseImage::getHouseId, id);
@@ -211,7 +221,11 @@ public class HouseServiceImpl implements HouseService {
                 .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
         userBehaviorMapper.delete(behaviorWrapper);
         // 删除房源主记录
-        houseMapper.deleteById(id);
+        try {
+            houseMapper.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(400, "该房源存在关联合同，无法删除");
+        }
         log.info("House {} deleted by owner {}", id, ownerId);
     }
 
