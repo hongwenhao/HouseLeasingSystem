@@ -17,24 +17,30 @@ import java.util.Base64;
 
 /**
  * 身份证号加解密服务（数据库静态存储加密）。
- *
- * <p>设计目标：
+ * 设计目标：
  * 1) 入库前加密（防止明文身份证号落库）；
  * 2) 出库后按需解密（兼容既有业务展示与脱敏流程）；
- * 3) 兼容历史明文数据（未加密前写入的数据可继续读取）。</p>
  */
 @Slf4j
 @Component
 @lombok.RequiredArgsConstructor
 public class IdCardCryptoService {
 
-    /** 默认演示密钥（仅开发环境可用）。 */
+    /**
+     * 默认演示密钥（仅开发环境可用）。
+     */
     private static final String DEFAULT_SECRET = "HouseLeasingSystem-IdCard-Default-Secret-ChangeMe";
-    /** 密文前缀：用于快速区分“已加密数据”与“历史明文数据”。 */
+    /**
+     * 密文前缀：用于快速区分“已加密数据”与“历史明文数据”。
+     */
     private static final String ENCRYPTED_PREFIX = "ENC$";
-    /** AES-GCM 推荐 12 字节 IV。 */
+    /**
+     * AES-GCM 推荐 12 字节 IV。
+     */
     private static final int GCM_IV_LENGTH = 12;
-    /** GCM 认证标签长度（bit）。 */
+    /**
+     * GCM 认证标签长度（bit）。
+     */
     private static final int GCM_TAG_LENGTH_BIT = 128;
     private static final String AES_ALGO = "AES";
     private static final String AES_GCM_TRANSFORMATION = "AES/GCM/NoPadding";

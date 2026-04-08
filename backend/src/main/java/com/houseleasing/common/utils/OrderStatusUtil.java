@@ -7,16 +7,15 @@ package com.houseleasing.common.utils;
  */
 public final class OrderStatusUtil {
 
-    private static final String STATUS_APPROVED = "APPROVED";
-    private static final String STATUS_SIGNED = "SIGNED";
+    private static final String STATUS_APPROVED = "APPROVED";//已通过审批
+    private static final String STATUS_SIGNED = "SIGNED";   //已签约
 
     private OrderStatusUtil() {
     }
 
     /**
      * 判断订单是否处于“允许支付”的业务状态。
-     *
-     * <p>当前规则：
+     * 当前规则：
      * 1) APPROVED：兼容历史流程；
      * 2) SIGNED：当前流程中双方签约后的标准状态。</p>
      *

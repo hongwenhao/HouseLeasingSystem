@@ -48,7 +48,6 @@ public class JwtUtil {
 
     /**
      * 生成 JWT Token。
-     * <p>
      * 说明：用户名是可修改字段，若直接放入 Subject，用户改名后旧 Token 会因“按旧用户名查不到人”而失效。
      * 因此这里将 Subject 设计为稳定不变的用户 ID（带 uid: 前缀），并额外携带 username 便于排查日志。
      *
@@ -59,14 +58,14 @@ public class JwtUtil {
      */
     public String generateToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role); // 角色用于权限判断/审计
+        claims.put("role", role); //将用户角色放入 Token，可以直接从中获取用户角色进行权限判断，无需再次查询数据库，提升了效率
         claims.put("username", username); // 用户名用于日志追踪（非认证主键）
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX + userId) // 认证主体使用稳定用户 ID
-                .setIssuedAt(new Date())                                        // 签发时间
-                .setExpiration(new Date(System.currentTimeMillis() + expiration)) // 过期时间
-                .signWith(signingKey, SignatureAlgorithm.HS256)                 // 使用 HMAC-SHA256 签名
+                .setSubject(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX + userId) //设置认证主体使用稳定用户ID
+                .setIssuedAt(new Date())  //设置签发时间，记录了 Token 是在何时被创建的
+                .setExpiration(new Date(System.currentTimeMillis() + expiration)) //设置过期时间
+                .signWith(signingKey, SignatureAlgorithm.HS256)// signingKey: 是服务端的绝密密钥，用于生成和验证签名，使用HMAC-SHA256签名
                 .compact();
     }
 
@@ -79,9 +78,9 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(signingKey)
+                    .setSigningKey(signingKey)//设置签名密钥
                     .build()
-                    .parseClaimsJws(token);
+                    .parseClaimsJws(token);//计算签名并验证签名和过期时间，如果验证失败会抛出异常
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             log.warn("无效的 JWT Token: {}", e.getMessage());
@@ -91,7 +90,6 @@ public class JwtUtil {
 
     /**
      * 从 JWT Token 中提取 Subject。
-     * <p>
      * 新版 Token 返回形如 uid:123 的稳定用户标识；旧版 Token 可能仍是用户名/手机号。
      *
      * @param token JWT Token 字符串
@@ -119,9 +117,9 @@ public class JwtUtil {
      */
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(signingKey)
+                .setSigningKey(signingKey)//设置签名密钥
                 .build()
-                .parseClaimsJws(token)
+                .parseClaimsJws(token)//1.验签 2.自动校验标准字段（如过期时间） 3.解析出Claims载荷
                 .getBody();
     }
 }

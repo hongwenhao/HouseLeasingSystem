@@ -91,7 +91,7 @@ public class RabbitMQConfig {
      */
     @Bean
     public Binding appointmentBinding(Queue appointmentQueue, TopicExchange houseExchange) {
-        return BindingBuilder.bind(appointmentQueue).to(houseExchange).with("appointment.*");
+        return BindingBuilder.bind(appointmentQueue).to(houseExchange).with("appointment.*");//只接收路由键符合 appointment.* 模式的消息
     }
 
     /**
@@ -103,7 +103,7 @@ public class RabbitMQConfig {
      */
     @Bean
     public Binding contractBinding(Queue contractQueue, TopicExchange houseExchange) {
-        return BindingBuilder.bind(contractQueue).to(houseExchange).with("contract.*");
+        return BindingBuilder.bind(contractQueue).to(houseExchange).with("contract.*");//只接收路由键符合 contract.* 模式的消息
     }
 
     /**
@@ -115,7 +115,7 @@ public class RabbitMQConfig {
      */
     @Bean
     public Binding orderBinding(Queue orderQueue, TopicExchange houseExchange) {
-        return BindingBuilder.bind(orderQueue).to(houseExchange).with("order.*");
+        return BindingBuilder.bind(orderQueue).to(houseExchange).with("order.*");//只接收路由键符合 order.* 模式的消息
     }
 
     /**
@@ -127,7 +127,7 @@ public class RabbitMQConfig {
      */
     @Bean
     public Binding loginBinding(Queue loginQueue, TopicExchange houseExchange) {
-        return BindingBuilder.bind(loginQueue).to(houseExchange).with("login.*");
+        return BindingBuilder.bind(loginQueue).to(houseExchange).with("login.*");//只接收路由键符合 login.* 模式的消息
     }
 
     /**
