@@ -42,7 +42,7 @@ public interface HouseMapper extends BaseMapper<House> {
      *
      * @return 在线房源数量
      */
-    @Select("SELECT COUNT(*) FROM houses WHERE status IN ('ONLINE', 'APPROVED')")
+    @Select("SELECT COUNT(*) FROM houses WHERE status IN ('ONLINE')")
     long countOnlineHouses();
 
     /**
@@ -50,6 +50,6 @@ public interface HouseMapper extends BaseMapper<House> {
      *
      * @return 覆盖城市数量
      */
-    @Select("SELECT COUNT(DISTINCT city) FROM houses WHERE status IN ('ONLINE', 'APPROVED') AND city IS NOT NULL AND city <> ''")
+    @Select("SELECT COUNT(DISTINCT city) FROM houses WHERE status IN ('ONLINE') AND city IS NOT NULL AND city <> ''")
     long countOnlineCities();
 }

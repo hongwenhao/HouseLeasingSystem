@@ -9,11 +9,10 @@ import org.apache.ibatis.annotations.Select;
 
 /**
  * 评价数据访问层
- *
  * 说明：
  * 1) 基础 CRUD 由 MyBatis-Plus BaseMapper 提供；
  * 2) 房东端“收到的评价”核心诉求是“看到自己房源上的评价”，
- *    因此必须基于 reviews.house_id 关联 houses.owner_id 做主过滤；
+ * 因此必须基于 reviews.house_id 关联 houses.owner_id 做主过滤；
  * 3) 同时兼容部分历史数据按订单归属（orders.landlord_id）命中，避免老数据口径不一致。
  */
 @Mapper
