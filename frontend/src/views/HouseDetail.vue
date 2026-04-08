@@ -101,6 +101,7 @@
                 <el-tag size="small" type="info" effect="plain">
                   {{ house.floor }}/{{ house.totalFloor }}层
                 </el-tag>
+                <el-tag size="small" type="info" effect="plain">{{ houseTypeLabel }}</el-tag>
                 <el-tag size="small" type="info" effect="plain">{{ decorationLabel }}</el-tag>
               </div>
 
@@ -250,6 +251,12 @@ const collected = ref(false)         // 是否已收藏
 const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
+const HOUSE_TYPE_LABEL_MAP = {
+  APARTMENT: '公寓',
+  HOUSE: '住宅',
+  ROOM: '单间',
+  VILLA: '别墅'
+}
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
 const isLandlord = computed(() => userStore.userInfo.role === 'LANDLORD')
 const isAdmin = computed(() => userStore.userInfo.role === 'ADMIN')
@@ -331,6 +338,23 @@ const decorationLabel = computed(() => {
     LUXURY: '豪装'
   }
   return map[house.value?.decoration] || house.value?.decoration || '-'
+})
+
+/**
+ * 计算房源类型的中文标签（用于“关键参数标签”区域展示）
+ * 说明：
+ * 1) 后端返回的 houseType 为英文枚举值，前端需要转换成用户可读的中文文案；
+ * 2) 该标签与“装修情况”标签同级并排展示，便于用户快速识别房源属性；
+ * 3) 若后端新增了未收录的枚举值，优先原样展示该值，避免页面出现空白；
+ * 4) 当 houseType 缺失时，统一返回 "-" 作为兜底占位。
+ * 枚举映射：
+ * APARTMENT → 公寓，HOUSE → 住宅，ROOM → 单间，VILLA → 别墅
+ */
+const houseTypeLabel = computed(() => {
+  const houseType = house.value?.houseType
+  if (!houseType) return '-'
+  // map 中存在时返回中文标签；不存在时回退为后端原始值，避免新枚举上线后页面空白。
+  return HOUSE_TYPE_LABEL_MAP[houseType] ?? houseType
 })
 
 /**
