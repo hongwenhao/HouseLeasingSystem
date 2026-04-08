@@ -21,11 +21,11 @@ import java.util.Map;
  */
 @Tag(name = "Authentication", description = "Auth endpoints")
 @RestController
-@RequestMapping("/api/auth")
-@RequiredArgsConstructor
-public class AuthController {
+@RequestMapping("/api/auth") // 这个控制器下的接口统一以 /api/auth 开头
+@RequiredArgsConstructor // 自动生成“需要的构造函数”，让 Spring 自动注入依赖
+public class AuthController { // 处理注册、登录、重置密码的入口类
 
-    private final UserService userService;
+    private final UserService userService; // 调用业务层处理用户相关逻辑
 
     /**
      * 用户注册接口
@@ -35,8 +35,8 @@ public class AuthController {
      */
     @Operation(summary = "Register new user")
     @PostMapping("/register")
-    public Result<Object> register(@Valid @RequestBody RegisterRequest request) {
-        return Result.success(userService.register(request));
+    public Result<Object> register(@Valid @RequestBody RegisterRequest request) { // 接收前端提交的注册信息
+        return Result.success(userService.register(request)); // 调用注册服务并把结果包装成统一成功响应
     }
 
     /**
@@ -47,8 +47,8 @@ public class AuthController {
      */
     @Operation(summary = "Login")
     @PostMapping("/login")
-    public Result<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        return Result.success(userService.login(request));
+    public Result<Map<String, Object>> login(@RequestBody LoginRequest request) { // 接收登录参数（账号+密码）
+        return Result.success(userService.login(request)); // 校验账号密码并返回 token 等登录数据
     }
 
     /**
@@ -59,8 +59,8 @@ public class AuthController {
      */
     @Operation(summary = "Reset password")
     @PostMapping("/reset-password")
-    public Result<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
-        userService.resetPassword(request);
-        return Result.success();
+    public Result<Void> resetPassword(@RequestBody ResetPasswordRequest request) { // 接收忘记密码后的重置参数
+        userService.resetPassword(request); // 执行身份校验并更新新密码
+        return Result.success(); // 返回“操作成功”，不返回额外数据
     }
 }

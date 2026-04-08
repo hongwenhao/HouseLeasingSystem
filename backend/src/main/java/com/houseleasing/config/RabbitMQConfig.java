@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Configuration
-public class RabbitMQConfig {
+public class RabbitMQConfig { // RabbitMQ 交换机/队列/绑定与模板配置
 
     /** 主题交换机名称（所有消息通过此交换机路由） */
     public static final String HOUSE_EXCHANGE = "house.exchange";
@@ -38,7 +38,7 @@ public class RabbitMQConfig {
      * @return Topic 交换机实例
      */
     @Bean
-    public TopicExchange houseExchange() {
+    public TopicExchange houseExchange() { // 创建主 Topic 交换机
         return ExchangeBuilder.topicExchange(HOUSE_EXCHANGE).durable(true).build();
     }
 
@@ -48,7 +48,7 @@ public class RabbitMQConfig {
      * @return 预约消息队列实例
      */
     @Bean
-    public Queue appointmentQueue() {
+    public Queue appointmentQueue() { // 创建预约消息队列
         return QueueBuilder.durable(APPOINTMENT_QUEUE).build();
     }
 
@@ -58,7 +58,7 @@ public class RabbitMQConfig {
      * @return 合同消息队列实例
      */
     @Bean
-    public Queue contractQueue() {
+    public Queue contractQueue() { // 创建合同消息队列
         return QueueBuilder.durable(CONTRACT_QUEUE).build();
     }
 
@@ -68,7 +68,7 @@ public class RabbitMQConfig {
      * @return 订单消息队列实例
      */
     @Bean
-    public Queue orderQueue() {
+    public Queue orderQueue() { // 创建订单消息队列
         return QueueBuilder.durable(ORDER_QUEUE).build();
     }
 
@@ -78,7 +78,7 @@ public class RabbitMQConfig {
      * @return 登录消息队列实例
      */
     @Bean
-    public Queue loginQueue() {
+    public Queue loginQueue() { // 创建登录消息队列
         return QueueBuilder.durable(LOGIN_QUEUE).build();
     }
 
@@ -90,7 +90,7 @@ public class RabbitMQConfig {
      * @return 绑定关系
      */
     @Bean
-    public Binding appointmentBinding(Queue appointmentQueue, TopicExchange houseExchange) {
+    public Binding appointmentBinding(Queue appointmentQueue, TopicExchange houseExchange) { // 绑定预约路由规则
         return BindingBuilder.bind(appointmentQueue).to(houseExchange).with("appointment.*");//只接收路由键符合 appointment.* 模式的消息
     }
 
@@ -102,7 +102,7 @@ public class RabbitMQConfig {
      * @return 绑定关系
      */
     @Bean
-    public Binding contractBinding(Queue contractQueue, TopicExchange houseExchange) {
+    public Binding contractBinding(Queue contractQueue, TopicExchange houseExchange) { // 绑定合同路由规则
         return BindingBuilder.bind(contractQueue).to(houseExchange).with("contract.*");//只接收路由键符合 contract.* 模式的消息
     }
 
@@ -114,7 +114,7 @@ public class RabbitMQConfig {
      * @return 绑定关系
      */
     @Bean
-    public Binding orderBinding(Queue orderQueue, TopicExchange houseExchange) {
+    public Binding orderBinding(Queue orderQueue, TopicExchange houseExchange) { // 绑定订单路由规则
         return BindingBuilder.bind(orderQueue).to(houseExchange).with("order.*");//只接收路由键符合 order.* 模式的消息
     }
 
@@ -126,7 +126,7 @@ public class RabbitMQConfig {
      * @return 绑定关系
      */
     @Bean
-    public Binding loginBinding(Queue loginQueue, TopicExchange houseExchange) {
+    public Binding loginBinding(Queue loginQueue, TopicExchange houseExchange) { // 绑定登录路由规则
         return BindingBuilder.bind(loginQueue).to(houseExchange).with("login.*");//只接收路由键符合 login.* 模式的消息
     }
 
@@ -136,7 +136,7 @@ public class RabbitMQConfig {
      * @return Jackson JSON 消息转换器
      */
     @Bean
-    public MessageConverter messageConverter() {
+    public MessageConverter messageConverter() { // 配置 JSON 消息转换器
         return new Jackson2JsonMessageConverter();
     }
 
@@ -147,7 +147,7 @@ public class RabbitMQConfig {
      * @return 配置好的 RabbitTemplate 实例
      */
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) { // 配置并返回 RabbitTemplate
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(messageConverter()); // 设置 JSON 消息格式
         return template;

@@ -23,8 +23,8 @@ import java.util.Map;
  * @description 提供 JWT Token 的生成、验证和解析功能，用于无状态的接口鉴权认证
  */
 @Slf4j
-@Component
-public class JwtUtil {
+@Component // 声明为 JWT 工具组件
+public class JwtUtil { // Token 生成、验签与解析实现
 
     /** JWT 签名密钥（从配置文件读取） */
     @Value("${jwt.secret}")
@@ -41,7 +41,7 @@ public class JwtUtil {
      * 初始化方法，在 Bean 实例化后将密钥字符串转换为 Key 对象
      */
     @PostConstruct
-    public void init() {
+    public void init() { // 初始化签名密钥对象
         // 使用 HMAC-SHA 算法从密钥字节数组构建签名密钥
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes());
     }
@@ -56,7 +56,7 @@ public class JwtUtil {
      * @param role     用户角色（写入 Claims）
      * @return 生成的 JWT Token 字符串
      */
-    public String generateToken(Long userId, String username, String role) {
+    public String generateToken(Long userId, String username, String role) { // 生成 JWT Token
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role); //将用户角色放入 Token，可以直接从中获取用户角色进行权限判断，无需再次查询数据库，提升了效率
         claims.put("username", username); // 用户名用于日志追踪（非认证主键）
@@ -75,7 +75,7 @@ public class JwtUtil {
      * @param token JWT Token 字符串
      * @return true 表示有效，false 表示无效或已过期
      */
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token) { // 校验 token 是否合法且未过期
         try {
             Jwts.parserBuilder()
                     .setSigningKey(signingKey)//设置签名密钥
@@ -95,7 +95,7 @@ public class JwtUtil {
      * @param token JWT Token 字符串
      * @return Subject 原始值
      */
-    public String getUsernameFromToken(String token) {
+    public String getUsernameFromToken(String token) { // 读取 token 的 subject（兼容 uid:xxx/旧标识）
         return getClaims(token).getSubject();
     }
 
@@ -105,7 +105,7 @@ public class JwtUtil {
      * @param token JWT Token 字符串
      * @return 用户角色字符串
      */
-    public String getRoleFromToken(String token) {
+    public String getRoleFromToken(String token) { // 读取 token 中的角色 claims
         return (String) getClaims(token).get("role");
     }
 

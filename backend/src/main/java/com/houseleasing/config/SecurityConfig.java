@@ -33,9 +33,9 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity  // 启用方法级别的权限控制（@PreAuthorize 等注解）
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class SecurityConfig { // Spring Security 过滤链与鉴权策略配置
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter; // JWT 认证过滤器
 
     /**
      * 配置 HTTP 安全策略和过滤器链
@@ -46,7 +46,7 @@ public class SecurityConfig {
      * @throws Exception 配置失败时抛出
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception { // 构建系统安全过滤器链
         http
             // CSRF disabled intentionally: this is a stateless REST API using JWT Bearer tokens.
             // CSRF protection is only needed for session/cookie-based authentication.
@@ -73,7 +73,7 @@ public class SecurityConfig {
      * @return CORS 配置来源对象
      */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() { // 配置全局 CORS 规则
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of("*")); // 允许所有来源（生产环境应限制为具体域名）
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
@@ -90,7 +90,7 @@ public class SecurityConfig {
      * @return BCrypt 密码编码器实例
      */
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() { // 注册密码编码器（BCrypt）
         return new BCryptPasswordEncoder();
     }
 
@@ -102,7 +102,7 @@ public class SecurityConfig {
      * @throws Exception 获取失败时抛出
      */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception { // 暴露认证管理器
         return config.getAuthenticationManager();
     }
 }

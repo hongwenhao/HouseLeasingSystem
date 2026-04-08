@@ -24,13 +24,13 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "Message", description = "Message management")
 @RestController
-@RequestMapping("/api/messages")
-@RequiredArgsConstructor
+@RequestMapping("/api/messages") // 消息接口统一前缀
+@RequiredArgsConstructor // 自动生成构造函数注入依赖
 @SecurityRequirement(name = "Bearer Authentication")
-public class MessageController {
+public class MessageController { // 处理消息列表、已读状态等请求
 
-    private final MessageService messageService;
-    private final UserMapper userMapper;
+    private final MessageService messageService; // 消息业务服务
+    private final UserMapper userMapper; // 用户查询组件
 
     /**
      * 查询当前用户的消息列表（分页，按时间降序）
@@ -45,9 +45,9 @@ public class MessageController {
     public Result<PageResult<Message>> listMessages(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(messageService.listMessages(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 分页参数：默认第1页，每页10条
+        User user = resolveUser(userDetails.getUsername()); // 解析当前登录用户
+        return Result.success(messageService.listMessages(user.getId(), page, size)); // 查询并返回该用户的消息分页列表
     }
 
     /**
@@ -58,9 +58,9 @@ public class MessageController {
      */
     @Operation(summary = "Count unread messages")
     @GetMapping("/unread/count")
-    public Result<Long> countUnread(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(messageService.countUnread(user.getId()));
+    public Result<Long> countUnread(@AuthenticationPrincipal UserDetails userDetails) { // 获取当前用户未读消息数量
+        User user = resolveUser(userDetails.getUsername()); // 解析登录用户
+        return Result.success(messageService.countUnread(user.getId())); // 返回未读条数
     }
 
     /**
@@ -73,10 +73,10 @@ public class MessageController {
     @Operation(summary = "Mark message as read")
     @PutMapping("/{id}/read")
     public Result<Void> markAsRead(@PathVariable Long id,
-                                    @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        messageService.markAsRead(id, user.getId());
-        return Result.success();
+                                    @AuthenticationPrincipal UserDetails userDetails) { // 把指定消息标记为已读
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户ID，防止越权操作
+        messageService.markAsRead(id, user.getId()); // 执行“已读”更新
+        return Result.success(); // 返回操作成功
     }
 
     /**
@@ -87,10 +87,10 @@ public class MessageController {
      */
     @Operation(summary = "Mark all messages as read")
     @PutMapping("/read-all")
-    public Result<Void> markAllAsRead(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        messageService.markAllAsRead(user.getId());
-        return Result.success();
+    public Result<Void> markAllAsRead(@AuthenticationPrincipal UserDetails userDetails) { // 把当前用户全部未读消息设为已读
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        messageService.markAllAsRead(user.getId()); // 执行批量已读
+        return Result.success(); // 返回操作成功
     }
 
     /**
@@ -99,11 +99,11 @@ public class MessageController {
      * @param username 用户名
      * @return 对应的用户实体
      */
-    private User resolveUser(String username) {
-        User user = userMapper.selectByUsername(username);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+    private User resolveUser(String username) { // 通用方法：通过用户名查用户
+        User user = userMapper.selectByUsername(username); // 访问数据库查询用户
+        if (user == null) { // 查不到说明用户无效
+            throw new BusinessException(404, "用户不存在"); // 抛出可读的业务异常
         }
-        return user;
+        return user; // 返回用户对象
     }
 }

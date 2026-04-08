@@ -26,7 +26,7 @@ import javax.sql.DataSource;
  * 在应用启动时自动加载 BPMN 文件，减少部署步骤。
  */
 @Configuration
-public class ActivitiConfig {
+public class ActivitiConfig { // Activiti 引擎与服务 Bean 的统一装配配置
 
     /**
      * BPMN 模型文件扫描路径。
@@ -50,8 +50,8 @@ public class ActivitiConfig {
      */
     @Bean
     public SpringProcessEngineConfiguration springProcessEngineConfiguration(DataSource dataSource,
-                                                                             PlatformTransactionManager transactionManager)
-            throws Exception {
+                                                                              PlatformTransactionManager transactionManager)
+            throws Exception { // 构建 Activiti 核心配置
         SpringProcessEngineConfiguration configuration = new SpringProcessEngineConfiguration();//构建配置对象
         configuration.setDataSource(dataSource);//将 Spring 管理的数据源注入给 Activiti
         configuration.setTransactionManager(transactionManager);//将 Spring 的事务管理器注入给 Activiti
@@ -70,7 +70,7 @@ public class ActivitiConfig {
      * @return ProcessEngineFactoryBean
      */
     @Bean
-    public ProcessEngineFactoryBean processEngine(SpringProcessEngineConfiguration configuration) {
+    public ProcessEngineFactoryBean processEngine(SpringProcessEngineConfiguration configuration) { // 创建流程引擎工厂
         ProcessEngineFactoryBean factoryBean = new ProcessEngineFactoryBean();//创建并配置工厂
         factoryBean.setProcessEngineConfiguration(configuration);
         return factoryBean;
@@ -83,7 +83,7 @@ public class ActivitiConfig {
      * @return RepositoryService
      */
     @Bean
-    public RepositoryService repositoryService(ProcessEngine processEngine) {
+    public RepositoryService repositoryService(ProcessEngine processEngine) { // 暴露流程定义管理服务
         return processEngine.getRepositoryService();
     }
 
@@ -94,7 +94,7 @@ public class ActivitiConfig {
      * @return RuntimeService
      */
     @Bean
-    public RuntimeService runtimeService(ProcessEngine processEngine) {
+    public RuntimeService runtimeService(ProcessEngine processEngine) { // 暴露流程运行时服务
         return processEngine.getRuntimeService();
     }
 
@@ -105,7 +105,7 @@ public class ActivitiConfig {
      * @return TaskService
      */
     @Bean
-    public TaskService taskService(ProcessEngine processEngine) {
+    public TaskService taskService(ProcessEngine processEngine) { // 暴露任务处理服务
         return processEngine.getTaskService();
     }
 
@@ -116,7 +116,7 @@ public class ActivitiConfig {
      * @return HistoryService
      */
     @Bean
-    public HistoryService historyService(ProcessEngine processEngine) {
+    public HistoryService historyService(ProcessEngine processEngine) { // 暴露历史查询服务
         return processEngine.getHistoryService();
     }
 }

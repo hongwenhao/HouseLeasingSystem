@@ -16,7 +16,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PageResult<T> {
+public class PageResult<T> { // 通用分页响应模型
     /** 总记录数 */
     private long total;
     /** 当前页的数据列表 */
@@ -36,7 +36,7 @@ public class PageResult<T> {
      * @param size    每页大小
      * @return 封装好的分页结果对象
      */
-    public static <T> PageResult<T> of(long total, List<T> records, int page, int size) {
+    public static <T> PageResult<T> of(long total, List<T> records, int page, int size) { // 快速构建分页结果
         return new PageResult<>(total, records, page, size);
     }
 }

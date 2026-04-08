@@ -15,12 +15,12 @@ import org.springframework.stereotype.Service;
  *              仅在 spring.rabbitmq.listener.simple.auto-startup=true 时启用
  */
 @Slf4j
-@Service
+@Service // 声明为消息消费服务
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "spring.rabbitmq.listener.simple.auto-startup", havingValue = "true")
-public class MessageConsumer {
+public class MessageConsumer { // MQ 消费入口：接收队列消息并落库通知
 
-    private final MessageService messageService;
+    private final MessageService messageService; // 站内消息持久化服务
 
     /**
      * 处理预约确认消息队列中的消息
@@ -29,7 +29,7 @@ public class MessageConsumer {
      * @param message 从队列接收的消息（Map 格式，包含 userId、title、content、relatedId）
      */
     @RabbitListener(queues = "appointment.queue")
-    public void handleAppointment(java.util.Map<String, Object> message) {
+    public void handleAppointment(java.util.Map<String, Object> message) { // 消费预约通知消息
         try {
             log.info("Received appointment message: {}", message);
             Long userId = message.get("userId") != null ? Long.valueOf(message.get("userId").toString()) : null;
@@ -53,7 +53,7 @@ public class MessageConsumer {
      * @param message 从队列接收的消息（Map 格式）
      */
     @RabbitListener(queues = "contract.queue")
-    public void handleContract(java.util.Map<String, Object> message) {
+    public void handleContract(java.util.Map<String, Object> message) { // 消费合同通知消息
         try {
             log.info("Received contract message: {}", message);
             Long userId = message.get("userId") != null ? Long.valueOf(message.get("userId").toString()) : null;
@@ -75,7 +75,7 @@ public class MessageConsumer {
      * @param message 从队列接收的消息（Map 格式）
      */
     @RabbitListener(queues = "order.queue")
-    public void handleOrder(java.util.Map<String, Object> message) {
+    public void handleOrder(java.util.Map<String, Object> message) { // 消费订单通知消息
         try {
             log.info("Received order message: {}", message);
             Long userId = message.get("userId") != null ? Long.valueOf(message.get("userId").toString()) : null;
@@ -97,7 +97,7 @@ public class MessageConsumer {
      * @param message 从队列接收的消息（Map 格式）
      */
     @RabbitListener(queues = "login.queue")
-    public void handleLogin(java.util.Map<String, Object> message) {
+    public void handleLogin(java.util.Map<String, Object> message) { // 消费登录提醒消息
         try {
             log.info("Received login message: {}", message);
             Long userId = message.get("userId") != null ? Long.valueOf(message.get("userId").toString()) : null;

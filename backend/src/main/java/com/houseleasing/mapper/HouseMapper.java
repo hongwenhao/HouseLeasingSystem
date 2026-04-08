@@ -18,7 +18,7 @@ import org.apache.ibatis.annotations.Update;
  *              并扩展了按条件分页查询和更新浏览量的方法
  */
 @Mapper
-public interface HouseMapper extends BaseMapper<House> {
+public interface HouseMapper extends BaseMapper<House> { // 房源数据访问接口（搜索/统计/浏览量）
 
     /**
      * 按多条件分页查询房源列表（对应 XML Mapper 中的自定义 SQL）
@@ -27,7 +27,7 @@ public interface HouseMapper extends BaseMapper<House> {
      * @param request 包含各种筛选条件的搜索请求
      * @return 符合条件的分页房源数据
      */
-    IPage<House> selectByCondition(Page<House> page, @Param("req") HouseSearchRequest request);
+    IPage<House> selectByCondition(Page<House> page, @Param("req") HouseSearchRequest request); // 多条件分页查询房源
 
     /**
      * 将指定房源的浏览量加 1
@@ -35,21 +35,21 @@ public interface HouseMapper extends BaseMapper<House> {
      * @param houseId 目标房源的 ID
      */
     @Update("UPDATE houses SET view_count = view_count + 1 WHERE id = #{houseId}")
-    void incrementViewCount(Long houseId);
+    void incrementViewCount(Long houseId); // 原子累加房源浏览量
 
     /**
      * 统计当前在线房源数量（兼容历史 APPROVED 状态）。
      *
      * @return 在线房源数量
      */
-    @Select("SELECT COUNT(*) FROM houses WHERE status IN ('ONLINE')")
-    long countOnlineHouses();
+    @Select("SELECT COUNT(*) FROM houses WHERE status IN ('ONLINE', 'APPROVED')")
+    long countOnlineHouses(); // 统计在线房源数量
 
     /**
      * 统计在线房源覆盖的城市数量（去重，兼容历史 APPROVED 状态）。
      *
      * @return 覆盖城市数量
      */
-    @Select("SELECT COUNT(DISTINCT city) FROM houses WHERE status IN ('ONLINE') AND city IS NOT NULL AND city <> ''")
-    long countOnlineCities();
+    @Select("SELECT COUNT(DISTINCT city) FROM houses WHERE status IN ('ONLINE', 'APPROVED') AND city IS NOT NULL AND city <> ''")
+    long countOnlineCities(); // 统计在线房源覆盖城市数
 }

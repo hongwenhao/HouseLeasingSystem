@@ -10,7 +10,7 @@ import java.util.List;
  * @author hongwenhao
  * @description 定义房源推荐的业务操作，基于协同过滤算法为用户提供个性化推荐
  */
-public interface RecommendationService {
+public interface RecommendationService { // 推荐能力抽象：根据用户行为返回个性化房源
 
     /**
      * 为指定用户获取推荐房源列表
@@ -20,5 +20,5 @@ public interface RecommendationService {
      * @param limit  最多返回的推荐房源数量
      * @return 推荐的房源列表
      */
-    List<House> getRecommendedHouses(Long userId, int limit);
+    List<House> getRecommendedHouses(Long userId, int limit); // 查询指定用户的推荐房源列表
 }

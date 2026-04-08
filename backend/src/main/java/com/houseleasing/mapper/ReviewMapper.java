@@ -16,7 +16,7 @@ import org.apache.ibatis.annotations.Select;
  * 3) 同时兼容部分历史数据按订单归属（orders.landlord_id）命中，避免老数据口径不一致。
  */
 @Mapper
-public interface ReviewMapper extends BaseMapper<Review> {
+public interface ReviewMapper extends BaseMapper<Review> { // 评价数据访问接口（房东侧分页查询）
 
     /**
      * 分页查询某房东“收到的评价”。
@@ -43,5 +43,5 @@ public interface ReviewMapper extends BaseMapper<Review> {
             )
             ORDER BY r.create_time DESC
             """)
-    Page<Review> selectLandlordReviewPage(Page<Review> page, @Param("landlordId") Long landlordId);
+    Page<Review> selectLandlordReviewPage(Page<Review> page, @Param("landlordId") Long landlordId); // 分页查询房东收到的评价
 }

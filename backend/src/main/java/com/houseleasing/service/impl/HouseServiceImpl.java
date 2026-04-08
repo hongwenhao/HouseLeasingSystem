@@ -41,17 +41,17 @@ import java.util.stream.Collectors;
  * 收藏和浏览量统计，热门房源使用 Redis 缓存提高查询性能
  */
 @Slf4j
-@Service
+@Service // 声明为房源业务服务
 @RequiredArgsConstructor
-public class HouseServiceImpl implements HouseService {
+public class HouseServiceImpl implements HouseService { // 房源核心业务实现：发布、查询、收藏、上下架等
 
-    private final HouseMapper houseMapper;
-    private final ContractMapper contractMapper;
-    private final HouseImageMapper houseImageMapper;
-    private final UserBehaviorMapper userBehaviorMapper;
-    private final UserMapper userMapper;
-    private final ObjectMapper objectMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final HouseMapper houseMapper; // 房源表访问组件
+    private final ContractMapper contractMapper; // 合同表访问组件（删除/状态联动会用到）
+    private final HouseImageMapper houseImageMapper; // 房源图片明细访问组件
+    private final UserBehaviorMapper userBehaviorMapper; // 用户行为访问组件
+    private final UserMapper userMapper; // 用户表访问组件
+    private final ObjectMapper objectMapper; // JSON 解析组件
+    private final RedisTemplate<String, Object> redisTemplate; // Redis 组件（缓存与计数）
 
     private static final String BEHAVIOR_COLLECT = "COLLECT";
     /**
@@ -73,7 +73,7 @@ public class HouseServiceImpl implements HouseService {
     @Override
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 发布并立即上线房源时清除热门房源缓存
-    public House addHouse(House house, Long ownerId) {
+    public House addHouse(House house, Long ownerId) { // 发布新房源
         User owner = userMapper.selectById(ownerId);
         if (owner == null) {
             throw new BusinessException(404, "用户不存在");
@@ -103,7 +103,7 @@ public class HouseServiceImpl implements HouseService {
     @Override
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 更新房源后清除热门房源缓存
-    public House updateHouse(Long id, House house, Long ownerId) {
+    public House updateHouse(Long id, House house, Long ownerId) { // 更新房源信息
         House existing = houseMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "房源不存在");
@@ -196,7 +196,7 @@ public class HouseServiceImpl implements HouseService {
     @Override
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 删除房源后清除热门房源缓存
-    public void deleteHouse(Long id, Long ownerId) {
+    public void deleteHouse(Long id, Long ownerId) { // 删除房源及关联数据
         House existing = houseMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "房源不存在");
@@ -244,7 +244,7 @@ public class HouseServiceImpl implements HouseService {
     @Override
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true)
-    public void putHouseOnline(Long id, Long ownerId) {
+    public void putHouseOnline(Long id, Long ownerId) { // 房东主动上架房源
         House existing = houseMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "房源不存在");
@@ -272,7 +272,7 @@ public class HouseServiceImpl implements HouseService {
     @Override
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true)
-    public void putHouseOffline(Long id, Long ownerId) {
+    public void putHouseOffline(Long id, Long ownerId) { // 房东主动下架房源
         House existing = houseMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "房源不存在");
@@ -294,7 +294,7 @@ public class HouseServiceImpl implements HouseService {
      * @return 房源详情对象
      */
     @Override
-    public House getHouseById(Long id) {
+    public House getHouseById(Long id) { // 查询房源详情并记录浏览行为
         House house = houseMapper.selectById(id);
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -345,7 +345,7 @@ public class HouseServiceImpl implements HouseService {
      * @return 该房源的图片列表
      */
     @Override
-    public List<HouseImage> getHouseImages(Long houseId) {
+    public List<HouseImage> getHouseImages(Long houseId) { // 查询房源图片明细列表
         House house = houseMapper.selectById(houseId);
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -360,7 +360,7 @@ public class HouseServiceImpl implements HouseService {
      * @return 符合条件的分页房源列表
      */
     @Override
-    public PageResult<House> searchHouses(HouseSearchRequest request) {
+    public PageResult<House> searchHouses(HouseSearchRequest request) { // 多条件分页搜索房源
         Page<House> page = new Page<>(request.getPage(), request.getSize());
         try {
             // 使用 XML Mapper 中的复杂条件查询
@@ -398,7 +398,7 @@ public class HouseServiceImpl implements HouseService {
      * @return 分页房源列表
      */
     @Override
-    public PageResult<House> listOwnerHouses(Long ownerId, int page, int size) {
+    public PageResult<House> listOwnerHouses(Long ownerId, int page, int size) { // 查询房东发布房源分页
         Page<House> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(House::getOwnerId, ownerId);
@@ -416,7 +416,7 @@ public class HouseServiceImpl implements HouseService {
      * @return 收藏房源分页结果
      */
     @Override
-    public PageResult<House> listCollectedHouses(Long userId, int page, int size) {
+    public PageResult<House> listCollectedHouses(Long userId, int page, int size) { // 查询用户收藏房源分页
         Page<UserBehavior> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
@@ -443,7 +443,7 @@ public class HouseServiceImpl implements HouseService {
      */
     @Override
     @Transactional
-    public void collectHouse(Long userId, Long houseId) {
+    public void collectHouse(Long userId, Long houseId) { // 收藏房源并记录行为分
         // 检查是否已经收藏过该房源
         LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
@@ -478,7 +478,7 @@ public class HouseServiceImpl implements HouseService {
      */
     @Override
     @Transactional
-    public void cancelCollectHouse(Long userId, Long houseId) {
+    public void cancelCollectHouse(Long userId, Long houseId) { // 取消收藏并清理行为记录
         LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
                 .eq(UserBehavior::getHouseId, houseId)
@@ -493,7 +493,7 @@ public class HouseServiceImpl implements HouseService {
      */
     @Override
     @Cacheable(value = "hotHouses", key = "'all'") // 缓存热门房源列表，key 为 'hotHouses::all'
-    public List<House> getHotHouses() {
+    public List<House> getHotHouses() { // 获取热门房源（带缓存）
         try {
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE);
@@ -512,7 +512,7 @@ public class HouseServiceImpl implements HouseService {
      * @param houseId 房源 ID
      */
     @Override
-    public void incrementViewCount(Long houseId) {
+    public void incrementViewCount(Long houseId) { // 增加房源浏览量
         try {
             houseMapper.incrementViewCount(houseId);
         } catch (Exception e) {

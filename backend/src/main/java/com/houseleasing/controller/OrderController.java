@@ -29,13 +29,13 @@ import java.util.Map;
  */
 @Tag(name = "Order", description = "Order management")
 @RestController
-@RequestMapping("/api/orders")
-@RequiredArgsConstructor
+@RequestMapping("/api/orders") // 订单接口统一前缀
+@RequiredArgsConstructor // 自动注入依赖
 @SecurityRequirement(name = "Bearer Authentication")
-public class OrderController {
+public class OrderController { // 负责意向单、预约单、审批、支付、评价等订单流程
 
-    private final OrderService orderService;
-    private final UserMapper userMapper;
+    private final OrderService orderService; // 订单业务服务
+    private final UserMapper userMapper; // 用户查询组件
 
     /**
      * 创建意向订单，租客表达对某房源的租房意向
@@ -47,11 +47,11 @@ public class OrderController {
     @Operation(summary = "Create intent order")
     @PostMapping("/intent")
     public Result<Order> createIntent(@RequestBody Map<String, Object> request,
-                                       @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        Long houseId = Long.valueOf(request.get("houseId").toString());
-        String remark = request.get("remark") != null ? request.get("remark").toString() : null;
-        return Result.success(orderService.createIntent(user.getId(), houseId, remark));
+                                       @AuthenticationPrincipal UserDetails userDetails) { // 创建“我想租这个房”的意向单
+        User user = resolveUser(userDetails.getUsername()); // 解析当前登录用户
+        Long houseId = Long.valueOf(request.get("houseId").toString()); // 取出要租的房源ID
+        String remark = request.get("remark") != null ? request.get("remark").toString() : null; // 取出备注（可为空）
+        return Result.success(orderService.createIntent(user.getId(), houseId, remark)); // 创建并返回意向订单
     }
 
     /**
@@ -64,9 +64,9 @@ public class OrderController {
     @Operation(summary = "Create appointment order")
     @PostMapping("/appointment")
     public Result<Order> createAppointment(@RequestBody OrderCreateRequest request,
-                                            @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(orderService.createAppointment(request, user.getId()));
+                                             @AuthenticationPrincipal UserDetails userDetails) { // 创建预约看房订单
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        return Result.success(orderService.createAppointment(request, user.getId())); // 提交预约参数并返回订单
     }
 
     /**
@@ -77,8 +77,8 @@ public class OrderController {
      */
     @Operation(summary = "Get order by ID")
     @GetMapping("/{id}")
-    public Result<Order> getOrderById(@PathVariable Long id) {
-        return Result.success(orderService.getOrderById(id));
+    public Result<Order> getOrderById(@PathVariable Long id) { // 查询单个订单详情
+        return Result.success(orderService.getOrderById(id)); // 按订单ID返回详情
     }
 
     /**
@@ -93,11 +93,11 @@ public class OrderController {
     @PutMapping("/{id}/approve")
     public Result<Void> approveOrder(@PathVariable Long id,
                                       @RequestBody Map<String, Object> request,
-                                      @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        boolean approved = Boolean.parseBoolean(request.get("approved").toString());
-        orderService.approveOrder(id, approved, user.getId());
-        return Result.success();
+                                      @AuthenticationPrincipal UserDetails userDetails) { // 房东对订单做“同意/拒绝”
+        User user = resolveUser(userDetails.getUsername()); // 获取当前房东
+        boolean approved = Boolean.parseBoolean(request.get("approved").toString()); // 读取是否同意
+        orderService.approveOrder(id, approved, user.getId()); // 执行审批逻辑
+        return Result.success(); // 返回审批成功
     }
 
     /**
@@ -110,10 +110,10 @@ public class OrderController {
     @Operation(summary = "Cancel order")
     @PutMapping("/{id}/cancel")
     public Result<Void> cancelOrder(@PathVariable Long id,
-                                     @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        orderService.cancelOrder(id, user.getId());
-        return Result.success();
+                                     @AuthenticationPrincipal UserDetails userDetails) { // 取消订单
+        User user = resolveUser(userDetails.getUsername()); // 解析当前操作用户
+        orderService.cancelOrder(id, user.getId()); // 执行业务取消
+        return Result.success(); // 返回取消成功
     }
 
     /**
@@ -124,9 +124,9 @@ public class OrderController {
      */
     @Operation(summary = "Complete order")
     @PutMapping("/{id}/complete")
-    public Result<Void> completeOrder(@PathVariable Long id) {
-        orderService.completeOrder(id);
-        return Result.success();
+    public Result<Void> completeOrder(@PathVariable Long id) { // 把订单标记为“已完成”
+        orderService.completeOrder(id); // 执行完成动作
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -141,10 +141,10 @@ public class OrderController {
     @Operation(summary = "Pay order (tenant)")
     @PutMapping("/{id}/pay")
     public Result<Void> payOrder(@PathVariable Long id,
-                                 @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        orderService.payOrder(id, user.getId());
-        return Result.success();
+                                 @AuthenticationPrincipal UserDetails userDetails) { // 租客支付订单
+        User user = resolveUser(userDetails.getUsername()); // 获取当前租客
+        orderService.payOrder(id, user.getId()); // 执行支付与状态变更
+        return Result.success(); // 返回支付成功
     }
 
     /**
@@ -159,10 +159,10 @@ public class OrderController {
     @Operation(summary = "Refund order (tenant)")
     @PutMapping("/{id}/refund")
     public Result<Void> refundOrder(@PathVariable Long id,
-                                    @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        orderService.refundOrder(id, user.getId());
-        return Result.success();
+                                    @AuthenticationPrincipal UserDetails userDetails) { // 租客发起退款
+        User user = resolveUser(userDetails.getUsername()); // 获取当前租客
+        orderService.refundOrder(id, user.getId()); // 执行退款与状态变更
+        return Result.success(); // 返回退款成功
     }
 
     /**
@@ -176,11 +176,11 @@ public class OrderController {
     @Operation(summary = "Review completed order (tenant)")
     @PostMapping("/{id}/review")
     public Result<Void> reviewOrder(@PathVariable Long id,
-                                    @RequestBody OrderReviewRequest request,
-                                    @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        orderService.reviewOrder(id, user.getId(), request);
-        return Result.success();
+                                     @RequestBody OrderReviewRequest request,
+                                     @AuthenticationPrincipal UserDetails userDetails) { // 租客提交评价
+        User user = resolveUser(userDetails.getUsername()); // 获取当前租客
+        orderService.reviewOrder(id, user.getId(), request); // 保存评分和评价内容
+        return Result.success(); // 返回评价成功
     }
 
     /**
@@ -196,9 +196,9 @@ public class OrderController {
     public Result<PageResult<Order>> listTenantOrders(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(orderService.listTenantOrders(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 查询“我作为租客”的订单
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        return Result.success(orderService.listTenantOrders(user.getId(), page, size)); // 返回租客订单分页
     }
 
     /**
@@ -214,9 +214,9 @@ public class OrderController {
     public Result<PageResult<Order>> listLandlordOrders(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(orderService.listLandlordOrders(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 查询“我作为房东”的订单
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        return Result.success(orderService.listLandlordOrders(user.getId(), page, size)); // 返回房东订单分页
     }
 
     /**
@@ -232,9 +232,9 @@ public class OrderController {
     public Result<PageResult<ReviewRecordResponse>> listTenantReviews(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(orderService.listTenantReviewRecords(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 查询“我写过的评价”
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        return Result.success(orderService.listTenantReviewRecords(user.getId(), page, size)); // 返回租客评价分页
     }
 
     /**
@@ -250,9 +250,9 @@ public class OrderController {
     public Result<PageResult<ReviewRecordResponse>> listLandlordReviews(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(orderService.listLandlordReviewRecords(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 查询“我收到的评价”
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        return Result.success(orderService.listLandlordReviewRecords(user.getId(), page, size)); // 返回房东评价分页
     }
 
     /**
@@ -261,11 +261,11 @@ public class OrderController {
      * @param username 用户名
      * @return 对应的用户实体
      */
-    private User resolveUser(String username) {
-        User user = userMapper.selectByUsername(username);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+    private User resolveUser(String username) { // 辅助方法：按用户名找用户
+        User user = userMapper.selectByUsername(username); // 数据库查询
+        if (user == null) { // 无此用户
+            throw new BusinessException(404, "用户不存在"); // 抛出明确错误
         }
-        return user;
+        return user; // 返回用户实体
     }
 }

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 @ConfigurationProperties(prefix = "alipay")
-public class AlipayProperties {
+public class AlipayProperties { // 支付宝配置属性载体（由 application.yml 绑定）
     /** 应用 ID（支付宝开放平台分配） */
     private String appId;
     /** 商户应用私钥（PKCS8 格式） */
@@ -31,4 +31,3 @@ public class AlipayProperties {
     /** 支付超时时间，示例值 30m（30 分钟） */
     private String timeoutExpress = "30m";
 }
-

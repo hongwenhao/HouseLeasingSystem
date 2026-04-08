@@ -9,7 +9,7 @@ import com.houseleasing.entity.Message;
  * @author hongwenhao
  * @description 定义站内消息相关的业务操作，包括发送消息、查询、标记已读等
  */
-public interface MessageService {
+public interface MessageService { // 站内消息能力抽象：发送、查询、已读管理
 
     /**
      * 向指定用户发送站内消息（不关联具体业务对象）
@@ -19,7 +19,7 @@ public interface MessageService {
      * @param content 消息内容
      * @param type    消息类型（APPOINTMENT/CONTRACT/ORDER/SYSTEM）
      */
-    void sendMessage(Long userId, String title, String content, String type);
+    void sendMessage(Long userId, String title, String content, String type); // 发送普通消息
 
     /**
      * 向指定用户发送站内消息，并关联具体业务对象（如订单 ID、合同 ID、房源 ID）
@@ -31,7 +31,7 @@ public interface MessageService {
      * @param type      消息类型（APPOINTMENT/CONTRACT/ORDER/SYSTEM）
      * @param relatedId 关联的业务对象 ID（如订单 ID、合同 ID、房源 ID），可为 null
      */
-    void sendMessage(Long userId, String title, String content, String type, Long relatedId);
+    void sendMessage(Long userId, String title, String content, String type, Long relatedId); // 发送带业务关联ID的消息
 
     /**
      * 分页查询用户的消息列表（按创建时间降序）
@@ -41,7 +41,7 @@ public interface MessageService {
      * @param size   每页大小
      * @return 该用户的分页消息列表
      */
-    PageResult<Message> listMessages(Long userId, int page, int size);
+    PageResult<Message> listMessages(Long userId, int page, int size); // 分页查询用户消息
 
     /**
      * 将指定消息标记为已读
@@ -49,14 +49,14 @@ public interface MessageService {
      * @param messageId 消息 ID
      * @param userId    操作人用户 ID（需与消息接收人一致）
      */
-    void markAsRead(Long messageId, Long userId);
+    void markAsRead(Long messageId, Long userId); // 标记单条消息已读
 
     /**
      * 将指定用户的所有未读消息标记为已读
      *
      * @param userId 用户 ID
      */
-    void markAllAsRead(Long userId);
+    void markAllAsRead(Long userId); // 标记用户全部未读消息为已读
 
     /**
      * 统计指定用户的未读消息数量
@@ -64,5 +64,5 @@ public interface MessageService {
      * @param userId 用户 ID
      * @return 未读消息总数
      */
-    long countUnread(Long userId);
+    long countUnread(Long userId); // 统计未读消息总数
 }
