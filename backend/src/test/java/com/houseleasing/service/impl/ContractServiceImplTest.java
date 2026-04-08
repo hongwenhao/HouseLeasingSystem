@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.activiti.WorkflowService;
 import com.houseleasing.common.security.IdCardCryptoService;
 import com.houseleasing.entity.Contract;
+import com.houseleasing.entity.House;
+import com.houseleasing.entity.Order;
 import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.OrderMapper;
@@ -112,5 +114,36 @@ class ContractServiceImplTest {
         assertEquals("FULLY_SIGNED", contract.getStatus());
         verify(orderMapper, never()).markOrderSignedIfApproved(any());
         verify(contractMapper, times(1)).updateById(contract);
+    }
+
+    @Test
+    void cancelContract_shouldAlsoCancelRelatedOrder_whenUserCancelsContract() {
+        Contract contract = new Contract();
+        contract.setId(8L);
+        contract.setOrderId(88L);
+        contract.setHouseId(188L);
+        contract.setTenantId(10L);
+        contract.setLandlordId(20L);
+        contract.setStatus("PENDING_SIGN");
+        when(contractMapper.selectById(8L)).thenReturn(contract);
+
+        Order order = new Order();
+        order.setId(88L);
+        order.setStatus("SIGNED");
+        when(orderMapper.selectById(88L)).thenReturn(order);
+
+        House house = new House();
+        house.setId(188L);
+        house.setStatus("OFFLINE");
+        when(houseMapper.selectById(188L)).thenReturn(house);
+
+        assertDoesNotThrow(() -> contractService.cancelContract(8L, 10L));
+
+        assertEquals("CANCELLED", contract.getStatus());
+        assertEquals("CANCELLED", order.getStatus());
+        assertEquals("ONLINE", house.getStatus());
+        verify(contractMapper, times(1)).updateById(contract);
+        verify(orderMapper, times(1)).updateById(order);
+        verify(houseMapper, times(1)).updateById(house);
     }
 }

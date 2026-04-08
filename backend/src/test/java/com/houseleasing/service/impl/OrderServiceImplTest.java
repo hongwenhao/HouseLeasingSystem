@@ -2,6 +2,7 @@ package com.houseleasing.service.impl;
 
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.dto.OrderReviewRequest;
+import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.Order;
 import com.houseleasing.entity.Review;
 import com.houseleasing.entity.User;
@@ -152,5 +153,54 @@ class OrderServiceImplTest {
 
         assertEquals(-5, landlord.getCreditScore());
         verify(userMapper, times(1)).updateById(landlord);
+    }
+
+    @Test
+    void cancelOrder_shouldAlsoCancelLatestContract_whenTenantCancels() {
+        Order order = new Order();
+        order.setId(101L);
+        order.setTenantId(10L);
+        order.setLandlordId(20L);
+        order.setHouseId(30L);
+        order.setStatus("APPROVED");
+        when(orderMapper.selectById(101L)).thenReturn(order);
+
+        Contract contract = new Contract();
+        contract.setId(501L);
+        contract.setOrderId(101L);
+        contract.setStatus("PENDING_SIGN");
+        when(contractMapper.selectOne(any())).thenReturn(contract);
+
+        orderService.cancelOrder(101L, 10L);
+
+        assertEquals("CANCELLED", order.getStatus());
+        assertEquals("CANCELLED", contract.getStatus());
+        verify(orderMapper, times(1)).updateById(order);
+        verify(contractMapper, times(1)).updateById(contract);
+    }
+
+    @Test
+    void refundOrder_shouldAlsoCancelLatestContract_whenTenantRefunds() {
+        Order order = new Order();
+        order.setId(102L);
+        order.setTenantId(10L);
+        order.setLandlordId(20L);
+        order.setPaymentStatus("PAID");
+        order.setStatus("COMPLETED");
+        when(orderMapper.selectById(102L)).thenReturn(order);
+
+        Contract contract = new Contract();
+        contract.setId(502L);
+        contract.setOrderId(102L);
+        contract.setStatus("FULLY_SIGNED");
+        when(contractMapper.selectOne(any())).thenReturn(contract);
+
+        orderService.refundOrder(102L, 10L);
+
+        assertEquals("REFUNDED", order.getPaymentStatus());
+        assertEquals("CANCELLED", order.getStatus());
+        assertEquals("CANCELLED", contract.getStatus());
+        verify(orderMapper, times(1)).updateById(order);
+        verify(contractMapper, times(1)).updateById(contract);
     }
 }

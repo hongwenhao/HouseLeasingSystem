@@ -248,6 +248,11 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        // 关键一致性规则（本次需求）：
+        // 当租客或房东取消订单时，订单绑定的“当前生效合同”也必须同步置为 CANCELLED，
+        // 避免出现“订单已取消但合同仍可继续签署/展示为有效”的状态分裂。
+        // 与订单更新处于同一事务中，任一步骤失败都会整体回滚，保证跨表状态原子性。
+        cancelLatestContractForOrder(orderId);
         // 订单取消属于关键业务事件：同时通知租客与房东，确保双方都能第一时间在消息中心看到状态变化。
         // 这里统一复用“订单状态通知”渠道，消息内容根据操作人身份区分，便于双方理解取消原因。
         // 关联 orderId 方便接收方在消息中心直接跳转到对应订单详情页
@@ -450,6 +455,11 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        // 退款即撤销交易闭环（本次需求）：
+        // 租客退款后，订单状态已变为 CANCELLED，对应合同也必须联动取消，
+        // 防止合同仍停留在 FULLY_SIGNED 等可执行状态，造成前后端口径不一致。
+        // 这里复用统一的“按订单定位最新合同并取消”逻辑，保持取消链路行为一致。
+        cancelLatestContractForOrder(orderId);
         messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消", order.getId());
         messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消", order.getId());
     }
@@ -575,6 +585,25 @@ public class OrderServiceImpl implements OrderService {
         wrapper.orderByDesc(Contract::getCreateTime);
         wrapper.last("LIMIT 1");
         return contractMapper.selectOne(wrapper);
+    }
+
+    /**
+     * 将订单关联的“最新合同”状态同步取消（若存在且尚未取消）。
+     *
+     * 说明：
+     * 1) 统一服务于“租客/房东取消订单”与“租客退款”两类入口，避免多处复制状态联动代码；
+     * 2) 仅处理最新合同，和订单详情页展示口径保持一致，规避历史多合同数据导致的歧义；
+     * 3) 已是 CANCELLED 时直接返回，保证幂等；
+     * 4) 本方法不抛业务异常（除数据库异常外），让上层事务可按真实失败原因回滚。
+     */
+    private void cancelLatestContractForOrder(Long orderId) {
+        Contract contract = findLatestContractByOrderId(orderId);
+        if (contract == null || "CANCELLED".equals(contract.getStatus())) {
+            return;
+        }
+        contract.setStatus("CANCELLED");
+        contract.setUpdateTime(LocalDateTime.now());
+        contractMapper.updateById(contract);
     }
 
     /**
