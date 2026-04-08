@@ -26,6 +26,7 @@
         - price_asc：月租金升序
         - price_desc：月租金降序
         - popular：按浏览量降序（热度排序）
+        - newest：按更新时间降序（最近更新优先，对应前端“最新”按钮）
         - 默认：按创建时间降序（最新发布优先）
     -->
     <select id="selectByCondition" resultType="com.houseleasing.entity.House">
@@ -76,11 +77,17 @@
             <!-- 只查询已上架（ONLINE）状态的房源 -->
             AND status = 'ONLINE'
         </where>
-        <!-- 排序规则：根据 sortBy 参数动态选择排序方式 -->
+        <!--
+          排序规则说明：
+            1) 前端“最新”按钮会传 sortBy=newest，此处按 update_time DESC 排序，
+               这样用户看到的是“最近编辑/更新过的房源”。
+            2) 默认分支依旧按 create_time DESC，保持“最新发布”的历史行为不变。
+        -->
         <choose>
             <when test="req.sortBy == 'price_asc'">ORDER BY price ASC</when>
             <when test="req.sortBy == 'price_desc'">ORDER BY price DESC</when>
             <when test="req.sortBy == 'popular'">ORDER BY view_count DESC</when>
+            <when test="req.sortBy == 'newest'">ORDER BY update_time DESC</when>
             <otherwise>ORDER BY create_time DESC</otherwise>
         </choose>
     </select>

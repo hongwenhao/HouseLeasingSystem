@@ -104,6 +104,8 @@ async function fetchData() {
     const params = {
       page: currentPage.value,
       pageSize: pageSize.value,
+      // sortBy=newest 对应“按房源最近更新时间倒序”，由后端统一执行排序。
+      // 这样可以保证分页场景下排序稳定，避免前端本地排序导致跨页顺序不一致。
       sortBy: sortBy.value
     }
     // 将非空筛选条件合并到请求参数

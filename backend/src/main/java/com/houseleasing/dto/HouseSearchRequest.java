@@ -38,7 +38,7 @@ public class HouseSearchRequest {
     private Integer size;
     /** 别名：与 size 等价的分页大小参数，方便前端使用 pageSize 命名 */
     private Integer pageSize;
-    /** 排序字段（如：price、viewCount、createTime） */
+    /** 排序方式：price_asc / price_desc / popular / newest（按 update_time 倒序） */
     private String sortBy;
 
     /** 返回非空的页码值，若未提供则返回默认值 1 */
