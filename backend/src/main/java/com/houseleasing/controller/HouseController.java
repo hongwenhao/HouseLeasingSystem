@@ -31,14 +31,14 @@ import java.util.Map;
  */
 @Tag(name = "House", description = "House management")
 @RestController
-@RequestMapping("/api/houses")
-@RequiredArgsConstructor
-public class HouseController {
+@RequestMapping("/api/houses") // 房源接口统一前缀
+@RequiredArgsConstructor // 自动注入依赖对象
+public class HouseController { // 处理房源搜索、发布、上下架、收藏等功能
 
-    private final HouseService houseService;
-    private final UserMapper userMapper;
-    private final HouseMapper houseMapper;
-    private final OrderMapper orderMapper;
+    private final HouseService houseService; // 房源业务服务
+    private final UserMapper userMapper; // 用户查询组件
+    private final HouseMapper houseMapper; // 房源数据库访问组件
+    private final OrderMapper orderMapper; // 订单数据库访问组件
 
     /**
      * 按条件搜索房源（公开接口，无需认证）
@@ -48,8 +48,8 @@ public class HouseController {
      */
     @Operation(summary = "Search houses (public)")
     @GetMapping("/search")
-    public Result<PageResult<House>> searchHouses(HouseSearchRequest request) {
-        return Result.success(houseService.searchHouses(request));
+    public Result<PageResult<House>> searchHouses(HouseSearchRequest request) { // 按筛选条件搜索房源
+        return Result.success(houseService.searchHouses(request)); // 返回分页搜索结果
     }
 
     /**
@@ -61,13 +61,13 @@ public class HouseController {
      */
     @Operation(summary = "Get all houses (public)")
     @GetMapping
-    public Result<PageResult<House>> listHouses(HouseSearchRequest request) {
+    public Result<PageResult<House>> listHouses(HouseSearchRequest request) { // 查询公开房源列表
         try {
-            request.normalizePagination();
+            request.normalizePagination(); // 统一处理分页参数（page/size 等）
         } catch (IllegalArgumentException e) {
-            throw new BusinessException(400, "Conflicting pagination parameters provided");
+            throw new BusinessException(400, "Conflicting pagination parameters provided"); // 分页参数冲突时给出可读错误
         }
-        return Result.success(houseService.searchHouses(request));
+        return Result.success(houseService.searchHouses(request)); // 复用搜索逻辑返回列表
     }
 
     /**
@@ -78,8 +78,8 @@ public class HouseController {
      */
     @Operation(summary = "Get house by ID (public)")
     @GetMapping("/{id}")
-    public Result<House> getHouseById(@PathVariable Long id) {
-        return Result.success(houseService.getHouseById(id));
+    public Result<House> getHouseById(@PathVariable Long id) { // 查询单个房源详情
+        return Result.success(houseService.getHouseById(id)); // 返回该房源完整信息
     }
 
     /**
@@ -90,8 +90,8 @@ public class HouseController {
      */
     @Operation(summary = "Get images for a house (public)")
     @GetMapping("/{id}/images")
-    public Result<List<HouseImage>> getHouseImages(@PathVariable Long id) {
-        return Result.success(houseService.getHouseImages(id));
+    public Result<List<HouseImage>> getHouseImages(@PathVariable Long id) { // 查询房源图片列表
+        return Result.success(houseService.getHouseImages(id)); // 返回按顺序排列的图片
     }
 
     /**
@@ -101,8 +101,8 @@ public class HouseController {
      */
     @Operation(summary = "Get hot houses")
     @GetMapping("/hot")
-    public Result<List<House>> getHotHouses() {
-        return Result.success(houseService.getHotHouses());
+    public Result<List<House>> getHotHouses() { // 查询热门房源
+        return Result.success(houseService.getHotHouses()); // 返回按热度排序的房源
     }
 
     /**
@@ -112,14 +112,14 @@ public class HouseController {
      */
     @Operation(summary = "Get home statistics (public)")
     @GetMapping("/home-stats")
-    public Result<Map<String, Long>> getHomeStats() {
-        Map<String, Long> stats = new HashMap<>();
-        stats.put("houses", houseMapper.countOnlineHouses());
-        stats.put("users", userMapper.selectCount(null));
+    public Result<Map<String, Long>> getHomeStats() { // 首页统计数据接口
+        Map<String, Long> stats = new HashMap<>(); // 用于返回多个统计项
+        stats.put("houses", houseMapper.countOnlineHouses()); // 在租房源数量
+        stats.put("users", userMapper.selectCount(null)); // 注册用户总数
         // 成交口径统一为“订单已完成”，仅 COMPLETED 才计入交易成功次数。
-        stats.put("deals", orderMapper.countCompletedOrders());
-        stats.put("cities", houseMapper.countOnlineCities());
-        return Result.success(stats);
+        stats.put("deals", orderMapper.countCompletedOrders()); // 成交数量
+        stats.put("cities", houseMapper.countOnlineCities()); // 覆盖城市数
+        return Result.success(stats); // 返回首页展示所需统计
     }
 
     /**
@@ -133,9 +133,9 @@ public class HouseController {
     @PostMapping
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<House> addHouse(@RequestBody House house,
-                                   @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(houseService.addHouse(house, user.getId()));
+                                   @AuthenticationPrincipal UserDetails userDetails) { // 房东发布房源
+        User user = resolveUser(userDetails.getUsername()); // 获取当前登录房东
+        return Result.success(houseService.addHouse(house, user.getId())); // 保存新房源并返回
     }
 
     /**
@@ -150,10 +150,10 @@ public class HouseController {
     @PutMapping("/{id}")
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<House> updateHouse(@PathVariable Long id,
-                                      @RequestBody House house,
-                                      @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(houseService.updateHouse(id, house, user.getId()));
+                                       @RequestBody House house,
+                                       @AuthenticationPrincipal UserDetails userDetails) { // 修改已有房源信息
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        return Result.success(houseService.updateHouse(id, house, user.getId())); // 按权限更新并返回最新数据
     }
 
     /**
@@ -170,9 +170,9 @@ public class HouseController {
     public Result<PageResult<House>> listMyHouses(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(houseService.listOwnerHouses(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 查询我发布的房源
+        User user = resolveUser(userDetails.getUsername()); // 解析当前房东
+        return Result.success(houseService.listOwnerHouses(user.getId(), page, size)); // 返回房东房源分页
     }
 
     /**
@@ -189,10 +189,10 @@ public class HouseController {
     public Result<PageResult<House>> listCollectedHouses(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        ensureTenantUser(user);
-        return Result.success(houseService.listCollectedHouses(user.getId(), page, size));
+            @RequestParam(defaultValue = "10") int size) { // 查询我收藏的房源
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        ensureTenantUser(user); // 仅租客允许收藏功能
+        return Result.success(houseService.listCollectedHouses(user.getId(), page, size)); // 返回收藏分页列表
     }
 
     /**
@@ -206,11 +206,11 @@ public class HouseController {
     @PostMapping("/{id}/collect")
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<Void> collectHouse(@PathVariable Long id,
-                                      @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        ensureTenantUser(user);
-        houseService.collectHouse(user.getId(), id);
-        return Result.success();
+                                      @AuthenticationPrincipal UserDetails userDetails) { // 收藏指定房源
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        ensureTenantUser(user); // 非租客不允许收藏
+        houseService.collectHouse(user.getId(), id); // 执行收藏
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -224,10 +224,10 @@ public class HouseController {
     @DeleteMapping("/{id}")
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<Void> deleteHouse(@PathVariable Long id,
-                                    @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        houseService.deleteHouse(id, user.getId());
-        return Result.success();
+                                     @AuthenticationPrincipal UserDetails userDetails) { // 删除我自己的房源
+        User user = resolveUser(userDetails.getUsername()); // 获取当前房东
+        houseService.deleteHouse(id, user.getId()); // 按权限删除房源
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -241,10 +241,10 @@ public class HouseController {
     @PutMapping("/{id}/online")
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<Void> putMyHouseOnline(@PathVariable Long id,
-                                         @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        houseService.putHouseOnline(id, user.getId());
-        return Result.success();
+                                         @AuthenticationPrincipal UserDetails userDetails) { // 房东主动上架房源
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        houseService.putHouseOnline(id, user.getId()); // 更新房源为 ONLINE
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -258,10 +258,10 @@ public class HouseController {
     @PutMapping("/{id}/offline")
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<Void> putMyHouseOffline(@PathVariable Long id,
-                                          @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        houseService.putHouseOffline(id, user.getId());
-        return Result.success();
+                                           @AuthenticationPrincipal UserDetails userDetails) { // 房东主动下架房源
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        houseService.putHouseOffline(id, user.getId()); // 更新房源为 OFFLINE
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -275,11 +275,11 @@ public class HouseController {
     @DeleteMapping("/{id}/collect")
     @SecurityRequirement(name = "Bearer Authentication")
     public Result<Void> cancelCollectHouse(@PathVariable Long id,
-                                           @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        ensureTenantUser(user);
-        houseService.cancelCollectHouse(user.getId(), id);
-        return Result.success();
+                                            @AuthenticationPrincipal UserDetails userDetails) { // 取消收藏房源
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        ensureTenantUser(user); // 仅租客可操作
+        houseService.cancelCollectHouse(user.getId(), id); // 执行取消收藏
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -288,12 +288,12 @@ public class HouseController {
      * @param username 用户名
      * @return 对应的用户实体
      */
-    private User resolveUser(String username) {
-        User user = userMapper.selectByUsername(username);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+    private User resolveUser(String username) { // 工具方法：根据用户名获取用户
+        User user = userMapper.selectByUsername(username); // 查询数据库
+        if (user == null) { // 用户不存在时
+            throw new BusinessException(404, "用户不存在"); // 抛出业务错误
         }
-        return user;
+        return user; // 返回用户实体
     }
 
     /**
@@ -301,10 +301,10 @@ public class HouseController {
      *
      * @param user 当前认证用户
      */
-    private void ensureTenantUser(User user) {
-        if (!"TENANT".equalsIgnoreCase(user.getRole())) {
+    private void ensureTenantUser(User user) { // 校验当前用户是否是租客
+        if (!"TENANT".equalsIgnoreCase(user.getRole())) { // 不是租客则拒绝
             // 返回 403 业务码，提示只有租客可以收藏房源
-            throw new BusinessException(403, "仅租客可以收藏房源");
+            throw new BusinessException(403, "仅租客可以收藏房源"); // 给出明确权限提示
         }
     }
 }

@@ -27,8 +27,8 @@ import java.util.UUID;
 @Slf4j
 @Tag(name = "FileUpload", description = "File upload endpoints")
 @RestController
-@RequestMapping("/api/upload")
-public class FileUploadController {
+@RequestMapping("/api/upload") // 上传接口统一前缀
+public class FileUploadController { // 负责图片上传并返回访问地址
 
     /**
      * 单张图片允许的最大大小：5 MB。
@@ -44,7 +44,7 @@ public class FileUploadController {
      * 默认为相对路径 "uploads"（即应用运行目录下的 uploads 文件夹）
      */
     @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    private String uploadDir; // 图片最终保存到这个目录
 
     /**
      * 上传图片接口

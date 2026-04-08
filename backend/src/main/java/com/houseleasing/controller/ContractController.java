@@ -32,14 +32,14 @@ import java.util.Map;
  */
 @Tag(name = "Contract", description = "Contract management")
 @RestController
-@RequestMapping("/api/contracts")
-@RequiredArgsConstructor
+@RequestMapping("/api/contracts") // 合同接口统一前缀
+@RequiredArgsConstructor // 自动注入依赖
 @SecurityRequirement(name = "Bearer Authentication")
-public class ContractController {
+public class ContractController { // 负责合同生成、签署、查询、导出、取消
 
-    private final ContractService contractService;
-    private final ContractRiskService contractRiskService;
-    private final UserMapper userMapper;
+    private final ContractService contractService; // 合同业务服务
+    private final ContractRiskService contractRiskService; // 合同风险分析服务
+    private final UserMapper userMapper; // 用户查询组件
 
     /**
      * 根据订单生成租赁合同（包含自动风险分析）
@@ -51,9 +51,9 @@ public class ContractController {
     @Operation(summary = "Generate contract from order")
     @PostMapping("/generate")
     public Result<Contract> generateContract(@RequestBody ContractGenerateRequest request,
-                                              @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(contractService.generateContract(request, user.getId()));
+                                              @AuthenticationPrincipal UserDetails userDetails) { // 根据订单生成合同
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        return Result.success(contractService.generateContract(request, user.getId())); // 生成并返回合同
     }
 
     /**
@@ -68,10 +68,10 @@ public class ContractController {
     @PostMapping("/{id}/sign")
     public Result<Contract> signContract(@PathVariable Long id,
                                           @RequestBody Map<String, String> request,
-                                          @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        String role = request.get("role");// TENANT 或 LANDLORD
-        return Result.success(contractService.signContract(id, user.getId(), role));// 双方均签署后合同状态自动变更为 ACTIVE（生效）
+                                          @AuthenticationPrincipal UserDetails userDetails) { // 对指定合同进行电子签署
+        User user = resolveUser(userDetails.getUsername()); // 解析当前用户
+        String role = request.get("role"); // 指明当前签署身份（租客或房东）
+        return Result.success(contractService.signContract(id, user.getId(), role)); // 执行签署并返回最新合同状态
     }
 
     /**
@@ -82,8 +82,8 @@ public class ContractController {
      */
     @Operation(summary = "Get contract detail")
     @GetMapping("/{id}")
-    public Result<Contract> getContractById(@PathVariable Long id) {
-        return Result.success(contractService.getContractById(id));
+    public Result<Contract> getContractById(@PathVariable Long id) { // 按合同ID查询详情
+        return Result.success(contractService.getContractById(id)); // 返回合同数据
     }
 
     /**
@@ -101,9 +101,9 @@ public class ContractController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String role,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        User user = resolveUser(userDetails.getUsername());
-        return Result.success(contractService.listContracts(user.getId(), role, page, size));
+            @RequestParam(defaultValue = "10") int size) { // 分页查询“我的合同”，可按角色筛选
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户
+        return Result.success(contractService.listContracts(user.getId(), role, page, size)); // 返回合同分页列表
     }
 
     /**
@@ -114,12 +114,12 @@ public class ContractController {
      */
     @Operation(summary = "Download contract PDF")
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
-        byte[] pdfBytes = contractService.exportPdf(id);
+    public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) { // 下载合同 PDF 文件
+        byte[] pdfBytes = contractService.exportPdf(id); // 生成或读取 PDF 二进制内容
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=contract-" + id + ".pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdfBytes);
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=contract-" + id + ".pdf") // 告诉浏览器按附件下载
+                .contentType(MediaType.APPLICATION_PDF) // 指定返回内容是 PDF
+                .body(pdfBytes); // 把 PDF 字节流写入响应体
     }
 
     /**
@@ -130,11 +130,11 @@ public class ContractController {
      */
     @Operation(summary = "Run risk analysis on contract")
     @PostMapping("/{id}/risk-check")
-    public Result<List<ContractRiskService.RiskItem>> riskCheck(@PathVariable Long id) {
-        Contract contract = contractService.getContractById(id);
+    public Result<List<ContractRiskService.RiskItem>> riskCheck(@PathVariable Long id) { // 对合同执行风险检查
+        Contract contract = contractService.getContractById(id); // 先拿到合同原文和关键金额
         List<ContractRiskService.RiskItem> risks = contractRiskService.analyzeRisk(
-                contract.getContent(), contract.getMonthlyRent(), contract.getDeposit());
-        return Result.success(risks);
+                contract.getContent(), contract.getMonthlyRent(), contract.getDeposit()); // 分析文本条款与金额风险
+        return Result.success(risks); // 返回风险列表给前端展示
     }
 
     /**
@@ -147,10 +147,10 @@ public class ContractController {
     @Operation(summary = "Cancel contract")
     @PutMapping("/{id}/cancel")
     public Result<Void> cancelContract(@PathVariable Long id,
-                                        @AuthenticationPrincipal UserDetails userDetails) {
-        User user = resolveUser(userDetails.getUsername());
-        contractService.cancelContract(id, user.getId());
-        return Result.success();
+                                        @AuthenticationPrincipal UserDetails userDetails) { // 取消合同
+        User user = resolveUser(userDetails.getUsername()); // 获取当前用户ID
+        contractService.cancelContract(id, user.getId()); // 执行取消逻辑（含权限与状态校验）
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -159,11 +159,11 @@ public class ContractController {
      * @param username 用户名
      * @return 对应的用户实体
      */
-    private User resolveUser(String username) {
-        User user = userMapper.selectByUsername(username);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+    private User resolveUser(String username) { // 通用方法：通过用户名取用户实体
+        User user = userMapper.selectByUsername(username); // 数据库查询
+        if (user == null) { // 查不到用户
+            throw new BusinessException(404, "用户不存在"); // 抛出业务错误
         }
-        return user;
+        return user; // 返回用户对象
     }
 }

@@ -26,12 +26,12 @@ import java.util.Map;
  */
 @Tag(name = "Alipay", description = "Alipay sandbox payment APIs")
 @RestController
-@RequestMapping("/api/alipay")
-@RequiredArgsConstructor
-public class AlipayController {
+@RequestMapping("/api/alipay") // 统一支付宝接口前缀
+@RequiredArgsConstructor // 自动生成构造函数并注入依赖
+public class AlipayController { // 负责支付宝支付创建与回调验签
 
-    private final AlipayService alipayService;
-    private final UserMapper userMapper;
+    private final AlipayService alipayService; // 支付宝业务处理服务
+    private final UserMapper userMapper; // 用户查询，用于拿到当前登录用户
 
     /**
      * 发起支付宝支付（租客）
@@ -43,13 +43,13 @@ public class AlipayController {
     @Operation(summary = "Create alipay page pay form")
     @PostMapping("/pay/create")
     public Result<AlipayCreateResponse> createPayForm(@RequestBody AlipayCreateRequest request,
-                                                       @AuthenticationPrincipal UserDetails userDetails) {
-        if (request == null || request.getOrderId() == null) {
-            throw new BusinessException(400, "订单ID不能为空");
+                                                       @AuthenticationPrincipal UserDetails userDetails) { // 生成支付宝支付表单
+        if (request == null || request.getOrderId() == null) { // 防止前端没传订单ID
+            throw new BusinessException(400, "订单ID不能为空"); // 参数不完整，直接返回业务错误
         }
-        User user = resolveUser(userDetails.getUsername());
-        String formHtml = alipayService.createPayForm(request.getOrderId(), user.getId());
-        return Result.success(new AlipayCreateResponse(formHtml));
+        User user = resolveUser(userDetails.getUsername()); // 根据登录用户名查出系统用户
+        String formHtml = alipayService.createPayForm(request.getOrderId(), user.getId()); // 生成支付宝自动提交的 HTML 表单
+        return Result.success(new AlipayCreateResponse(formHtml)); // 把表单包装后返回给前端
     }
 
     /**
@@ -63,8 +63,8 @@ public class AlipayController {
      */
     @Operation(summary = "Verify alipay sync return params")
     @PostMapping("/pay/sync/verify")
-    public Result<AlipaySyncVerifyResponse> verifySyncReturn(@RequestBody Map<String, String> params) {
-        return Result.success(alipayService.verifyAndHandleSyncReturn(params));
+    public Result<AlipaySyncVerifyResponse> verifySyncReturn(@RequestBody Map<String, String> params) { // 验签并处理支付宝同步回调
+        return Result.success(alipayService.verifyAndHandleSyncReturn(params)); // 验证签名成功后更新订单支付状态并返回结果
     }
 
     /**
@@ -73,12 +73,11 @@ public class AlipayController {
      * @param username 用户名
      * @return 用户实体
      */
-    private User resolveUser(String username) {
-        User user = userMapper.selectByUsername(username);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
+    private User resolveUser(String username) { // 通用方法：把用户名转换为用户实体
+        User user = userMapper.selectByUsername(username); // 按用户名查询数据库
+        if (user == null) { // 查不到说明登录态对应用户异常
+            throw new BusinessException(404, "用户不存在"); // 明确提示“用户不存在”
         }
-        return user;
+        return user; // 返回查询到的用户对象
     }
 }
-
