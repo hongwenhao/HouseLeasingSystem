@@ -251,6 +251,12 @@ const collected = ref(false)         // 是否已收藏
 const appointFormRef = ref(null)
 const placeholder = 'https://via.placeholder.com/400x300/409EFF/ffffff?text=房屋图片'
 const GROUPING_CITY_LABELS = ['市辖区', '省直辖县级行政区划', '县']  // 行政区划中的占位分组名称
+const HOUSE_TYPE_LABEL_MAP = {
+  APARTMENT: '公寓',
+  HOUSE: '住宅',
+  ROOM: '单间',
+  VILLA: '别墅'
+}
 const isTenant = computed(() => userStore.userInfo.role === 'TENANT')
 const isLandlord = computed(() => userStore.userInfo.role === 'LANDLORD')
 const isAdmin = computed(() => userStore.userInfo.role === 'ADMIN')
@@ -345,16 +351,10 @@ const decorationLabel = computed(() => {
  * APARTMENT → 公寓，HOUSE → 住宅，ROOM → 单间，VILLA → 别墅
  */
 const houseTypeLabel = computed(() => {
-  const map = {
-    APARTMENT: '公寓',
-    HOUSE: '住宅',
-    ROOM: '单间',
-    VILLA: '别墅'
-  }
   const houseType = house.value?.houseType
   if (!houseType) return '-'
   // map 中存在时返回中文标签；不存在时回退为后端原始值，避免新枚举上线后页面空白。
-  return map[houseType] ?? houseType
+  return HOUSE_TYPE_LABEL_MAP[houseType] ?? houseType
 })
 
 /**
