@@ -41,15 +41,15 @@ import java.util.Objects;
  * 3) 验签通过且支付成功后，再调用订单支付逻辑完成“PAID + COMPLETED”落库，保证状态变更口径统一。</p>
  */
 @Slf4j
-@Service
+@Service // 声明为支付宝业务服务
 @RequiredArgsConstructor
-public class AlipayServiceImpl implements AlipayService {
+public class AlipayServiceImpl implements AlipayService { // 支付宝支付与回调验签的实现类
 
-    private final AlipayClient alipayClient;
-    private final AlipayProperties alipayProperties;
-    private final OrderMapper orderMapper;
-    private final ContractMapper contractMapper;
-    private final OrderService orderService;
+    private final AlipayClient alipayClient; // 支付宝 SDK 客户端
+    private final AlipayProperties alipayProperties; // 支付宝配置（appId/密钥/回调地址等）
+    private final OrderMapper orderMapper; // 订单数据访问组件
+    private final ContractMapper contractMapper; // 合同数据访问组件（支付前合同校验会用到）
+    private final OrderService orderService; // 复用统一订单支付落库逻辑
 
     private static final String TRADE_SUCCESS = "TRADE_SUCCESS";
     private static final String TRADE_FINISHED = "TRADE_FINISHED";
@@ -62,7 +62,7 @@ public class AlipayServiceImpl implements AlipayService {
      * @return 可直接提交到支付宝网关的 HTML 表单
      */
     @Override
-    public String createPayForm(Long orderId, Long tenantId) {
+    public String createPayForm(Long orderId, Long tenantId) { // 生成支付宝收银台表单
         validateAlipayConfig();
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
@@ -104,7 +104,7 @@ public class AlipayServiceImpl implements AlipayService {
      */
     @Override
     @Transactional
-    public AlipaySyncVerifyResponse verifyAndHandleSyncReturn(Map<String, String> params) {
+    public AlipaySyncVerifyResponse verifyAndHandleSyncReturn(Map<String, String> params) { // 验签回调并确认支付结果
         validateAlipayConfig();
         if (params == null || params.isEmpty()) {
             throw new BusinessException(400, "回调参数为空");

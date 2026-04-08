@@ -38,9 +38,9 @@ import java.util.concurrent.TimeUnit;
  *              信用评分管理及管理员对用户的封禁/解封操作
  */
 @Slf4j
-@Service
+@Service // 声明为用户业务服务
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService { // 用户主流程实现：注册登录、实名、改密、后台管理
 
     /** 每日首次登录可获得的信用分奖励 */
     private static final int DAILY_LOGIN_CREDIT_BONUS = 1;
@@ -57,12 +57,12 @@ public class UserServiceImpl implements UserService {
     /** 校验位映射表：sum % 11 后对应字符 */
     private static final char[] ID_CARD_CHECK_CODES = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
 
-    private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final MessageProducer messageProducer;
-    private final IdCardCryptoService idCardCryptoService;
+    private final UserMapper userMapper; // 用户表访问组件
+    private final PasswordEncoder passwordEncoder; // 密码加密/校验组件
+    private final JwtUtil jwtUtil; // JWT 生成工具
+    private final RedisTemplate<String, Object> redisTemplate; // Redis 组件（每日登录去重等）
+    private final MessageProducer messageProducer; // MQ 消息发送组件
+    private final IdCardCryptoService idCardCryptoService; // 身份证加解密服务
 
     /**
      * 用户注册：验证用户名、手机号、邮箱的唯一性，加密密码后保存用户信息
@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public User register(RegisterRequest request) {
+    public User register(RegisterRequest request) { // 用户注册
         // 检查用户名是否已存在
         if (userMapper.selectByUsername(request.getUsername()) != null) {
             throw new BusinessException("用户名已存在");
@@ -112,7 +112,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public Map<String, Object> login(LoginRequest request) {
+    public Map<String, Object> login(LoginRequest request) { // 用户登录并返回 token
         // 支持「用户名」或「手机号」作为统一登录入口，减少前端区分字段的负担
         User user = userMapper.selectByUsernameOrPhone(request.getUsername());
         if (user == null) {
@@ -164,7 +164,7 @@ public class UserServiceImpl implements UserService {
      * @return 用户对象（密码字段已清空）
      */
     @Override
-    public User getUserById(Long id) {
+    public User getUserById(Long id) { // 查询用户详情（含敏感字段处理）
         User user = userMapper.selectById(id);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -184,7 +184,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public User updateProfile(Long userId, UserUpdateRequest request) {
+    public User updateProfile(Long userId, UserUpdateRequest request) { // 更新用户个人资料
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -246,7 +246,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void realNameAuth(Long userId, String realName, String idCard) {
+    public void realNameAuth(Long userId, String realName, String idCard) { // 提交实名认证
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -337,7 +337,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void changePassword(Long userId, ChangePasswordRequest request) {
+    public void changePassword(Long userId, ChangePasswordRequest request) { // 修改登录密码
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -360,7 +360,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
+    public void resetPassword(ResetPasswordRequest request) { // 忘记密码重置
         User user = userMapper.selectByUsername(request.getUsername());
         // 使用统一的错误信息，防止用户名枚举攻击
         if (user == null || user.getPhone() == null || !user.getPhone().equals(request.getPhone())) {
@@ -380,7 +380,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void updateCreditScore(Long userId, int delta) {
+    public void updateCreditScore(Long userId, int delta) { // 调整用户信用分
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -401,7 +401,7 @@ public class UserServiceImpl implements UserService {
      * @return 分页用户列表
      */
     @Override
-    public PageResult<User> listUsers(int page, int size, String keyword) {
+    public PageResult<User> listUsers(int page, int size, String keyword) { // 管理员分页查询用户
         Page<User> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
@@ -427,7 +427,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void banUser(Long userId) {
+    public void banUser(Long userId) { // 封禁用户
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -444,7 +444,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void unbanUser(Long userId) {
+    public void unbanUser(Long userId) { // 解封用户
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");

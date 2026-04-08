@@ -16,8 +16,8 @@ import java.util.List;
  *              检测押金比例、维修条款、解约条款、违约金和费用约定等风险点
  */
 @Slf4j
-@Service
-public class ContractRiskServiceImpl implements ContractRiskService {
+@Service // 声明为 Spring 服务组件
+public class ContractRiskServiceImpl implements ContractRiskService { // 合同风控规则的具体实现
 
     /**
      * 对合同文本进行多维度风险分析
@@ -29,7 +29,7 @@ public class ContractRiskServiceImpl implements ContractRiskService {
      * @return 发现的风险条目列表
      */
     @Override
-    public List<RiskItem> analyzeRisk(String contractText, BigDecimal monthlyRent, BigDecimal deposit) {
+    public List<RiskItem> analyzeRisk(String contractText, BigDecimal monthlyRent, BigDecimal deposit) { // 执行合同文本风险扫描并返回风险清单
         List<RiskItem> risks = new ArrayList<>();
         // 合同正文为空时不做规则匹配，直接返回空风险列表：
         // - 避免空指针影响合同主流程；

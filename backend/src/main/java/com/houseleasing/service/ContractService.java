@@ -10,7 +10,7 @@ import com.houseleasing.entity.Contract;
  * @author hongwenhao
  * @description 定义租赁合同相关的业务操作，包括生成合同、签署、查询、导出和取消
  */
-public interface ContractService {
+public interface ContractService { // 合同主流程抽象：生成、签署、查询、导出、取消
 
     /**
      * 根据订单生成租赁合同（自动进行风险分析）
@@ -19,7 +19,7 @@ public interface ContractService {
      * @param userId  操作人用户 ID
      * @return 生成的合同对象（含风险分析结果）
      */
-    Contract generateContract(ContractGenerateRequest request, Long userId);
+    Contract generateContract(ContractGenerateRequest request, Long userId); // 根据订单和补充条款生成合同
 
     /**
      * 用户对合同进行电子签署
@@ -29,7 +29,7 @@ public interface ContractService {
      * @param role       签署角色：TENANT（租客）或 LANDLORD（房东）
      * @return 签署后的合同对象
      */
-    Contract signContract(Long contractId, Long userId, String role);
+    Contract signContract(Long contractId, Long userId, String role); // 合同签署（租客/房东）
 
     /**
      * 根据合同 ID 查询合同详情
@@ -37,7 +37,7 @@ public interface ContractService {
      * @param id 合同 ID
      * @return 合同详情对象
      */
-    Contract getContractById(Long id);
+    Contract getContractById(Long id); // 查询单个合同详情
 
     /**
      * 查询用户的合同列表（分页）
@@ -48,7 +48,7 @@ public interface ContractService {
      * @param size   每页大小
      * @return 该用户的分页合同列表
      */
-    PageResult<Contract> listContracts(Long userId, String role, int page, int size);
+    PageResult<Contract> listContracts(Long userId, String role, int page, int size); // 分页查询“我的合同”
 
     /**
      * 导出合同为 PDF 文件
@@ -56,7 +56,7 @@ public interface ContractService {
      * @param contractId 要导出的合同 ID
      * @return PDF 文件的字节数组
      */
-    byte[] exportPdf(Long contractId);
+    byte[] exportPdf(Long contractId); // 导出合同 PDF 字节流
 
     /**
      * 取消指定合同（仅限草稿或待签署状态）
@@ -64,5 +64,5 @@ public interface ContractService {
      * @param contractId 要取消的合同 ID
      * @param userId     操作人用户 ID（必须是合同的租客或房东）
      */
-    void cancelContract(Long contractId, Long userId);
+    void cancelContract(Long contractId, Long userId); // 取消合同（带状态与权限校验）
 }

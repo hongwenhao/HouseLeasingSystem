@@ -51,19 +51,19 @@ import java.util.stream.Collectors;
  *              订单审批、取消、完成等操作，通过 RabbitMQ 发送状态变更通知
  */
 @Slf4j
-@Service
+@Service // 声明为订单业务服务
 @RequiredArgsConstructor
-public class OrderServiceImpl implements OrderService {
+public class OrderServiceImpl implements OrderService { // 订单主流程实现：创建、审批、支付、退款、评价
 
-    private final OrderMapper orderMapper;
-    private final HouseMapper houseMapper;
-    private final UserMapper userMapper;
-    private final ReviewMapper reviewMapper;
-    private final ContractMapper contractMapper;
-    private final UserBehaviorMapper userBehaviorMapper;
-    private final MessageProducer messageProducer;
-    private final MessageService messageService;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final OrderMapper orderMapper; // 订单表访问组件
+    private final HouseMapper houseMapper; // 房源表访问组件
+    private final UserMapper userMapper; // 用户表访问组件
+    private final ReviewMapper reviewMapper; // 评价表访问组件
+    private final ContractMapper contractMapper; // 合同表访问组件
+    private final UserBehaviorMapper userBehaviorMapper; // 用户行为表访问组件
+    private final MessageProducer messageProducer; // MQ 消息发送组件
+    private final MessageService messageService; // 站内消息服务
+    private final RedisTemplate<String, Object> redisTemplate; // Redis 组件（计数与去重）
     private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript();
     private static final long CANCEL_COUNT_DEDUCT_THRESHOLD = 11L;
     private static final String TENANT_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
@@ -96,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public Order createIntent(Long tenantId, Long houseId, String remark) {
+    public Order createIntent(Long tenantId, Long houseId, String remark) { // 创建意向订单
         House house = houseMapper.selectById(houseId);
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -144,7 +144,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public Order createAppointment(OrderCreateRequest request, Long tenantId) {
+    public Order createAppointment(OrderCreateRequest request, Long tenantId) { // 创建预约看房订单
         House house = houseMapper.selectById(request.getHouseId());
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
@@ -196,7 +196,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public void approveOrder(Long orderId, boolean approved, Long landlordId) {
+    public void approveOrder(Long orderId, boolean approved, Long landlordId) { // 房东审批订单
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -221,7 +221,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public void cancelOrder(Long orderId, Long userId) {
+    public void cancelOrder(Long orderId, Long userId) { // 取消订单并处理信用分与通知
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -283,7 +283,7 @@ public class OrderServiceImpl implements OrderService {
      * @return 订单详情对象（含关联信息）
      */
     @Override
-    public Order getOrderById(Long id) {
+    public Order getOrderById(Long id) { // 查询订单详情
         Order order = orderMapper.selectById(id);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -326,7 +326,7 @@ public class OrderServiceImpl implements OrderService {
      * @return 分页订单列表
      */
     @Override
-    public PageResult<Order> listTenantOrders(Long tenantId, int page, int size) {
+    public PageResult<Order> listTenantOrders(Long tenantId, int page, int size) { // 分页查询租客订单
         Page<Order> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Order::getTenantId, tenantId);
@@ -350,7 +350,7 @@ public class OrderServiceImpl implements OrderService {
      * @return 分页订单列表
      */
     @Override
-    public PageResult<Order> listLandlordOrders(Long landlordId, int page, int size) {
+    public PageResult<Order> listLandlordOrders(Long landlordId, int page, int size) { // 分页查询房东订单
         Page<Order> pageObj = new Page<>(page, size);
 
         // 兼容历史数据：landlord_id 直接命中，或订单房源归属当前房东（JOIN houses.owner_id）
@@ -379,7 +379,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public void completeOrder(Long orderId) {
+    public void completeOrder(Long orderId) { // 手动标记订单完成
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -398,7 +398,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public void payOrder(Long orderId, Long tenantId) {
+    public void payOrder(Long orderId, Long tenantId) { // 支付订单
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -440,7 +440,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public void refundOrder(Long orderId, Long tenantId) {
+    public void refundOrder(Long orderId, Long tenantId) { // 退款订单
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -470,7 +470,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional
-    public void reviewOrder(Long orderId, Long tenantId, OrderReviewRequest request) {
+    public void reviewOrder(Long orderId, Long tenantId, OrderReviewRequest request) { // 提交订单评价并调整信用分
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -532,7 +532,7 @@ public class OrderServiceImpl implements OrderService {
      * 查询租客自己提交过的评价记录（分页）。
      */
     @Override
-    public PageResult<ReviewRecordResponse> listTenantReviewRecords(Long tenantId, int page, int size) {
+    public PageResult<ReviewRecordResponse> listTenantReviewRecords(Long tenantId, int page, int size) { // 分页查询租客评价记录
         Page<Review> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Review::getUserId, tenantId);
@@ -553,7 +553,7 @@ public class OrderServiceImpl implements OrderService {
      * - 同时保留 orders.landlord_id 兼容口径，防止历史数据字段差异导致漏数。
      */
     @Override
-    public PageResult<ReviewRecordResponse> listLandlordReviewRecords(Long landlordId, int page, int size) {
+    public PageResult<ReviewRecordResponse> listLandlordReviewRecords(Long landlordId, int page, int size) { // 分页查询房东收到的评价
         Page<Review> pageObj = new Page<>(page, size);
         Page<Review> result = reviewMapper.selectLandlordReviewPage(pageObj, landlordId);
         List<ReviewRecordResponse> records = toReviewRecordResponses(result.getRecords());
