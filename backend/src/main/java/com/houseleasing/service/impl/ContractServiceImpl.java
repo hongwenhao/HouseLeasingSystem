@@ -687,6 +687,11 @@ public class ContractServiceImpl implements ContractService {
         contract.setStatus("CANCELLED");
         contract.setUpdateTime(LocalDateTime.now());
         contractMapper.updateById(contract);
+        // 关键一致性规则（本次需求）：
+        // 当租客或房东取消合同时，关联订单也必须同步置为 CANCELLED，
+        // 防止出现“合同已取消但订单仍可流转”的不一致状态。
+        // 该更新与合同取消处于同一事务中，保证跨表状态原子提交/回滚。
+        cancelRelatedOrderForContract(contract);
 
         // 合同取消后将对应房源恢复为上架状态（ONLINE），使其可以被重新预订
         House house = houseMapper.selectById(contract.getHouseId());
@@ -695,6 +700,27 @@ public class ContractServiceImpl implements ContractService {
             houseMapper.updateById(house);
             log.info("合同 {} 已取消，房源 {} 已自动恢复上架", contractId, house.getId());
         }
+    }
+
+    /**
+     * 合同取消时联动取消对应订单（若存在且尚未取消）。
+     *
+     * 设计说明：
+     * 1) orderId 为空时直接忽略，兼容历史脏数据；
+     * 2) 订单不存在或已取消时直接返回，保证幂等；
+     * 3) 不额外限制订单当前业务阶段，统一落库为 CANCELLED，满足“取消动作双向同步”的业务口径。
+     */
+    private void cancelRelatedOrderForContract(Contract contract) {
+        if (contract == null || contract.getOrderId() == null) {
+            return;
+        }
+        Order relatedOrder = orderMapper.selectById(contract.getOrderId());
+        if (relatedOrder == null || "CANCELLED".equals(relatedOrder.getStatus())) {
+            return;
+        }
+        relatedOrder.setStatus("CANCELLED");
+        relatedOrder.setUpdateTime(LocalDateTime.now());
+        orderMapper.updateById(relatedOrder);
     }
 
     /**
