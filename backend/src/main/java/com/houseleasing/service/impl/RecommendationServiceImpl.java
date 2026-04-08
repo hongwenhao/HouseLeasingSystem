@@ -20,12 +20,12 @@ import java.util.stream.Collectors;
  *              算法流程：获取用户历史行为 → 找到相似用户 → 推荐相似用户感兴趣的房源 → 不足时补充热门房源
  */
 @Slf4j
-@Service
+@Service // 声明为推荐业务服务
 @RequiredArgsConstructor
-public class RecommendationServiceImpl implements RecommendationService {
+public class RecommendationServiceImpl implements RecommendationService { // 协同过滤推荐算法的实现类
 
-    private final UserBehaviorMapper userBehaviorMapper;
-    private final HouseMapper houseMapper;
+    private final UserBehaviorMapper userBehaviorMapper; // 用户行为查询组件（浏览/收藏/下单）
+    private final HouseMapper houseMapper; // 房源数据访问组件
 
     /**
      * 基于协同过滤为用户推荐房源
@@ -36,7 +36,7 @@ public class RecommendationServiceImpl implements RecommendationService {
      * @return 推荐的房源列表
      */
     @Override
-    public List<House> getRecommendedHouses(Long userId, int limit) {
+    public List<House> getRecommendedHouses(Long userId, int limit) { // 给指定用户生成推荐房源列表
         try {
             // 第一步：获取当前用户有过交互的所有房源集合
             // 交互行为由 UserBehaviorMapper 统一维护（浏览/收藏等），此处不区分行为权重

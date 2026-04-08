@@ -32,7 +32,7 @@ import java.time.Duration;
 @Slf4j
 @Configuration
 @EnableCaching
-public class RedisConfig {
+public class RedisConfig { // Redis 序列化、缓存管理与异常处理配置
 
     /**
      * 配置 RedisTemplate，使用 Jackson JSON 序列化存储 Java 对象
@@ -42,7 +42,7 @@ public class RedisConfig {
      * @return 配置好的 RedisTemplate 实例
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) { // 配置 RedisTemplate 序列化策略
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
 
@@ -76,7 +76,7 @@ public class RedisConfig {
      * @return 配置好的 CacheManager 实例
      */
     @Bean
-    public CacheManager cacheManager(RedisConnectionFactory factory) {
+    public CacheManager cacheManager(RedisConnectionFactory factory) { // 配置 Spring Cache 的 Redis 管理器
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.activateDefaultTyping(
@@ -107,7 +107,7 @@ public class RedisConfig {
      * @return 自定义缓存错误处理器
      */
     @Bean
-    public CacheErrorHandler cacheErrorHandler() {
+    public CacheErrorHandler cacheErrorHandler() { // 配置缓存异常兜底处理器
         return new CacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException exception, org.springframework.cache.Cache cache, Object key) {

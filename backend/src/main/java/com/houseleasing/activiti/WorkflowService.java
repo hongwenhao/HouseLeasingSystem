@@ -21,13 +21,13 @@ import java.util.Map;
  * 封装流程启动、任务完成、状态查询等操作。
  */
 @Slf4j
-@Service
+@Service // 声明为工作流业务服务
 @RequiredArgsConstructor
-public class WorkflowService {
+public class WorkflowService { // 合同签署流程编排实现：启动流程、完成任务、查询状态
 
-    private final RuntimeService runtimeService;
-    private final TaskService taskService;
-    private final HistoryService historyService;
+    private final RuntimeService runtimeService; // 运行时流程服务（启动/查询在途实例）
+    private final TaskService taskService; // 用户任务服务（查询待办/完成任务）
+    private final HistoryService historyService; // 历史流程服务（查询已结束流程）
 
     /**
      * 启动合同签署流程
@@ -37,7 +37,7 @@ public class WorkflowService {
      * @param landlordId 房东 ID
      * @return 流程实例 ID
      */
-    public String startContractSigningProcess(Long contractId, Long tenantId, Long landlordId) {
+    public String startContractSigningProcess(Long contractId, Long tenantId, Long landlordId) { // 启动合同签署流程实例
         Map<String, Object> variables = new HashMap<>();
         //组装流程变量，供后续用户任务节点读取使用：
         //contractId：用于在签署回调时反查业务合同；
@@ -64,7 +64,7 @@ public class WorkflowService {
      * @param role              签署角色 TENANT / LANDLORD
      * @param approved          是否同意签署
      */
-    public void completeContractTask(String processInstanceId, Long userId, String role, boolean approved) {
+    public void completeContractTask(String processInstanceId, Long userId, String role, boolean approved) { // 完成当前用户签署任务
         // 1. 查询待办任务
         // 构建任务查询条件：匹配指定的流程实例ID以及当前用户ID（需转为String以匹配Assignee字段）
         // singleResult() 确保查询结果唯一，如果无结果返回null，多于一个结果则抛出异常
@@ -107,7 +107,7 @@ public class WorkflowService {
      * @param processInstanceId 流程实例 ID
      * @return true 表示已结束
      */
-    public boolean isProcessFinished(String processInstanceId) {
+    public boolean isProcessFinished(String processInstanceId) { // 判断流程是否已经结束
         // 优先查 runtime：只要还能查到实例，说明流程仍在运行（包括待办/并行分支未结束）。
         ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
                 .processInstanceId(processInstanceId)

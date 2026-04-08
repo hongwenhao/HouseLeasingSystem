@@ -16,7 +16,7 @@ import java.util.Map;
  * @author hongwenhao
  * @description 定义用户相关的业务操作，包括注册、登录、信息管理、实名认证及管理员操作
  */
-public interface UserService {
+public interface UserService { // 用户主流程抽象：注册登录、资料维护、实名、管理能力
 
     /**
      * 用户注册
@@ -24,7 +24,7 @@ public interface UserService {
      * @param request 注册请求参数（用户名、密码、手机号等）
      * @return 注册成功的用户对象（密码字段已清空）
      */
-    User register(RegisterRequest request);
+    User register(RegisterRequest request); // 用户注册
 
     /**
      * 用户登录，验证账号密码并生成 JWT Token
@@ -32,7 +32,7 @@ public interface UserService {
      * @param request 登录请求参数（用户名和密码）
      * @return 包含 token 和用户信息的 Map
      */
-    Map<String, Object> login(LoginRequest request);
+    Map<String, Object> login(LoginRequest request); // 用户登录并返回 token
 
     /**
      * 根据用户 ID 查询用户信息
@@ -40,7 +40,7 @@ public interface UserService {
      * @param id 用户 ID
      * @return 用户对象（密码字段已清空）
      */
-    User getUserById(Long id);
+    User getUserById(Long id); // 按ID查询用户详情
 
     /**
      * 更新用户个人资料
@@ -49,7 +49,7 @@ public interface UserService {
      * @param request 包含更新内容的请求对象
      * @return 更新后的用户对象
      */
-    User updateProfile(Long userId, UserUpdateRequest request);
+    User updateProfile(Long userId, UserUpdateRequest request); // 更新用户资料
 
     /**
      * 提交用户实名认证信息
@@ -58,7 +58,7 @@ public interface UserService {
      * @param realName 真实姓名
      * @param idCard   身份证号码
      */
-    void realNameAuth(Long userId, String realName, String idCard);
+    void realNameAuth(Long userId, String realName, String idCard); // 提交实名认证
 
     /**
      * 修改用户密码（需验证旧密码）
@@ -66,7 +66,7 @@ public interface UserService {
      * @param userId  当前登录用户 ID
      * @param request 包含旧密码和新密码的请求对象
      */
-    void changePassword(Long userId, ChangePasswordRequest request);
+    void changePassword(Long userId, ChangePasswordRequest request); // 修改密码
 
     /**
      * 重置用户密码（忘记密码功能）
@@ -74,7 +74,7 @@ public interface UserService {
      *
      * @param request 包含用户名、手机号和新密码的请求对象
      */
-    void resetPassword(ResetPasswordRequest request);
+    void resetPassword(ResetPasswordRequest request); // 忘记密码重置
 
     /**
      * 更新用户信用评分
@@ -82,7 +82,7 @@ public interface UserService {
      * @param userId 用户 ID
      * @param delta  评分变动值（正数加分，负数减分），结果限制在 0-200 之间
      */
-    void updateCreditScore(Long userId, int delta);
+    void updateCreditScore(Long userId, int delta); // 调整信用分
 
     /**
      * 分页查询用户列表（管理员使用）
@@ -92,19 +92,19 @@ public interface UserService {
      * @param keyword 搜索关键词（匹配用户名、手机号、邮箱）
      * @return 分页用户列表
      */
-    PageResult<User> listUsers(int page, int size, String keyword);
+    PageResult<User> listUsers(int page, int size, String keyword); // 管理员分页查询用户
 
     /**
      * 封禁指定用户账号
      *
      * @param userId 要封禁的用户 ID
      */
-    void banUser(Long userId);
+    void banUser(Long userId); // 封禁用户
 
     /**
      * 解封指定用户账号
      *
      * @param userId 要解封的用户 ID
      */
-    void unbanUser(Long userId);
+    void unbanUser(Long userId); // 解封用户
 }

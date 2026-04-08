@@ -21,11 +21,11 @@ import java.time.LocalDateTime;
  * @description 实现站内消息的发送、分页查询、已读标记等业务逻辑
  */
 @Slf4j
-@Service
+@Service // 声明为消息业务服务实现
 @RequiredArgsConstructor
-public class MessageServiceImpl implements MessageService {
+public class MessageServiceImpl implements MessageService { // 站内消息发送与已读管理的具体实现
 
-    private final MessageMapper messageMapper;
+    private final MessageMapper messageMapper; // 消息表数据访问组件
 
     /**
      * 发送站内消息，创建消息记录并保存到数据库（不关联具体业务对象）
@@ -37,7 +37,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     @Transactional
-    public void sendMessage(Long userId, String title, String content, String type) {
+    public void sendMessage(Long userId, String title, String content, String type) { // 发送不带业务关联ID的消息
         // 无关联业务对象时，relatedId 传 null
         sendMessage(userId, title, content, type, null);
     }
@@ -54,7 +54,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     @Transactional
-    public void sendMessage(Long userId, String title, String content, String type, Long relatedId) {
+    public void sendMessage(Long userId, String title, String content, String type, Long relatedId) { // 发送可关联订单/合同/房源的消息
         Message message = new Message();
         message.setUserId(userId);
         message.setTitle(title);
@@ -75,7 +75,7 @@ public class MessageServiceImpl implements MessageService {
      * @return 分页消息列表
      */
     @Override
-    public PageResult<Message> listMessages(Long userId, int page, int size) {
+    public PageResult<Message> listMessages(Long userId, int page, int size) { // 分页查询某个用户的消息列表
         Page<Message> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getUserId, userId);
@@ -92,7 +92,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     @Transactional
-    public void markAsRead(Long messageId, Long userId) {
+    public void markAsRead(Long messageId, Long userId) { // 把指定消息标记为已读（含归属校验）
         Message message = messageMapper.selectById(messageId);
         // 消息不存在或不属于该用户时抛出异常
         if (message == null || !message.getUserId().equals(userId)) {
@@ -109,7 +109,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     @Transactional
-    public void markAllAsRead(Long userId) {
+    public void markAllAsRead(Long userId) { // 批量把用户所有未读消息设为已读
         // 构建批量更新条件：属于该用户且未读的消息
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getUserId, userId).eq(Message::getIsRead, false);
@@ -125,7 +125,7 @@ public class MessageServiceImpl implements MessageService {
      * @return 未读消息数量
      */
     @Override
-    public long countUnread(Long userId) {
+    public long countUnread(Long userId) { // 统计用户未读消息数量
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getUserId, userId).eq(Message::getIsRead, false);
         return messageMapper.selectCount(wrapper);

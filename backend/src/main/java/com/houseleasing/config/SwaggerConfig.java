@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  *              访问地址：/swagger-ui.html 或 /v3/api-docs
  */
 @Configuration
-public class SwaggerConfig {
+public class SwaggerConfig { // OpenAPI 文档与 Bearer 鉴权方案配置
 
     /**
      * 配置 OpenAPI 文档信息和全局安全方案
@@ -25,7 +25,7 @@ public class SwaggerConfig {
      * @return OpenAPI 配置对象
      */
     @Bean
-    public OpenAPI openAPI() {
+    public OpenAPI openAPI() { // 构建 OpenAPI 文档对象
         return new OpenAPI()
                 .info(new Info()
                         .title("House Leasing System API")       // API 文档标题

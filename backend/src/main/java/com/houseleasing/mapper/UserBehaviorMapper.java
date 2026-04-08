@@ -15,7 +15,7 @@ import java.util.List;
  *              并扩展了用于协同过滤推荐算法的数据查询方法
  */
 @Mapper
-public interface UserBehaviorMapper extends BaseMapper<UserBehavior> {
+public interface UserBehaviorMapper extends BaseMapper<UserBehavior> { // 用户行为数据访问接口（含推荐查询）
 
     /**
      * 查询指定用户有过交互行为的所有房源 ID（去重）
@@ -24,7 +24,7 @@ public interface UserBehaviorMapper extends BaseMapper<UserBehavior> {
      * @return 该用户交互过的房源 ID 列表
      */
     @Select("SELECT DISTINCT house_id FROM user_behaviors WHERE user_id = #{userId}")
-    List<Long> selectHouseIdsByUserId(Long userId);
+    List<Long> selectHouseIdsByUserId(Long userId); // 查询用户交互过的房源 ID 列表
 
     /**
      * 查询与指定房源有过交互行为的所有用户 ID（排除指定用户，去重）
@@ -35,5 +35,5 @@ public interface UserBehaviorMapper extends BaseMapper<UserBehavior> {
      * @return 与该房源交互过的其他用户 ID 列表
      */
     @Select("SELECT DISTINCT user_id FROM user_behaviors WHERE house_id = #{houseId} AND user_id != #{excludeUserId}")
-    List<Long> selectUserIdsByHouseId(Long houseId, Long excludeUserId);
+    List<Long> selectUserIdsByHouseId(Long houseId, Long excludeUserId); // 查询交互过房源的其他用户 ID
 }

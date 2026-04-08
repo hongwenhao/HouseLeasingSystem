@@ -25,12 +25,12 @@ import java.io.IOException;
  *              验证有效性后将认证信息注入 Spring Security 上下文
  */
 @Slf4j
-@Component
+@Component // 注册为 Spring Security 过滤器组件
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter { // JWT 认证入口：解析并写入安全上下文
 
-    private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService;
+    private final JwtUtil jwtUtil; // JWT 生成/校验工具
+    private final UserDetailsService userDetailsService; // 用户详情加载服务
 
     /**
      * 过滤器核心逻辑：解析 Authorization 请求头中的 Bearer Token 并设置认证信息
@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain) throws ServletException, IOException { // 每次请求执行一次鉴权解析
         String authHeader = request.getHeader("Authorization");
         // 仅处理 Bearer Token 格式的认证请求
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

@@ -48,19 +48,19 @@ import java.util.stream.Collectors;
  */
 @Tag(name = "Admin", description = "Admin management endpoints")
 @RestController
-@RequestMapping("/api/admin")
-@RequiredArgsConstructor
+@RequestMapping("/api/admin") // 管理后台接口统一前缀
+@RequiredArgsConstructor // 自动注入依赖组件
 @SecurityRequirement(name = "Bearer Authentication")
 @PreAuthorize("hasRole('ADMIN')") // 仅允许管理员角色访问此控制器的所有接口
-public class AdminController {
-    private static final int AREA_STATS_LIMIT = 12;
-    private static final int PRICE_TRENDS_LIMIT = 6;
-    private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
-    private static final String HOUSE_ACTION_ONLINE = "上架";
-    private static final String HOUSE_ACTION_OFFLINE = "下架";
-    private static final String OWNER_HOUSE_ONLINE_MESSAGE = "管理员已将您的房源上架，可正常展示给租客。";
-    private static final String OWNER_HOUSE_OFFLINE_MESSAGE = "管理员已将您的房源下架，暂不可展示给租客。";
-    private static final String TENANT_HOUSE_OFFLINE_MESSAGE_TEMPLATE = "管理员已将您关注/下单的房源《%s》下架。";
+public class AdminController { // 管理员专用控制器：用户、房源、订单、合同、统计等后台能力
+    private static final int AREA_STATS_LIMIT = 12; // 城市统计最多返回 12 个城市
+    private static final int PRICE_TRENDS_LIMIT = 6; // 租金趋势最多返回最近 6 个月
+    private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM"); // 月份字符串格式
+    private static final String HOUSE_ACTION_ONLINE = "上架"; // 房源上架动作名
+    private static final String HOUSE_ACTION_OFFLINE = "下架"; // 房源下架动作名
+    private static final String OWNER_HOUSE_ONLINE_MESSAGE = "管理员已将您的房源上架，可正常展示给租客。"; // 给房东的上架通知文案
+    private static final String OWNER_HOUSE_OFFLINE_MESSAGE = "管理员已将您的房源下架，暂不可展示给租客。"; // 给房东的下架通知文案
+    private static final String TENANT_HOUSE_OFFLINE_MESSAGE_TEMPLATE = "管理员已将您关注/下单的房源《%s》下架。"; // 给租客的下架通知模板
 
     private static final String CREDIT_RANGE_EXCELLENT = "90-100(优秀)";
     private static final String CREDIT_RANGE_GOOD = "70-89(良好)";
@@ -92,12 +92,12 @@ public class AdminController {
                     "WHEN credit_score >= 60 THEN '" + CREDIT_RANGE_NORMAL + "' " +
                     "ELSE '" + CREDIT_RANGE_LOW + "' END";
 
-    private final UserService userService;
-    private final UserMapper userMapper;
-    private final HouseMapper houseMapper;
-    private final OrderMapper orderMapper;
-    private final ContractMapper contractMapper;
-    private final MessageProducer messageProducer;
+    private final UserService userService; // 用户管理业务服务
+    private final UserMapper userMapper; // 用户数据访问组件
+    private final HouseMapper houseMapper; // 房源数据访问组件
+    private final OrderMapper orderMapper; // 订单数据访问组件
+    private final ContractMapper contractMapper; // 合同数据访问组件
+    private final MessageProducer messageProducer; // MQ 消息发送器（用于异步通知）
 
     /**
      * 查询系统所有用户列表（支持关键词搜索）
@@ -112,8 +112,8 @@ public class AdminController {
     public Result<PageResult<User>> listUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) String keyword) {
-        return Result.success(userService.listUsers(page, size, keyword));
+            @RequestParam(required = false) String keyword) { // 管理员分页查询用户，可按关键词检索
+        return Result.success(userService.listUsers(page, size, keyword)); // 返回用户分页结果
     }
 
     /**
@@ -124,9 +124,9 @@ public class AdminController {
      */
     @Operation(summary = "Ban user")
     @PutMapping("/users/{id}/ban")
-    public Result<Void> banUser(@PathVariable Long id) {
-        userService.banUser(id);
-        return Result.success();
+    public Result<Void> banUser(@PathVariable Long id) { // 封禁指定用户
+        userService.banUser(id); // 更新用户状态为封禁
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -137,9 +137,9 @@ public class AdminController {
      */
     @Operation(summary = "Unban user")
     @PutMapping("/users/{id}/unban")
-    public Result<Void> unbanUser(@PathVariable Long id) {
-        userService.unbanUser(id);
-        return Result.success();
+    public Result<Void> unbanUser(@PathVariable Long id) { // 解封指定用户
+        userService.unbanUser(id); // 更新用户状态为正常
+        return Result.success(); // 返回成功
     }
 
     /**
@@ -156,7 +156,7 @@ public class AdminController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status) { // 后台分页查询订单（支持关键词+状态）
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
@@ -210,7 +210,7 @@ public class AdminController {
             order.setTenant(sanitizeUser(userMap.get(order.getTenantId())));
             order.setLandlord(sanitizeUser(userMap.get(order.getLandlordId())));
         });
-        return Result.success(PageResult.of(result.getTotal(), records, page, size));
+        return Result.success(PageResult.of(result.getTotal(), records, page, size)); // 返回处理好的订单分页结果
     }
 
     /**
@@ -228,7 +228,7 @@ public class AdminController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status) { // 后台分页查询合同（支持编号、订单号、状态）
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Contract> pageObj =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> wrapper =
@@ -293,7 +293,7 @@ public class AdminController {
             Order order = orderMap.get(contract.getOrderId());
             if (order != null) contract.setOrderNo(order.getOrderNo());
         });
-        return Result.success(PageResult.of(result.getTotal(), records, page, size));
+        return Result.success(PageResult.of(result.getTotal(), records, page, size)); // 返回处理好的合同分页数据
     }
 
     /**
@@ -305,8 +305,8 @@ public class AdminController {
     @Operation(summary = "Cancel order by admin")
     @PutMapping("/orders/{id}/cancel")
     @Transactional
-    public Result<Void> cancelOrderByAdmin(@PathVariable Long id) {
-        Order order = orderMapper.selectById(id);
+    public Result<Void> cancelOrderByAdmin(@PathVariable Long id) { // 管理员兜底取消订单
+        Order order = orderMapper.selectById(id); // 先查订单是否存在
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
@@ -331,7 +331,7 @@ public class AdminController {
         // 管理员取消订单属于关键业务动作：
         // 通过 MQ 异步推送给订单双方（租客+房东），确保双方及时在消息中心看到状态变化。
         notifyOrderCancelledByAdmin(order);
-        return Result.success();
+        return Result.success(); // 取消成功（含联动合同与通知）
     }
 
     /**
@@ -343,8 +343,8 @@ public class AdminController {
     @Operation(summary = "Cancel contract by admin")
     @PutMapping("/contracts/{id}/cancel")
     @Transactional
-    public Result<Void> cancelContractByAdmin(@PathVariable Long id) {
-        Contract contract = contractMapper.selectById(id);
+    public Result<Void> cancelContractByAdmin(@PathVariable Long id) { // 管理员兜底取消合同
+        Contract contract = contractMapper.selectById(id); // 先查合同是否存在
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");
         }
@@ -369,7 +369,7 @@ public class AdminController {
             house.setUpdateTime(LocalDateTime.now());
             houseMapper.updateById(house);
         }
-        return Result.success();
+        return Result.success(); // 取消成功（含联动订单、房源与通知）
     }
 
     /**
@@ -441,8 +441,8 @@ public class AdminController {
      */
     @Operation(summary = "Get system statistics")
     @GetMapping("/statistics")
-    public Result<Map<String, Object>> getStatistics() {
-        Map<String, Object> stats = new HashMap<>();
+    public Result<Map<String, Object>> getStatistics() { // 获取后台首页统计
+        Map<String, Object> stats = new HashMap<>(); // 统计结果容器
         stats.put("userCount", userMapper.selectCount(null));     // 用户总数
         stats.put("houseCount", houseMapper.selectCount(null));   // 房源总数
         stats.put("orderCount", orderMapper.selectCount(null));   // 订单总数
@@ -452,7 +452,7 @@ public class AdminController {
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         pendingWrapper.eq(Contract::getStatus, "PENDING_SIGN");
         stats.put("pendingContracts", contractMapper.selectCount(pendingWrapper)); // 待审核合同数
-        return Result.success(stats);
+        return Result.success(stats); // 返回统计数据
     }
 
     /**
@@ -462,8 +462,8 @@ public class AdminController {
      */
     @Operation(summary = "Get dashboard stats")
     @GetMapping("/stats")
-    public Result<Map<String, Object>> getStats() {
-        return getStatistics();
+    public Result<Map<String, Object>> getStats() { // 与 /statistics 同口径，给前端另一路径调用
+        return getStatistics(); // 直接复用统计逻辑
     }
 
     /**
@@ -473,7 +473,7 @@ public class AdminController {
      */
     @Operation(summary = "Get area stats")
     @GetMapping("/stats/area")
-    public Result<List<Map<String, Object>>> getAreaStats() {
+    public Result<List<Map<String, Object>>> getAreaStats() { // 统计不同城市的房源数量
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<House> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         wrapper.select("city AS city", "COUNT(*) AS count")
@@ -482,7 +482,7 @@ public class AdminController {
                 .groupBy("city")
                 .orderByDesc("count")
                 .last("LIMIT " + AREA_STATS_LIMIT);
-        return Result.success(houseMapper.selectMaps(wrapper));
+        return Result.success(houseMapper.selectMaps(wrapper)); // 返回城市与数量列表
     }
 
     /**
@@ -492,7 +492,7 @@ public class AdminController {
      */
     @Operation(summary = "Get price trend stats")
     @GetMapping("/stats/price-trends")
-    public Result<List<Map<String, Object>>> getPriceTrends() {
+    public Result<List<Map<String, Object>>> getPriceTrends() { // 统计近几个月平均租金趋势
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<House> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         wrapper.select("DATE_FORMAT(create_time, '%Y-%m') AS month", "ROUND(AVG(price), 2) AS avgPrice")
@@ -509,7 +509,7 @@ public class AdminController {
                     row.put("avgPrice", parseDecimal(item.get("avgPrice")));
                     formatted.add(row);
                 });
-        return Result.success(formatted);
+        return Result.success(formatted); // 返回按时间升序整理后的趋势数据
     }
 
     /**
@@ -519,7 +519,7 @@ public class AdminController {
      */
     @Operation(summary = "Get credit distribution stats")
     @GetMapping("/stats/credit")
-    public Result<List<Map<String, Object>>> getCreditDistribution() {
+    public Result<List<Map<String, Object>>> getCreditDistribution() { // 统计用户信用分区间分布
         Map<String, Long> buckets = new LinkedHashMap<>();
         buckets.put(CREDIT_RANGE_EXCELLENT, 0L);
         buckets.put(CREDIT_RANGE_GOOD, 0L);
@@ -546,7 +546,7 @@ public class AdminController {
             row.put("count", count);
             result.add(row);
         });
-        return Result.success(result);
+        return Result.success(result); // 返回饼图需要的区间统计结果
     }
 
     /**

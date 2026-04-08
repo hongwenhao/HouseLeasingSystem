@@ -15,7 +15,7 @@ import org.apache.ibatis.annotations.Update;
  * @description 继承 MyBatis-Plus BaseMapper，提供订单的基础 CRUD 操作
  */
 @Mapper
-public interface OrderMapper extends BaseMapper<Order> {
+public interface OrderMapper extends BaseMapper<Order> { // 订单数据访问接口（分页查询/状态原子更新）
     /**
      * 查询房东订单（兼容历史数据）：
      * - 新数据：orders.landlord_id = 当前房东
@@ -35,14 +35,14 @@ public interface OrderMapper extends BaseMapper<Order> {
                )
             ORDER BY o.create_time DESC
             """)
-    Page<Order> selectLandlordOrdersPage(Page<Order> page, @Param("landlordId") Long landlordId);
+    Page<Order> selectLandlordOrdersPage(Page<Order> page, @Param("landlordId") Long landlordId); // 分页查询房东侧订单
 
     /**
      * 统计交易成功次数：仅统计订单状态为 COMPLETED 的记录。
      * 与产品口径保持一致，避免将仅签约未完成支付/履约的记录计入成交。
      */
     @Select("SELECT COUNT(*) FROM orders WHERE status = 'COMPLETED'")
-    long countCompletedOrders();
+    long countCompletedOrders(); // 统计已完成订单数
 
     /**
      * 将订单状态从 APPROVED 原子更新为 SIGNED。
@@ -56,6 +56,6 @@ public interface OrderMapper extends BaseMapper<Order> {
             WHERE id = #{orderId}
               AND status = 'APPROVED'
             """)
-    int markOrderSignedIfApproved(@Param("orderId") Long orderId);
+    int markOrderSignedIfApproved(@Param("orderId") Long orderId); // 将 APPROVED 原子更新为 SIGNED
 
 }

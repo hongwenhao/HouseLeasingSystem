@@ -19,11 +19,11 @@ import java.util.List;
  *              通过用户名从数据库加载用户信息用于认证，
  *              角色转换为 Spring Security 的 GrantedAuthority 格式（ROLE_前缀）
  */
-@Service
+@Service // 声明为 Spring Security 用户详情服务
 @RequiredArgsConstructor
-public class UserDetailsServiceImpl implements UserDetailsService {
+public class UserDetailsServiceImpl implements UserDetailsService { // 认证标识到 UserDetails 的解析实现
 
-    private final UserMapper userMapper;
+    private final UserMapper userMapper; // 用户数据访问接口
 
     /**
      * 根据用户名或手机号从数据库加载用户认证信息
@@ -33,7 +33,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * @throws UsernameNotFoundException 用户不存在时抛出
      */
     @Override
-    public UserDetails loadUserByUsername(String usernameOrPhone) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String usernameOrPhone) throws UsernameNotFoundException { // 根据认证标识加载用户与权限
         // 为了兼容历史 Token 与手机号登录，这里支持三类输入：
         // 1) uid:123（新版 JWT Subject，稳定标识，用户名变更后仍可识别同一用户）
         // 2) username（用户名登录或旧版 Token）
@@ -58,7 +58,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * @param identifier 认证标识
      * @return 命中的用户，未命中返回 null
      */
-    private User resolveUser(String identifier) {
+    private User resolveUser(String identifier) { // 兼容 uid:前缀与用户名/手机号两类标识
         if (identifier != null && identifier.startsWith(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX)) {
             String userIdText = identifier.substring(JwtSubjectConstants.USER_ID_SUBJECT_PREFIX.length());
             try {

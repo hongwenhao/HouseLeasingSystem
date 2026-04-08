@@ -10,7 +10,7 @@ import lombok.Getter;
  *              由全局异常处理器捕获并返回给客户端
  */
 @Getter
-public class BusinessException extends RuntimeException {
+public class BusinessException extends RuntimeException { // 业务异常：携带业务状态码与错误消息
     /** HTTP 错误状态码 */
     private final int code;
 
@@ -19,7 +19,7 @@ public class BusinessException extends RuntimeException {
      *
      * @param message 错误消息
      */
-    public BusinessException(String message) {
+    public BusinessException(String message) { // 使用默认 400 状态码创建业务异常
         super(message);
         this.code = 400;
     }
@@ -30,7 +30,7 @@ public class BusinessException extends RuntimeException {
      * @param code    HTTP 错误状态码
      * @param message 错误消息
      */
-    public BusinessException(int code, String message) {
+    public BusinessException(int code, String message) { // 使用自定义状态码创建业务异常
         super(message);
         this.code = code;
     }

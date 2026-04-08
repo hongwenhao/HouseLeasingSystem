@@ -45,9 +45,9 @@ import java.util.List;
  *              电子签署、PDF 导出（落盘保存路径）和合同取消，支持中文字体的 PDF 导出
  */
 @Slf4j
-@Service
+@Service // 声明为合同业务服务
 @RequiredArgsConstructor
-public class ContractServiceImpl implements ContractService {
+public class ContractServiceImpl implements ContractService { // 合同全流程实现：生成、签署、导出、取消
 
     /** PDF 文件存储子目录，位于上传根目录下的 contracts/ 文件夹 */
     private static final String CONTRACT_PDF_SUBDIR = "contracts";
@@ -74,15 +74,15 @@ public class ContractServiceImpl implements ContractService {
             "C:/Windows/Fonts/simhei.ttf"
     };
 
-    private final WorkflowService workflowService;
-    private final ContractMapper contractMapper;
-    private final OrderMapper orderMapper;
-    private final HouseMapper houseMapper;
-    private final UserMapper userMapper;
-    private final ContractRiskService contractRiskService;
-    private final MessageProducer messageProducer;
-    private final ObjectMapper objectMapper;
-    private final IdCardCryptoService idCardCryptoService;
+    private final WorkflowService workflowService; // 工作流服务（驱动合同签署流程）
+    private final ContractMapper contractMapper; // 合同表访问组件
+    private final OrderMapper orderMapper; // 订单表访问组件
+    private final HouseMapper houseMapper; // 房源表访问组件
+    private final UserMapper userMapper; // 用户表访问组件
+    private final ContractRiskService contractRiskService; // 合同风控服务
+    private final MessageProducer messageProducer; // MQ 消息发送组件
+    private final ObjectMapper objectMapper; // JSON 序列化组件
+    private final IdCardCryptoService idCardCryptoService; // 身份证加解密服务
 
     /**
      * 根据订单生成租赁合同，包括自动生成合同文本和风险分析
@@ -93,7 +93,7 @@ public class ContractServiceImpl implements ContractService {
      */
     @Override
     @Transactional
-    public Contract generateContract(ContractGenerateRequest request, Long userId) {
+    public Contract generateContract(ContractGenerateRequest request, Long userId) { // 根据订单生成合同并做风险分析
         Order order = orderMapper.selectById(request.getOrderId());
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
@@ -385,7 +385,7 @@ public class ContractServiceImpl implements ContractService {
      */
     @Override
     @Transactional
-    public Contract signContract(Long contractId, Long userId, String role) {
+    public Contract signContract(Long contractId, Long userId, String role) { // 合同签署（租客/房东）
         Contract contract = contractMapper.selectById(contractId);
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");
@@ -452,7 +452,7 @@ public class ContractServiceImpl implements ContractService {
      * @return 合同详情对象
      */
     @Override
-    public Contract getContractById(Long id) {
+    public Contract getContractById(Long id) { // 查询合同详情
         Contract contract = contractMapper.selectById(id);
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");
@@ -496,7 +496,7 @@ public class ContractServiceImpl implements ContractService {
      * @return 分页合同列表
      */
     @Override
-    public PageResult<Contract> listContracts(Long userId, String role, int page, int size) {
+    public PageResult<Contract> listContracts(Long userId, String role, int page, int size) { // 分页查询用户合同列表
         Page<Contract> pageObj = new Page<>(page, size);
         LambdaQueryWrapper<Contract> wrapper = new LambdaQueryWrapper<>();
         // 根据角色过滤合同
@@ -523,7 +523,7 @@ public class ContractServiceImpl implements ContractService {
      * @return PDF 文件的字节数组
      */
     @Override
-    public byte[] exportPdf(Long contractId) {
+    public byte[] exportPdf(Long contractId) { // 导出合同 PDF
         Contract contract = contractMapper.selectById(contractId);
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");
@@ -671,7 +671,7 @@ public class ContractServiceImpl implements ContractService {
      */
     @Override
     @Transactional
-    public void cancelContract(Long contractId, Long userId) {
+    public void cancelContract(Long contractId, Long userId) { // 取消合同并联动业务状态
         Contract contract = contractMapper.selectById(contractId);
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");

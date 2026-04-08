@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @RequiredArgsConstructor
-public class AlipayConfig {
+public class AlipayConfig { // 支付宝 SDK 客户端装配配置
 
-    private final AlipayProperties alipayProperties;
+    private final AlipayProperties alipayProperties; // 支付宝接入参数
 
     /**
      * 构建支付宝客户端
@@ -24,7 +24,7 @@ public class AlipayConfig {
      * @return 可复用的支付宝 SDK 客户端
      */
     @Bean
-    public AlipayClient alipayClient() {
+    public AlipayClient alipayClient() { // 构建全局可复用 AlipayClient
         return new DefaultAlipayClient(
                 alipayProperties.getGatewayUrl(),//网关地址
                 alipayProperties.getAppId(),//应用身份

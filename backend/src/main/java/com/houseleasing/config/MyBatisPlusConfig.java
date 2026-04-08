@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @MapperScan("com.houseleasing.mapper") // 扫描所有 Mapper 接口并注册为 Spring Bean
-public class MyBatisPlusConfig {
+public class MyBatisPlusConfig { // MyBatis-Plus 插件与 Mapper 扫描配置
 
     /**
      * 配置 MyBatis-Plus 拦截器，添加 MySQL 数据库的分页插件
@@ -25,7 +25,7 @@ public class MyBatisPlusConfig {
      * @return MyBatis-Plus 拦截器实例
      */
     @Bean
-    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+    public MybatisPlusInterceptor mybatisPlusInterceptor() { // 注册 MyBatis-Plus 拦截器链
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 添加针对 MySQL 的分页内部拦截器
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));

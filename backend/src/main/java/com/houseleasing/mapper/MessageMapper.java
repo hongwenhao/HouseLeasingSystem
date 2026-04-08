@@ -11,5 +11,5 @@ import org.apache.ibatis.annotations.Mapper;
  * @description 继承 MyBatis-Plus BaseMapper，提供站内消息的基础 CRUD 操作
  */
 @Mapper
-public interface MessageMapper extends BaseMapper<Message> {
+public interface MessageMapper extends BaseMapper<Message> { // 站内消息数据访问接口
 }
