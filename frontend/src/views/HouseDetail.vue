@@ -101,6 +101,7 @@
                 <el-tag size="small" type="info" effect="plain">
                   {{ house.floor }}/{{ house.totalFloor }}层
                 </el-tag>
+                <el-tag size="small" type="info" effect="plain">{{ houseTypeLabel }}</el-tag>
                 <el-tag size="small" type="info" effect="plain">{{ decorationLabel }}</el-tag>
               </div>
 
@@ -331,6 +332,26 @@ const decorationLabel = computed(() => {
     LUXURY: '豪装'
   }
   return map[house.value?.decoration] || house.value?.decoration || '-'
+})
+
+/**
+ * 计算房源类型的中文标签（用于“关键参数标签”区域展示）
+ * 说明：
+ * 1) 后端返回的 houseType 为英文枚举值，前端需要转换成用户可读的中文文案；
+ * 2) 该标签与“装修情况”标签同级并排展示，便于用户快速识别房源属性；
+ * 3) 若后端新增了未收录的枚举值，优先原样展示该值，避免页面出现空白；
+ * 4) 当 houseType 缺失时，统一返回 "-" 作为兜底占位。
+ * 枚举映射：
+ * APARTMENT → 公寓，HOUSE → 住宅，ROOM → 单间，VILLA → 别墅
+ */
+const houseTypeLabel = computed(() => {
+  const map = {
+    APARTMENT: '公寓',
+    HOUSE: '住宅',
+    ROOM: '单间',
+    VILLA: '别墅'
+  }
+  return map[house.value?.houseType] || house.value?.houseType || '-'
 })
 
 /**
