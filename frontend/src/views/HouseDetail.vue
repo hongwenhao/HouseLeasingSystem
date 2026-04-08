@@ -351,7 +351,10 @@ const houseTypeLabel = computed(() => {
     ROOM: '单间',
     VILLA: '别墅'
   }
-  return map[house.value?.houseType] || house.value?.houseType || '-'
+  const houseType = house.value?.houseType
+  if (!houseType) return '-'
+  // 明确区分“已知枚举映射”与“未知新枚举兜底展示”，提升可读性与可维护性。
+  return Object.prototype.hasOwnProperty.call(map, houseType) ? map[houseType] : houseType
 })
 
 /**
