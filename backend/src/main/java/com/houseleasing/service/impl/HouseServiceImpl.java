@@ -7,10 +7,12 @@ import com.houseleasing.common.exception.BusinessException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.houseleasing.dto.HouseSearchRequest;
+import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.HouseImage;
 import com.houseleasing.entity.User;
 import com.houseleasing.entity.UserBehavior;
+import com.houseleasing.mapper.ContractMapper;
 import com.houseleasing.mapper.HouseImageMapper;
 import com.houseleasing.mapper.HouseMapper;
 import com.houseleasing.mapper.UserBehaviorMapper;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 public class HouseServiceImpl implements HouseService {
 
     private final HouseMapper houseMapper;
+    private final ContractMapper contractMapper;
     private final HouseImageMapper houseImageMapper;
     private final UserBehaviorMapper userBehaviorMapper;
     private final UserMapper userMapper;
@@ -200,6 +203,12 @@ public class HouseServiceImpl implements HouseService {
         // 验证操作人是否是该房源的所有者
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限删除该房源");
+        }
+        long relatedContracts = contractMapper.selectCount(
+                new LambdaQueryWrapper<Contract>().eq(Contract::getHouseId, id)
+        );
+        if (relatedContracts > 0) {
+            throw new BusinessException(400, "该房源存在关联合同，无法删除");
         }
         // 清理关联的图片明细记录
         LambdaQueryWrapper<HouseImage> imageWrapper = new LambdaQueryWrapper<>();
