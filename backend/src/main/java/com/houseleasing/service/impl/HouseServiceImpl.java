@@ -370,8 +370,20 @@ public class HouseServiceImpl implements HouseService {
             // 降级处理：复杂查询失败时退回简单查询
             log.error("复杂的房屋搜索出错了，系统正在改用基础搜索方式重试: {}", e.getMessage());
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(House::getStatus, "ONLINE");
-            wrapper.orderByDesc(House::getCreateTime);
+            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE);
+            // 降级分支也要保持与 XML 主查询一致的排序语义，避免主查询异常时“最新”按钮失效。
+            // newest = 最近更新时间优先；其余保持原有默认行为（最新发布时间优先）。
+            if ("newest".equals(request.getSortBy())) {
+                wrapper.orderByDesc(House::getUpdateTime);
+            } else if ("price_asc".equals(request.getSortBy())) {
+                wrapper.orderByAsc(House::getPrice);
+            } else if ("price_desc".equals(request.getSortBy())) {
+                wrapper.orderByDesc(House::getPrice);
+            } else if ("popular".equals(request.getSortBy())) {
+                wrapper.orderByDesc(House::getViewCount);
+            } else {
+                wrapper.orderByDesc(House::getCreateTime);
+            }
             Page<House> result = houseMapper.selectPage(page, wrapper);
             return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize());
         }
