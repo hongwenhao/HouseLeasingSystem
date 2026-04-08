@@ -212,7 +212,7 @@ async function handleRegister() {
 /* ===== 注册页全屏背景：柔和渐变 + 装饰光圈 ===== */
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #99f6e4 100%);
   display: flex;
   align-items: center;
   justify-content: center;
