@@ -1,43 +1,42 @@
 package com.houseleasing.controller; // 声明当前控制器所属的 Java 包，方便项目按层级组织代码
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper; // 导入 `com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper` 类型，供本文件后续代码直接使用
-import com.houseleasing.common.PageResult; // 导入 `com.houseleasing.common.PageResult` 类型，供本文件后续代码直接使用
-import com.houseleasing.common.Result; // 导入 `com.houseleasing.common.Result` 类型，供本文件后续代码直接使用
-import com.houseleasing.common.exception.BusinessException; // 导入 `com.houseleasing.common.exception.BusinessException` 类型，供本文件后续代码直接使用
-import com.houseleasing.entity.Contract; // 导入 `com.houseleasing.entity.Contract` 类型，供本文件后续代码直接使用
-import com.houseleasing.entity.House; // 导入 `com.houseleasing.entity.House` 类型，供本文件后续代码直接使用
-import com.houseleasing.entity.Order; // 导入 `com.houseleasing.entity.Order` 类型，供本文件后续代码直接使用
-import com.houseleasing.entity.User; // 导入 `com.houseleasing.entity.User` 类型，供本文件后续代码直接使用
-import com.houseleasing.mapper.ContractMapper; // 导入 `com.houseleasing.mapper.ContractMapper` 类型，供本文件后续代码直接使用
-import com.houseleasing.mapper.HouseMapper; // 导入 `com.houseleasing.mapper.HouseMapper` 类型，供本文件后续代码直接使用
-import com.houseleasing.mapper.OrderMapper; // 导入 `com.houseleasing.mapper.OrderMapper` 类型，供本文件后续代码直接使用
-import com.houseleasing.mapper.UserMapper; // 导入 `com.houseleasing.mapper.UserMapper` 类型，供本文件后续代码直接使用
-import com.houseleasing.mq.MessageProducer; // 导入 `com.houseleasing.mq.MessageProducer` 类型，供本文件后续代码直接使用
-import com.houseleasing.service.UserService; // 导入 `com.houseleasing.service.UserService` 类型，供本文件后续代码直接使用
-import io.swagger.v3.oas.annotations.Operation; // 导入 `io.swagger.v3.oas.annotations.Operation` 类型，供本文件后续代码直接使用
-import io.swagger.v3.oas.annotations.security.SecurityRequirement; // 导入 `io.swagger.v3.oas.annotations.security.SecurityRequirement` 类型，供本文件后续代码直接使用
-import io.swagger.v3.oas.annotations.tags.Tag; // 导入 `io.swagger.v3.oas.annotations.tags.Tag` 类型，供本文件后续代码直接使用
-import lombok.RequiredArgsConstructor; // 导入 `lombok.RequiredArgsConstructor` 类型，供本文件后续代码直接使用
-import org.springframework.util.StringUtils; // 导入 `org.springframework.util.StringUtils` 类型，供本文件后续代码直接使用
-import org.springframework.security.access.prepost.PreAuthorize; // 导入 `org.springframework.security.access.prepost.PreAuthorize` 类型，供本文件后续代码直接使用
-import org.springframework.transaction.annotation.Transactional; // 导入 `org.springframework.transaction.annotation.Transactional` 类型，供本文件后续代码直接使用
-import org.springframework.web.bind.annotation.*; // 导入 `org.springframework.web.bind.annotation.*` 类型，供本文件后续代码直接使用
-
-import java.math.BigDecimal; // 导入 `java.math.BigDecimal` 类型，供本文件后续代码直接使用
-import java.time.LocalDateTime; // 导入 `java.time.LocalDateTime` 类型，供本文件后续代码直接使用
-import java.time.YearMonth; // 导入 `java.time.YearMonth` 类型，供本文件后续代码直接使用
-import java.time.format.DateTimeFormatter; // 导入 `java.time.format.DateTimeFormatter` 类型，供本文件后续代码直接使用
-import java.util.ArrayList; // 导入 `java.util.ArrayList` 类型，供本文件后续代码直接使用
-import java.util.Comparator; // 导入 `java.util.Comparator` 类型，供本文件后续代码直接使用
-import java.util.HashMap; // 导入 `java.util.HashMap` 类型，供本文件后续代码直接使用
-import java.util.HashSet; // 导入 `java.util.HashSet` 类型，供本文件后续代码直接使用
-import java.util.LinkedHashMap; // 导入 `java.util.LinkedHashMap` 类型，供本文件后续代码直接使用
-import java.util.List; // 导入 `java.util.List` 类型，供本文件后续代码直接使用
-import java.util.Locale; // 导入 `java.util.Locale` 类型，供本文件后续代码直接使用
-import java.util.Map; // 导入 `java.util.Map` 类型，供本文件后续代码直接使用
-import java.util.Set; // 导入 `java.util.Set` 类型，供本文件后续代码直接使用
-import java.util.function.Function; // 导入 `java.util.function.Function` 类型，供本文件后续代码直接使用
-import java.util.stream.Collectors; // 导入 `java.util.stream.Collectors` 类型，供本文件后续代码直接使用
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.houseleasing.common.PageResult;
+import com.houseleasing.common.Result;
+import com.houseleasing.common.exception.BusinessException;
+import com.houseleasing.entity.Contract;
+import com.houseleasing.entity.House;
+import com.houseleasing.entity.Order;
+import com.houseleasing.entity.User;
+import com.houseleasing.mapper.ContractMapper;
+import com.houseleasing.mapper.HouseMapper;
+import com.houseleasing.mapper.OrderMapper;
+import com.houseleasing.mapper.UserMapper;
+import com.houseleasing.mq.MessageProducer;
+import com.houseleasing.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 后台管理控制器
