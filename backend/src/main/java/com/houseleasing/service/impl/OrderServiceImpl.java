@@ -81,7 +81,7 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
     private static final int DEFAULT_CREDIT_SCORE = 100; // 用户信用分兜底默认值
     private static final String REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE = "租客已完成评价：%d星"; // 通知房东评价结果的模板
     private static final String REVIEW_NOTIFY_TO_TENANT = "您的评价已提交，感谢反馈"; // 通知租客评价提交成功的文案
-    /** 订单行为埋点类型（仅保留 VIEW/COLLECT/ORDER，不再使用 REVIEW）。 */
+    /** 订单行为埋点类型（仅保留 VIEW/COLLECT/ORDER）。 */
     private static final String BEHAVIOR_ORDER = "ORDER";
     /** ORDER 行为推荐权重：下单行为代表强意向。 */
     private static final BigDecimal BEHAVIOR_ORDER_SCORE = new BigDecimal("5.0");
@@ -503,7 +503,7 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
         review.setContent(request.getContent()); // 保存评价文本内容，供前端展示
         review.setCreateTime(LocalDateTime.now()); // 记录评价提交时间
         reviewMapper.insert(review); // 将评价持久化到数据库
-        // 评价成功后记录 ORDER 行为（不再写 REVIEW 类型），确保推荐系统行为枚举口径一致。
+        // 评价成功后记录 ORDER 行为，确保推荐系统行为枚举口径一致。
         upsertOrderBehavior(tenantId, order.getHouseId()); // 更新用户行为轨迹，帮助推荐系统感知真实成交偏好
 
         User landlord = userMapper.selectById(order.getLandlordId()); // 读取房东信息，用于按评分调整信用分
@@ -743,12 +743,11 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
 
     /**
      * 记录下单行为（幂等更新）：
-     * - user_behaviors 表已明确不使用 REVIEW 行为类型；
      * - 若该用户-房源已存在 ORDER 行为，则仅刷新时间和分值；
      * - 否则新增一条 ORDER 行为记录。
      *
-     * <p>实现说明：复用 create_time 作为“最近一次下单行为时间”字段，
-     * 便于推荐系统按最近行为排序；在当前数据结构下不新增额外字段。</p>
+     * 实现说明：复用 create_time 作为“最近一次下单行为时间”字段，
+     * 便于推荐系统按最近行为排序；在当前数据结构下不新增额外字段。
      */
     private void upsertOrderBehavior(Long userId, Long houseId) {
         if (userId == null || houseId == null) {
@@ -776,6 +775,7 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
         userBehaviorMapper.updateById(existing);
     }
 
+    //redis限流一天
     private static DefaultRedisScript<Long> buildIncrWithExpireOneDayScript() {
         DefaultRedisScript<Long> script = new DefaultRedisScript<>();
         script.setScriptText("""

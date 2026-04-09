@@ -125,12 +125,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     /**
      * 将 houses.images（JSON 字符串）同步到 house_images 表。
      *
-     * <p>为什么需要该同步：</p>
-     * <ul>
-     *   <li>当前系统历史上同时保留了两种图片存储方式：主表 JSON 字段 + 明细表 house_images。</li>
-     *   <li>前端发布房源时会写入 houses.images，但若不额外同步，house_images 会一直为空。</li>
-     *   <li>这里采用“先删后插”的幂等策略，每次发布/更新后重建当前房源的图片明细，避免脏数据。</li>
-     * </ul>
+     * 为什么需要该同步：
+     *   当前系统历史上同时保留了两种图片存储方式：主表 JSON 字段 + 明细表 house_images。
+     *   前端发布房源时会写入 houses.images，但若不额外同步，house_images 会一直为空。
+     *   这里采用“先删后插”的幂等策略，每次发布/更新后重建当前房源的图片明细，避免脏数据。
+     *
      *
      * @param houseId     房源 ID
      * @param imagesJson  图片 JSON 字符串，期望格式如：["/api/uploads/a.jpg","/api/uploads/b.jpg"]
@@ -157,13 +156,10 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
 
     /**
      * 解析图片列表字符串为 URL 集合。
-     *
-     * <p>兼容三类输入：</p>
-     * <ol>
-     *   <li>标准 JSON 数组字符串：["url1","url2"]</li>
-     *   <li>单个 URL 字符串：/api/uploads/a.jpg</li>
-     *   <li>空值：null / 空串（返回空集合）</li>
-     * </ol>
+     * 兼容三类输入：
+     *   标准 JSON 数组字符串：["url1","url2"]
+     *   单个 URL 字符串：/api/uploads/a.jpg
+     *   空值：null / 空串（返回空集合）
      *
      * @param images 图片字段原始值
      * @return 清洗后的图片 URL 列表（已过滤空白项）
@@ -188,7 +184,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
 
     /**
      * 删除房源，同时清理关联的图片明细和用户收藏行为记录。
-     * <p>操作人必须是该房源的所有者，否则抛出 403 业务异常。</p>
+     * 操作人必须是该房源的所有者，否则抛出 403 业务异常。
      *
      * @param id      要删除的房源 ID
      * @param ownerId 操作人用户 ID
@@ -231,12 +227,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
 
     /**
      * 房东主动上架自己的房源。
-     * <p>安全约束：</p>
-     * <ul>
-     *   <li>房源必须存在，否则返回 404。</li>
-     *   <li>仅房源所有者可操作，否则返回 403。</li>
-     * </ul>
-     * <p>业务效果：将 status 设置为 ONLINE，并刷新更新时间。</p>
+     * 安全约束：
+     *   房源必须存在，否则返回 404。
+     *   仅房源所有者可操作，否则返回 403。
+     *
+     * 业务效果：将 status 设置为 ONLINE，并刷新更新时间。
      *
      * @param id      房源 ID
      * @param ownerId 当前操作房东 ID
@@ -259,12 +254,10 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
 
     /**
      * 房东主动下架自己的房源。
-     * <p>安全约束：</p>
-     * <ul>
-     *   <li>房源必须存在，否则返回 404。</li>
-     *   <li>仅房源所有者可操作，否则返回 403。</li>
-     * </ul>
-     * <p>业务效果：将 status 设置为 OFFLINE，并刷新更新时间。</p>
+     * 安全约束：
+     *   房源必须存在，否则返回 404。
+     *   仅房源所有者可操作，否则返回 403。
+     * 业务效果：将 status 设置为 OFFLINE，并刷新更新时间。
      *
      * @param id      房源 ID
      * @param ownerId 当前操作房东 ID
@@ -430,7 +423,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
         Map<Long, House> houseMap = houses.stream().collect(Collectors.toMap(House::getId, h -> h, (a, b) -> a));
         List<House> ordered = houseIds.stream()
                 .map(houseMap::get)
-                .filter(h -> h != null && HOUSE_STATUS_ONLINE.equals(h.getStatus()))
+                .filter(h -> h != null && HOUSE_STATUS_ONLINE.equals(h.getStatus()))//状态为已上架的房源
                 .toList();
         return PageResult.of(behaviorPage.getTotal(), ordered, (int) behaviorPage.getCurrent(), (int) behaviorPage.getSize());
     }
