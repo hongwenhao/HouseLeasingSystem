@@ -607,10 +607,10 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             contract.setPdfPath(relativePath);
             contract.setUpdateTime(LocalDateTime.now());
             contractMapper.updateById(contract);
-            log.info("合同 {} PDF 已保存至：{}，path 已更新至数据库", contract.getContractNo(), pdfFile.getAbsolutePath());
+            log.info("合同 {} PDF 已保存至：{}，文件路径已更新至数据库", contract.getContractNo(), pdfFile.getAbsolutePath());
         } catch (Exception e) {
             // PDF 落盘失败不应阻断下载流程，仅记录警告日志
-            log.warn("合同 {} PDF 落盘失败，pdf_path 未更新：{}", contract.getContractNo(), e.getMessage());
+            log.warn("合同 {} PDF 落盘失败，数据库文件路径字段未更新：{}", contract.getContractNo(), e.getMessage());
         }
     }
 

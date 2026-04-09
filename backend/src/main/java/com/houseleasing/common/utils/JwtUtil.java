@@ -83,7 +83,7 @@ public class JwtUtil { // Token 生成、验签与解析实现
                     .parseClaimsJws(token);//计算签名并验证签名和过期时间，如果验证失败会抛出异常
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            log.warn("无效的 JWT Token: {}", e.getMessage());
+            log.warn("无效的 JWT 令牌：{}", e.getMessage());
             return false;
         }
     }
