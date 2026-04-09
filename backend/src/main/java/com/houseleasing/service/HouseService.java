@@ -102,7 +102,7 @@ public interface HouseService { // 房源主流程抽象：发布、查询、收
 
     /**
      * 删除房源（仅房源所有者可操作）
-     * <p>同时清理关联的图片明细记录和用户收藏行为记录，并清除热门房源缓存。</p>
+     * 同时清理关联的图片明细记录和用户收藏行为记录，并清除热门房源缓存。
      *
      * @param id      要删除的房源 ID
      * @param ownerId 操作人用户 ID（必须是该房源的房东，否则抛出 403 业务异常）
@@ -111,7 +111,7 @@ public interface HouseService { // 房源主流程抽象：发布、查询、收
 
     /**
      * 房东主动上架自己的房源。
-     * <p>仅允许房源所有者操作，成功后房源状态会更新为 ONLINE。</p>
+     * 仅允许房源所有者操作，成功后房源状态会更新为 ONLINE。
      *
      * @param id      房源 ID
      * @param ownerId 当前操作房东 ID（必须与房源 ownerId 一致）
@@ -120,7 +120,7 @@ public interface HouseService { // 房源主流程抽象：发布、查询、收
 
     /**
      * 房东主动下架自己的房源。
-     * <p>仅允许房源所有者操作，成功后房源状态会更新为 OFFLINE。</p>
+     * 仅允许房源所有者操作，成功后房源状态会更新为 OFFLINE。
      *
      * @param id      房源 ID
      * @param ownerId 当前操作房东 ID（必须与房源 ownerId 一致）
