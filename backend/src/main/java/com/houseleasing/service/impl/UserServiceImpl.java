@@ -43,19 +43,19 @@ import java.util.concurrent.TimeUnit;
 public class UserServiceImpl implements UserService { // 用户主流程实现：注册登录、实名、改密、后台管理
 
     /** 每日首次登录可获得的信用分奖励 */
-    private static final int DAILY_LOGIN_CREDIT_BONUS = 1;
+    private static final int DAILY_LOGIN_CREDIT_BONUS = 1; // 每日首次登录固定加 1 分信用分
     /** 信用分系统上限 */
-    private static final int CREDIT_SCORE_MAX = 200;
+    private static final int CREDIT_SCORE_MAX = 200; // 信用分上限，防止无限增长
     /** 每日首次登录提醒文案模板 */
-    private static final String DAILY_LOGIN_BONUS_MESSAGE_TEMPLATE = "今日登录成功，信用分+%d（每日仅首次登录生效）";
+    private static final String DAILY_LOGIN_BONUS_MESSAGE_TEMPLATE = "今日登录成功，信用分+%d（每日仅首次登录生效）"; // 首次登录消息模板
     /** 非首次登录提醒文案 */
-    private static final String DAILY_LOGIN_REPEAT_MESSAGE = "登录成功（今日已完成登录加分，不重复累计）";
+    private static final String DAILY_LOGIN_REPEAT_MESSAGE = "登录成功（今日已完成登录加分，不重复累计）"; // 非首次登录提示文案
     /** 中国大陆身份证号基础格式：18 位，前 17 位数字 + 末位数字或 X */
-    private static final String CHINA_ID_CARD_REGEX = "^\\d{17}[\\dXx]$";
+    private static final String CHINA_ID_CARD_REGEX = "^\\d{17}[\\dXx]$"; // 身份证基础格式正则
     /** 身份证校验位计算权重（国家标准 GB 11643） */
-    private static final int[] ID_CARD_WEIGHTS = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
+    private static final int[] ID_CARD_WEIGHTS = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2}; // 身份证前17位加权系数
     /** 校验位映射表：sum % 11 后对应字符 */
-    private static final char[] ID_CARD_CHECK_CODES = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
+    private static final char[] ID_CARD_CHECK_CODES = {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'}; // 校验码映射表
 
     private final UserMapper userMapper; // 用户表访问组件
     private final PasswordEncoder passwordEncoder; // 密码加密/校验组件

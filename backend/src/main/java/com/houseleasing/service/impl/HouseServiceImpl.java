@@ -53,15 +53,15 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     private final ObjectMapper objectMapper; // JSON 解析组件
     private final RedisTemplate<String, Object> redisTemplate; // Redis 组件（缓存与计数）
 
-    private static final String BEHAVIOR_COLLECT = "COLLECT";
+    private static final String BEHAVIOR_COLLECT = "COLLECT"; // 用户“收藏房源”行为类型标识
     /**
      * 收藏行为分值（用于推荐系统行为权重）：
      * 规则约定为 VIEW=1、COLLECT=3、ORDER=5，这里固定 COLLECT=3。
      */
     private static final BigDecimal BEHAVIOR_COLLECT_SCORE = new BigDecimal("3.0");
-    private static final String HOUSE_STATUS_ONLINE = "ONLINE";
-    private static final String HOUSE_STATUS_OFFLINE = "OFFLINE";
-    private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0;
+    private static final String HOUSE_STATUS_ONLINE = "ONLINE"; // 房源上架状态
+    private static final String HOUSE_STATUS_OFFLINE = "OFFLINE"; // 房源下架状态
+    private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0; // 发布房源所需最低信用分
 
     /**
      * 发布新房源，设置初始状态为已上架，清除热门房源缓存
@@ -74,19 +74,19 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 发布并立即上线房源时清除热门房源缓存
     public House addHouse(House house, Long ownerId) { // 发布新房源
-        User owner = userMapper.selectById(ownerId);
+        User owner = userMapper.selectById(ownerId); // 查询发布者用户信息用于权限与信用校验
         if (owner == null) {
             throw new BusinessException(404, "用户不存在");
         }
         if (owner.getCreditScore() != null && owner.getCreditScore() < CREDIT_SCORE_PUBLISHING_THRESHOLD) {
             throw new BusinessException(403, "当前信用分过低，暂不可发布房源");
         }
-        house.setOwnerId(ownerId);
+        house.setOwnerId(ownerId); // 绑定房源归属房东
         house.setStatus(HOUSE_STATUS_ONLINE); // 新房源默认状态为已上线
-        house.setViewCount(0);
-        house.setCreateTime(LocalDateTime.now());
-        house.setUpdateTime(LocalDateTime.now());
-        houseMapper.insert(house);
+        house.setViewCount(0); // 新房源浏览量从 0 开始累计
+        house.setCreateTime(LocalDateTime.now()); // 写入创建时间
+        house.setUpdateTime(LocalDateTime.now()); // 初始化更新时间
+        houseMapper.insert(house); // 插入房源主表记录
         // 同步写入 house_images 明细表，确保“房源主表 JSON 字段”和“图片明细表”两处数据一致
         syncHouseImages(house.getId(), house.getImages());
         return house;

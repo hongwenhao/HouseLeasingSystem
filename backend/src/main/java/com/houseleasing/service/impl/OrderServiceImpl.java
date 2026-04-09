@@ -64,23 +64,23 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
     private final MessageProducer messageProducer; // MQ 消息发送组件
     private final MessageService messageService; // 站内消息服务
     private final RedisTemplate<String, Object> redisTemplate; // Redis 组件（计数与去重）
-    private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript();
-    private static final long CANCEL_COUNT_DEDUCT_THRESHOLD = 11L;
-    private static final String TENANT_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
-    private static final String TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE = "租客已取消预约订单";
-    private static final String LANDLORD_CANCEL_SELF_MESSAGE = "您已取消该预约订单";
-    private static final String LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE = "房东已取消预约订单";
-    private static final int REVIEW_MIN_RATING = 1;
-    private static final int REVIEW_MAX_RATING = 5;
-    private static final int REVIEW_MIDDLE_RATING = 3;
-    private static final int REVIEW_GOOD_RATING = 4;
-    private static final int CREDIT_DELTA_LOW_RATING = -10;
-    private static final int CREDIT_DELTA_THREE_STARS = 3;
-    private static final int CREDIT_DELTA_FOUR_STARS = 4;
-    private static final int CREDIT_DELTA_FIVE_STARS = 5;
-    private static final int DEFAULT_CREDIT_SCORE = 100;
-    private static final String REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE = "租客已完成评价：%d星";
-    private static final String REVIEW_NOTIFY_TO_TENANT = "您的评价已提交，感谢反馈";
+    private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_ONE_DAY_SCRIPT = buildIncrWithExpireOneDayScript(); // Redis 原子脚本：递增并设置 1 天过期
+    private static final long CANCEL_COUNT_DEDUCT_THRESHOLD = 11L; // 超过该取消次数后触发信用分扣减
+    private static final String TENANT_CANCEL_SELF_MESSAGE = "您已取消该预约订单"; // 租客取消后发给租客自己的通知文案
+    private static final String TENANT_CANCEL_NOTIFY_LANDLORD_MESSAGE = "租客已取消预约订单"; // 租客取消后发给房东的通知文案
+    private static final String LANDLORD_CANCEL_SELF_MESSAGE = "您已取消该预约订单"; // 房东取消后发给房东自己的通知文案
+    private static final String LANDLORD_CANCEL_NOTIFY_TENANT_MESSAGE = "房东已取消预约订单"; // 房东取消后发给租客的通知文案
+    private static final int REVIEW_MIN_RATING = 1; // 评价最小星级
+    private static final int REVIEW_MAX_RATING = 5; // 评价最大星级
+    private static final int REVIEW_MIDDLE_RATING = 3; // 中评分界线（3星）
+    private static final int REVIEW_GOOD_RATING = 4; // 好评分界线（4星）
+    private static final int CREDIT_DELTA_LOW_RATING = -10; // 低分评价触发的信用分扣减值
+    private static final int CREDIT_DELTA_THREE_STARS = 3; // 3 星评价对应信用分加分值
+    private static final int CREDIT_DELTA_FOUR_STARS = 4; // 4 星评价对应信用分加分值
+    private static final int CREDIT_DELTA_FIVE_STARS = 5; // 5 星评价对应信用分加分值
+    private static final int DEFAULT_CREDIT_SCORE = 100; // 用户信用分兜底默认值
+    private static final String REVIEW_NOTIFY_TO_LANDLORD_TEMPLATE = "租客已完成评价：%d星"; // 通知房东评价结果的模板
+    private static final String REVIEW_NOTIFY_TO_TENANT = "您的评价已提交，感谢反馈"; // 通知租客评价提交成功的文案
     /** 订单行为埋点类型（仅保留 VIEW/COLLECT/ORDER，不再使用 REVIEW）。 */
     private static final String BEHAVIOR_ORDER = "ORDER";
     /** ORDER 行为推荐权重：下单行为代表强意向。 */
