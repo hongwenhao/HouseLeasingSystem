@@ -48,8 +48,8 @@ public class SecurityConfig { // Spring Security 过滤链与鉴权策略配置
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception { // 构建系统安全过滤器链
         http
-            // CSRF disabled intentionally: this is a stateless REST API using JWT Bearer tokens.
-            // CSRF protection is only needed for session/cookie-based authentication.
+                // CSRF 保护已特意禁用：这是一个使用 JWT Bearer 令牌的无状态 REST API。
+                // CSRF 防护仅在基于会话（Session）或 Cookie 的身份验证中才需要。
             .csrf(AbstractHttpConfigurer::disable) // 禁用 CSRF，REST API 使用 JWT 无需 CSRF 保护
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // 应用 CORS 配置
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 无状态 Session
