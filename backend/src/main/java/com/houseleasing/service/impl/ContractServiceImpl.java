@@ -178,7 +178,6 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             houseMapper.updateById(house);
             log.info("合同 {} 生成，房源 {} 已自动下架", contract.getContractNo(), house.getId());
         }
-
         return contract;
     }
 
@@ -541,7 +540,7 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             Font bodyFont = new Font(baseFont, 12);
 
             // 添加合同标题
-            Paragraph title = new Paragraph("House Lease Contract / 房屋租赁合同", titleFont);
+            Paragraph title = new Paragraph("房屋租赁合同", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(20);
             document.add(title);
