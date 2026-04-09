@@ -560,7 +560,6 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             // 将 PDF 保存到磁盘，并把相对路径写入数据库的 pdf_path 字段，
             // 以便后续可通过 /api/uploads/contracts/{filename} 直接下载，无需重新生成
             savePdfAndUpdatePath(contract, pdfBytes);
-
             return pdfBytes;
         } catch (Exception e) {
             log.error("PDF 生成失败：{}", e.getMessage(), e);
