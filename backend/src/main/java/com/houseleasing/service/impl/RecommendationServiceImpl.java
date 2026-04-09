@@ -97,7 +97,7 @@ public class RecommendationServiceImpl implements RecommendationService { // 协
 
             return recommended;
         } catch (Exception e) {
-            log.error("Recommendation failed: {}", e.getMessage());
+            log.error("推荐计算失败：{}", e.getMessage());
             // 异常降级：推荐失败时直接返回热门房源，保障接口可用性
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(House::getStatus, "ONLINE").orderByDesc(House::getViewCount);

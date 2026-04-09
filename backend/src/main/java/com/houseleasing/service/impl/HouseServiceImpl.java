@@ -180,7 +180,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
                         .filter(url -> url != null && !url.trim().isEmpty())
                         .toList();
             } catch (Exception e) {
-                log.warn("Failed to parse house images JSON, fallback to single URL mode: {}", e.getMessage());
+                log.warn("解析房源图片 JSON 失败，回退到单 URL 模式：{}", e.getMessage());
             }
         }
         return List.of(trimmed);
@@ -226,7 +226,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(400, "该房源存在关联合同，无法删除");
         }
-        log.info("House {} deleted by owner {}", id, ownerId);
+        log.info("房源 {} 已被房东 {} 删除", id, ownerId);
     }
 
     /**
@@ -303,7 +303,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
         try {
             houseMapper.incrementViewCount(id);
         } catch (Exception e) {
-            log.warn("Failed to increment view count: {}", e.getMessage());
+            log.warn("增加浏览量失败：{}", e.getMessage());
         }
         // 从 house_images 明细表读取图片列表（按 sort 升序），重建 images JSON 字段。
         // house_images 通过 syncHouseImages 在写入时保持与 houses.images 同步，
@@ -318,7 +318,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
                 house.setImages(objectMapper.writeValueAsString(urls));
             }
         } catch (Exception e) {
-            log.warn("Failed to populate images from house_images for house {}: {}", id, e.getMessage());
+            log.warn("从 house_images 填充房源 {} 图片失败：{}", id, e.getMessage());
         }
         // 关联填充房东信息（隐去密码等敏感字段）
         if (house.getOwnerId() != null) {
@@ -501,7 +501,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
             Page<House> page = new Page<>(1, 10);
             return houseMapper.selectPage(page, wrapper).getRecords();
         } catch (Exception e) {
-            log.error("Failed to get hot houses: {}", e.getMessage());
+            log.error("获取热门房源失败：{}", e.getMessage());
             return List.of();
         }
     }
@@ -516,7 +516,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
         try {
             houseMapper.incrementViewCount(houseId);
         } catch (Exception e) {
-            log.warn("Failed to increment view count for house {}: {}", houseId, e.getMessage());
+            log.warn("增加房源 {} 浏览量失败：{}", houseId, e.getMessage());
         }
     }
 }
