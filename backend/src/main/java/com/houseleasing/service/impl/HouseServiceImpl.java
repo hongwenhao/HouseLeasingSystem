@@ -245,16 +245,16 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true)
     public void putHouseOnline(Long id, Long ownerId) { // 房东主动上架房源
-        House existing = houseMapper.selectById(id);
+        House existing = houseMapper.selectById(id); // 先读取房源，确认目标记录存在
         if (existing == null) {
             throw new BusinessException(404, "房源不存在");
         }
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限操作该房源");
         }
-        existing.setStatus(HOUSE_STATUS_ONLINE);
-        existing.setUpdateTime(LocalDateTime.now());
-        houseMapper.updateById(existing);
+        existing.setStatus(HOUSE_STATUS_ONLINE); // 更新状态为“上架中”，使租客搜索结果可见
+        existing.setUpdateTime(LocalDateTime.now()); // 刷新更新时间，便于“最新更新”排序准确
+        houseMapper.updateById(existing); // 持久化状态变更到数据库
     }
 
     /**
@@ -273,16 +273,16 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true)
     public void putHouseOffline(Long id, Long ownerId) { // 房东主动下架房源
-        House existing = houseMapper.selectById(id);
+        House existing = houseMapper.selectById(id); // 加载房源记录，后续执行权限与状态更新
         if (existing == null) {
             throw new BusinessException(404, "房源不存在");
         }
         if (!existing.getOwnerId().equals(ownerId)) {
             throw new BusinessException(403, "没有权限操作该房源");
         }
-        existing.setStatus(HOUSE_STATUS_OFFLINE);
-        existing.setUpdateTime(LocalDateTime.now());
-        houseMapper.updateById(existing);
+        existing.setStatus(HOUSE_STATUS_OFFLINE); // 更新状态为“已下架”，从公开列表中隐藏
+        existing.setUpdateTime(LocalDateTime.now()); // 记录下架时间对应的更新时间
+        houseMapper.updateById(existing); // 保存下架后的房源状态
     }
 
     /**
@@ -295,47 +295,47 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      */
     @Override
     public House getHouseById(Long id) { // 查询房源详情并记录浏览行为
-        House house = houseMapper.selectById(id);
+        House house = houseMapper.selectById(id); // 查询房源主记录，作为详情页基础数据
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
         }
         // 尝试增加浏览量，失败时只打印警告不影响正常查询
         try {
-            houseMapper.incrementViewCount(id);
+            houseMapper.incrementViewCount(id); // 浏览详情即累计热度，支持热门排序与推荐
         } catch (Exception e) {
-            log.warn("增加浏览量失败：{}", e.getMessage());
+            log.warn("增加浏览量失败：{}", e.getMessage()); // 浏览量更新失败不应影响用户查看详情
         }
         // 从 house_images 明细表读取图片列表（按 sort 升序），重建 images JSON 字段。
         // house_images 通过 syncHouseImages 在写入时保持与 houses.images 同步，
         // 因此两者正常情况下始终一致；当 house_images 无数据时（如历史旧数据），
         // 保留 houses.images 原值作为兜底。
         try {
-            List<HouseImage> houseImages = houseImageMapper.selectByHouseId(id);
+            List<HouseImage> houseImages = houseImageMapper.selectByHouseId(id); // 从图片明细表读取该房源所有图片
             if (!houseImages.isEmpty()) {
                 List<String> urls = houseImages.stream()
                         .map(HouseImage::getImageUrl)
-                        .toList();
-                house.setImages(objectMapper.writeValueAsString(urls));
+                        .toList(); // 提取图片 URL 列表，准备回写到 images JSON 字段
+                house.setImages(objectMapper.writeValueAsString(urls)); // 按前端既有字段格式输出，避免兼容性问题
             }
         } catch (Exception e) {
-            log.warn("从 house_images 填充房源 {} 图片失败：{}", id, e.getMessage());
+            log.warn("从 house_images 填充房源 {} 图片失败：{}", id, e.getMessage()); // 图片重建失败仅告警，保留原 images 兜底
         }
         // 关联填充房东信息（隐去密码等敏感字段）
         if (house.getOwnerId() != null) {
-            User owner = userMapper.selectById(house.getOwnerId());
+            User owner = userMapper.selectById(house.getOwnerId()); // 查询房东基础信息用于详情页展示
             if (owner != null) {
-                User sanitized = new User();
-                sanitized.setId(owner.getId());
-                sanitized.setUsername(owner.getUsername());
-                sanitized.setPhone(owner.getPhone());
-                sanitized.setAvatar(owner.getAvatar());
-                sanitized.setRealName(owner.getRealName());
-                sanitized.setCreditScore(owner.getCreditScore());
-                sanitized.setIsRealNameAuth(owner.getIsRealNameAuth());
-                house.setLandlord(sanitized);
+                User sanitized = new User(); // 构建脱敏视图对象，避免直接返回完整用户实体
+                sanitized.setId(owner.getId()); // 保留房东ID供前端跳转个人页使用
+                sanitized.setUsername(owner.getUsername()); // 保留昵称用于详情页展示
+                sanitized.setPhone(owner.getPhone()); // 保留联系电话便于租客沟通
+                sanitized.setAvatar(owner.getAvatar()); // 保留头像提升页面可读性
+                sanitized.setRealName(owner.getRealName()); // 展示实名认证姓名增强信任感
+                sanitized.setCreditScore(owner.getCreditScore()); // 展示信用分帮助租客评估交易风险
+                sanitized.setIsRealNameAuth(owner.getIsRealNameAuth()); // 标识是否实名，辅助用户判断账号可靠性
+                house.setLandlord(sanitized); // 把脱敏后的房东信息挂到房源详情返回体
             }
         }
-        return house;
+        return house; // 返回已补齐图片与房东信息的房源详情对象
     }
 
     /**
@@ -346,11 +346,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      */
     @Override
     public List<HouseImage> getHouseImages(Long houseId) { // 查询房源图片明细列表
-        House house = houseMapper.selectById(houseId);
+        House house = houseMapper.selectById(houseId); // 先确认房源存在，避免查询无效图片数据
         if (house == null) {
             throw new BusinessException(404, "房源不存在");
         }
-        return houseImageMapper.selectByHouseId(houseId);
+        return houseImageMapper.selectByHouseId(houseId); // 返回按 sort 排好序的图片明细列表
     }
 
     /**
@@ -361,16 +361,16 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      */
     @Override
     public PageResult<House> searchHouses(HouseSearchRequest request) { // 多条件分页搜索房源
-        Page<House> page = new Page<>(request.getPage(), request.getSize());
+        Page<House> page = new Page<>(request.getPage(), request.getSize()); // 创建分页参数，统一控制查询窗口
         try {
             // 使用 XML Mapper 中的复杂条件查询
-            com.baomidou.mybatisplus.core.metadata.IPage<House> result = houseMapper.selectByCondition(page, request);
-            return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize());
+            com.baomidou.mybatisplus.core.metadata.IPage<House> result = houseMapper.selectByCondition(page, request); // 执行主查询，支持多条件组合过滤
+            return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize()); // 按统一分页对象格式返回结果
         } catch (Exception e) {
             // 降级处理：复杂查询失败时退回简单查询
-            log.error("复杂的房屋搜索出错了，系统正在改用基础搜索方式重试: {}", e.getMessage());
-            LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE);
+            log.error("复杂的房屋搜索出错了，系统正在改用基础搜索方式重试: {}", e.getMessage()); // 记录主查询失败原因，便于后续排查SQL或参数问题
+            LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>(); // 构建降级查询条件，保障接口可用性
+            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE); // 降级查询仅返回上架房源
             // 降级分支也要保持与 XML 主查询一致的排序语义，避免主查询异常时“最新”按钮失效。
             // newest = 最近更新时间优先；其余保持原有默认行为（最新发布时间优先）。
             if ("newest".equals(request.getSortBy())) {
