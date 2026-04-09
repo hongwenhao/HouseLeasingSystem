@@ -386,7 +386,7 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
     @Override
     @Transactional
     public Contract signContract(Long contractId, Long userId, String role) { // 合同签署（租客/房东）
-        Contract contract = contractMapper.selectById(contractId);
+        Contract contract = contractMapper.selectById(contractId); // 读取合同主记录，作为签署动作的操作对象
         if (contract == null) {
             throw new BusinessException(404, "合同不存在");
         }
@@ -399,24 +399,24 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             if (!contract.getTenantId().equals(userId)) {
                 throw new BusinessException(403, "无权以租客身份签署合同");
             }
-            contract.setTenantSigned(true);
+            contract.setTenantSigned(true); // 记录租客已签署，供后续判断是否达到“双方签完”
             // 记录租客的实际签署时间，该时间将持久化到 contracts.tenant_sign_time
-            contract.setTenantSignTime(LocalDateTime.now());
+            contract.setTenantSignTime(LocalDateTime.now()); // 写入租客签署时间用于审计与合同展示
         } else if ("LANDLORD".equals(role)) {
             if (!contract.getLandlordId().equals(userId)) {
                 throw new BusinessException(403, "无权以房东身份签署合同");
             }
-            contract.setLandlordSigned(true);
+            contract.setLandlordSigned(true); // 记录房东已签署，推动合同状态向“双方已签”演进
             // 记录房东的实际签署时间，该时间将持久化到 contracts.landlord_sign_time
-            contract.setLandlordSignTime(LocalDateTime.now());
+            contract.setLandlordSignTime(LocalDateTime.now()); // 写入房东签署时间，保证签约时间轴完整
         } else {
             throw new BusinessException("角色无效: " + role);
         }
 
         // 检查双方是否均已签署，若是则更新状态为双方已签并发送通知
         if (Boolean.TRUE.equals(contract.getTenantSigned()) && Boolean.TRUE.equals(contract.getLandlordSigned())) {
-            contract.setStatus("FULLY_SIGNED");
-            contract.setSignTime(LocalDateTime.now());
+            contract.setStatus("FULLY_SIGNED"); // 双方都签完后，合同进入“已生效可履约”状态
+            contract.setSignTime(LocalDateTime.now()); // 记录双方签署完成时间，作为合同正式生效时间
             // 关键业务口径：
             // 当租客与房东都完成合同签署后，预约订单应从“房东已确认(APPROVED)”进入“已签约(SIGNED)”。
             // 这样前端列表与详情能准确区分“仅确认预约”与“双方已签合同”两个阶段，
@@ -425,24 +425,24 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
                 // 使用“带状态条件”的原子更新代替“先查后改”，避免并发签署时出现竞态覆盖。
                 // 返回值为 0 表示订单不存在或状态已不是 APPROVED（例如已被其他事务更新），
                 // 该场景属于幂等可接受结果，无需抛错中断合同签署流程。
-                orderMapper.markOrderSignedIfApproved(contract.getOrderId());
+                orderMapper.markOrderSignedIfApproved(contract.getOrderId()); // 将关联订单从 APPROVED 原子推进到 SIGNED
             }
-            messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成", contract.getId());
-            messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成", contract.getId());
+            messageProducer.sendContractStatusChange(contract.getTenantId(), "合同已签署完成", contract.getId()); // 通知租客合同完成签约
+            messageProducer.sendContractStatusChange(contract.getLandlordId(), "合同已签署完成", contract.getId()); // 通知房东合同完成签约
         } else {
             // 只有一方签署时，根据签署方设置明确状态，便于前端清晰展示流程
             if ("TENANT".equals(role)) {
-                contract.setStatus("TENANT_SIGNED");
+                contract.setStatus("TENANT_SIGNED"); // 仅租客签完，等待房东签署
             } else {
-                contract.setStatus("LANDLORD_SIGNED");
+                contract.setStatus("LANDLORD_SIGNED"); // 仅房东签完，等待租客签署
             }
         }
-        contract.setUpdateTime(LocalDateTime.now());
-        contractMapper.updateById(contract);
+        contract.setUpdateTime(LocalDateTime.now()); // 刷新更新时间，准确记录本次签署动作
+        contractMapper.updateById(contract); // 持久化签署结果到合同表
         if (contract.getWorkflowInstanceId() != null) {
-            workflowService.completeContractTask(contract.getWorkflowInstanceId(), userId, role, true);
+            workflowService.completeContractTask(contract.getWorkflowInstanceId(), userId, role, true); // 同步推进工作流节点，保持流程引擎状态一致
         }
-        return contract;
+        return contract; // 返回最新合同状态，前端可立即刷新签约进度
     }
 
     /**

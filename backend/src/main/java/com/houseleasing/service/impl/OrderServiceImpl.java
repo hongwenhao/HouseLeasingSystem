@@ -327,11 +327,11 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
      */
     @Override
     public PageResult<Order> listTenantOrders(Long tenantId, int page, int size) { // 分页查询租客订单
-        Page<Order> pageObj = new Page<>(page, size);
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Order::getTenantId, tenantId);
-        wrapper.orderByDesc(Order::getCreateTime);
-        Page<Order> result = orderMapper.selectPage(pageObj, wrapper);
+        Page<Order> pageObj = new Page<>(page, size); // 创建分页对象，定义当前页和每页条数
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>(); // 构建“只查当前租客”的查询条件
+        wrapper.eq(Order::getTenantId, tenantId); // 过滤出该租客自己的订单，避免越权读取他人数据
+        wrapper.orderByDesc(Order::getCreateTime); // 按创建时间倒序，确保最新订单优先展示
+        Page<Order> result = orderMapper.selectPage(pageObj, wrapper); // 执行分页查询，拿到当前页订单记录
         // 批量回填合同状态、房源信息与评价标记，避免前端为每条订单额外请求详情接口。
         result.getRecords().forEach(order -> {
             fillContractPaymentAbility(order);
@@ -351,25 +351,25 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
      */
     @Override
     public PageResult<Order> listLandlordOrders(Long landlordId, int page, int size) { // 分页查询房东订单
-        Page<Order> pageObj = new Page<>(page, size);
+        Page<Order> pageObj = new Page<>(page, size); // 创建分页对象，控制房东订单列表分页范围
 
         // 兼容历史数据：landlord_id 直接命中，或订单房源归属当前房东（JOIN houses.owner_id）
-        Page<Order> result = orderMapper.selectLandlordOrdersPage(pageObj, landlordId);
+        Page<Order> result = orderMapper.selectLandlordOrdersPage(pageObj, landlordId); // 查询房东可见订单（兼容新旧数据口径）
         result.getRecords().forEach(order -> {
-            fillContractPaymentAbility(order);
+            fillContractPaymentAbility(order); // 回填“是否允许支付”的合同能力标记，减少前端二次请求
             if (order.getTenantId() != null) {
-                User tenant = userMapper.selectById(order.getTenantId());
+                User tenant = userMapper.selectById(order.getTenantId()); // 按租客ID加载基础资料用于展示
                 if (tenant != null) {
-                    tenant.setPassword(null);
-                    tenant.setIdCard(null);
-                    order.setTenant(tenant);
+                    tenant.setPassword(null); // 清空密码字段，防止敏感信息进入接口响应
+                    tenant.setIdCard(null); // 清空身份证字段，降低个人隐私泄露风险
+                    order.setTenant(tenant); // 将脱敏后的租客信息挂载到订单对象
                 }
             }
-            fillOrderHouse(order);
+            fillOrderHouse(order); // 回填房源关键信息，方便列表直接显示房屋标题/封面等
             // 房东列表也回填 reviewed 字段，保持订单返回结构一致，避免前端空字段分支判断。
-            fillOrderReviewFlag(order);
+            fillOrderReviewFlag(order); // 回填评价状态，前端可据此展示“已评价/去评价”按钮
         });
-        return PageResult.of(result.getTotal(), result.getRecords(), page, size);
+        return PageResult.of(result.getTotal(), result.getRecords(), page, size); // 按统一分页结构返回给前端
     }
 
     /**
@@ -380,13 +380,13 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
     @Override
     @Transactional
     public void completeOrder(Long orderId) { // 手动标记订单完成
-        Order order = orderMapper.selectById(orderId);
+        Order order = orderMapper.selectById(orderId); // 先按ID读取订单，确认目标数据存在
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        order.setStatus("COMPLETED");
-        order.setUpdateTime(LocalDateTime.now());
-        orderMapper.updateById(order);
+        order.setStatus("COMPLETED"); // 把业务状态改为“已完成”
+        order.setUpdateTime(LocalDateTime.now()); // 记录本次状态变更时间，便于后续审计追踪
+        orderMapper.updateById(order); // 将最新状态持久化到数据库
     }
 
     /**
@@ -399,7 +399,7 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
     @Override
     @Transactional
     public void payOrder(Long orderId, Long tenantId) { // 支付订单
-        Order order = orderMapper.selectById(orderId);
+        Order order = orderMapper.selectById(orderId); // 加载订单主记录，后续做权限与状态校验
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
@@ -419,16 +419,16 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
         if ("REFUNDED".equals(order.getPaymentStatus())) {
             throw new BusinessException(400, "订单已退款，无法再次支付");
         }
-        Contract contract = findLatestContractByOrderId(order.getId());
+        Contract contract = findLatestContractByOrderId(order.getId()); // 获取该订单最新合同，确认签约流程已经完成
         if (contract == null || !"FULLY_SIGNED".equals(contract.getStatus())) {
             throw new BusinessException(400, "合同双方签署完成后方可支付");
         }
-        order.setPaymentStatus("PAID");
-        order.setStatus("COMPLETED");
-        order.setUpdateTime(LocalDateTime.now());
-        orderMapper.updateById(order);
-        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单支付成功，订单已完成", order.getId());
-        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已完成支付，订单已完成", order.getId());
+        order.setPaymentStatus("PAID"); // 标记支付状态为“已支付”
+        order.setStatus("COMPLETED"); // 支付完成即闭环，订单业务状态同步置为“已完成”
+        order.setUpdateTime(LocalDateTime.now()); // 更新时间戳，确保时间线反映最新处理动作
+        orderMapper.updateById(order); // 落库保存支付后的订单状态
+        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单支付成功，订单已完成", order.getId()); // 通知租客支付成功
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已完成支付，订单已完成", order.getId()); // 通知房东订单已收款完成
     }
 
     /**
@@ -441,7 +441,7 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
     @Override
     @Transactional
     public void refundOrder(Long orderId, Long tenantId) { // 退款订单
-        Order order = orderMapper.selectById(orderId);
+        Order order = orderMapper.selectById(orderId); // 加载订单，确认退款目标存在且可操作
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
@@ -451,17 +451,17 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
         if (!"PAID".equals(order.getPaymentStatus())) {
             throw new BusinessException(400, "仅已支付订单可退款");
         }
-        order.setPaymentStatus("REFUNDED");
-        order.setStatus("CANCELLED");
-        order.setUpdateTime(LocalDateTime.now());
-        orderMapper.updateById(order);
+        order.setPaymentStatus("REFUNDED"); // 支付状态改为“已退款”，防止后续重复支付或重复退款
+        order.setStatus("CANCELLED"); // 退款后交易闭环终止，订单状态同步改为“已取消”
+        order.setUpdateTime(LocalDateTime.now()); // 记录退款处理时间点
+        orderMapper.updateById(order); // 把退款结果写回数据库
         // 退款即撤销交易闭环（本次需求）：
         // 租客退款后，订单状态已变为 CANCELLED，对应合同也必须联动取消，
         // 防止合同仍停留在 FULLY_SIGNED 等可执行状态，造成前后端口径不一致。
         // 这里复用统一的“按订单定位最新合同并取消”逻辑，保持取消链路行为一致。
-        cancelLatestContractForOrder(orderId);
-        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消", order.getId());
-        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消", order.getId());
+        cancelLatestContractForOrder(orderId); // 联动取消该订单最新合同，避免合同状态与订单状态脱节
+        messageProducer.sendOrderStatusChange(order.getTenantId(), "订单退款成功，订单已取消", order.getId()); // 通知租客退款完成
+        messageProducer.sendOrderStatusChange(order.getLandlordId(), "租客已退款，订单已取消", order.getId()); // 通知房东订单已退款取消
     }
 
     /**
@@ -471,7 +471,7 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
     @Override
     @Transactional
     public void reviewOrder(Long orderId, Long tenantId, OrderReviewRequest request) { // 提交订单评价并调整信用分
-        Order order = orderMapper.selectById(orderId);
+        Order order = orderMapper.selectById(orderId); // 查询订单，确认评价对象存在
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
@@ -484,40 +484,40 @@ public class OrderServiceImpl implements OrderService { // 订单主流程实现
         if (request == null || request.getRating() == null) {
             throw new BusinessException(400, "评分不能为空");
         }
-        int rating = request.getRating();
+        int rating = request.getRating(); // 取出评分值，后续用于范围校验与信用分增减
         if (rating < REVIEW_MIN_RATING || rating > REVIEW_MAX_RATING) {
             throw new BusinessException(400, "评分必须在1到5之间");
         }
 
-        LambdaQueryWrapper<Review> existsWrapper = new LambdaQueryWrapper<>();
-        existsWrapper.eq(Review::getOrderId, orderId).eq(Review::getUserId, tenantId);
+        LambdaQueryWrapper<Review> existsWrapper = new LambdaQueryWrapper<>(); // 构建“该租客对该订单是否已评价”的查询条件
+        existsWrapper.eq(Review::getOrderId, orderId).eq(Review::getUserId, tenantId); // 限定订单ID+用户ID组合，确保幂等校验准确
         if (reviewMapper.selectCount(existsWrapper) > 0) {
             throw new BusinessException(400, "该订单已评价，请勿重复提交");
         }
 
-        Review review = new Review();
-        review.setHouseId(order.getHouseId());
-        review.setOrderId(orderId);
-        review.setUserId(tenantId);
-        review.setRating(rating);
-        review.setContent(request.getContent());
-        review.setCreateTime(LocalDateTime.now());
-        reviewMapper.insert(review);
+        Review review = new Review(); // 创建评价实体，准备落库保存
+        review.setHouseId(order.getHouseId()); // 记录关联房源，便于后续按房源汇总评分
+        review.setOrderId(orderId); // 记录关联订单，保证评价与交易链路可追溯
+        review.setUserId(tenantId); // 记录评价人，支持“我的评价”场景查询
+        review.setRating(rating); // 保存星级评分（1-5）
+        review.setContent(request.getContent()); // 保存评价文本内容，供前端展示
+        review.setCreateTime(LocalDateTime.now()); // 记录评价提交时间
+        reviewMapper.insert(review); // 将评价持久化到数据库
         // 评价成功后记录 ORDER 行为（不再写 REVIEW 类型），确保推荐系统行为枚举口径一致。
-        upsertOrderBehavior(tenantId, order.getHouseId());
+        upsertOrderBehavior(tenantId, order.getHouseId()); // 更新用户行为轨迹，帮助推荐系统感知真实成交偏好
 
-        User landlord = userMapper.selectById(order.getLandlordId());
+        User landlord = userMapper.selectById(order.getLandlordId()); // 读取房东信息，用于按评分调整信用分
         if (landlord != null) {
-            int currentScore = landlord.getCreditScore() == null ? DEFAULT_CREDIT_SCORE : landlord.getCreditScore();
-            int delta;
+            int currentScore = landlord.getCreditScore() == null ? DEFAULT_CREDIT_SCORE : landlord.getCreditScore(); // 空值场景回退默认信用分
+            int delta; // 记录本次评分对应的信用分变化量
             if (rating < REVIEW_MIDDLE_RATING) {
-                delta = CREDIT_DELTA_LOW_RATING;
+                delta = CREDIT_DELTA_LOW_RATING; // 低分评价触发扣分
             } else if (rating == REVIEW_MIDDLE_RATING) {
-                delta = CREDIT_DELTA_THREE_STARS;
+                delta = CREDIT_DELTA_THREE_STARS; // 3 星给小幅正向加分
             } else if (rating == REVIEW_GOOD_RATING) {
-                delta = CREDIT_DELTA_FOUR_STARS;
+                delta = CREDIT_DELTA_FOUR_STARS; // 4 星给中等正向加分
             } else {
-                delta = CREDIT_DELTA_FIVE_STARS;
+                delta = CREDIT_DELTA_FIVE_STARS; // 5 星给最高档正向加分
             }
             landlord.setCreditScore(currentScore + delta);
             landlord.setUpdateTime(LocalDateTime.now());
