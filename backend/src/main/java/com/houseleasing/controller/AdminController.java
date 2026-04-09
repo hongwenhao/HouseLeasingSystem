@@ -144,8 +144,8 @@ public class AdminController {
     /**
      * 查询系统所有订单列表（分页）
      *
-     * @param page 当前页码
-     * @param size 每页大小
+     * @param page    当前页码
+     * @param size    每页大小
      * @param keyword 搜索关键词（可选，支持订单号与订单状态）
      * @return 所有订单的分页列表
      */
@@ -160,25 +160,16 @@ public class AdminController {
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size); // 组装分页对象（当前页 + 每页条数）
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>(); // 构建订单查询条件
-
-
-
-
         boolean hasExplicitStatusFilter = StringUtils.hasText(status); // 是否传了 status 参数（优先使用显式状态筛选）
         if (StringUtils.hasText(keyword)) {
             String trimmedKeyword = keyword.trim(); // 去掉关键词首尾空格，避免误匹配
             String normalizedStatusKeyword = trimmedKeyword.toUpperCase(Locale.ROOT); // 转大写，统一与状态白名单比较
-
-
             if (!hasExplicitStatusFilter && ORDER_STATUS_KEYWORDS.contains(normalizedStatusKeyword)) {
                 wrapper.eq(Order::getStatus, normalizedStatusKeyword); // 关键词命中状态枚举时，按状态精确筛选
             } else {
                 wrapper.like(Order::getOrderNo, trimmedKeyword); // 否则按订单号模糊查询
             }
         }
-
-
-
         if (StringUtils.hasText(status)) {
             String normalizedStatus = status.trim().toUpperCase(Locale.ROOT); // 标准化状态入参（去空格+转大写）
             if (ORDER_STATUS_KEYWORDS.contains(normalizedStatus)) {
@@ -215,10 +206,10 @@ public class AdminController {
     /**
      * 查询系统所有合同列表（分页）
      *
-     * @param page 当前页码
-     * @param size 每页大小
+     * @param page    当前页码
+     * @param size    每页大小
      * @param keyword 搜索关键词（可选，匹配合同编号/关联订单号）
-     * @param status 状态筛选（可选，命中白名单时生效）
+     * @param status  状态筛选（可选，命中白名单时生效）
      * @return 所有合同的分页列表
      */
     @Operation(summary = "List all contracts")
@@ -232,9 +223,6 @@ public class AdminController {
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size); // 组装合同分页对象
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> wrapper =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>(); // 构建合同查询条件
-
-
-
 
         if (StringUtils.hasText(keyword)) {
             String trimmedKeyword = keyword.trim(); // 清理关键词首尾空格
@@ -313,10 +301,6 @@ public class AdminController {
             return Result.success(); // 已取消时直接成功返回（幂等）
         }
 
-
-
-
-
         Contract latestContract = findCancellableLatestContractForOrderByAdmin(order); // 检查并获取可联动取消的最新合同
         order.setStatus("CANCELLED"); // 订单状态更新为已取消
         order.setUpdateTime(LocalDateTime.now()); // 记录订单更新时间
@@ -327,8 +311,6 @@ public class AdminController {
             contractMapper.updateById(latestContract); // 持久化合同状态变更
             notifyContractCancelledByAdmin(latestContract); // 通知合同双方“管理员已取消”
         }
-
-
         notifyOrderCancelledByAdmin(order); // 通知订单双方“管理员已取消”
         return Result.success(); // 返回取消成功
     }
@@ -356,9 +338,6 @@ public class AdminController {
         contract.setStatus("CANCELLED"); // 合同状态改为已取消
         contract.setUpdateTime(LocalDateTime.now()); // 记录合同更新时间
         contractMapper.updateById(contract); // 落库保存合同状态
-
-
-
         cancelRelatedOrderForContractByAdmin(contract); // 联动取消其关联订单（若可取消）
 
         notifyContractCancelledByAdmin(contract); // 通知合同双方“管理员取消合同”
@@ -373,12 +352,11 @@ public class AdminController {
 
     /**
      * 管理员取消订单前，校验该订单关联的最新合同是否允许被联动取消。
-     *
      * 设计要点：
      * 1) 只处理“最新合同”，与订单详情页展示口径保持一致；
      * 2) 若最新合同已取消，直接忽略，保证幂等；
      * 3) 若最新合同已双方签署（FULLY_SIGNED），按业务规则禁止取消，
-     *    抛出异常终止本次管理员取消订单操作，避免出现“订单已取消、合同未取消”的不一致状态。
+     * 抛出异常终止本次管理员取消订单操作，避免出现“订单已取消、合同未取消”的不一致状态。
      *
      * @return 可被联动取消的最新合同；若无需处理返回 null
      */
@@ -398,7 +376,6 @@ public class AdminController {
 
     /**
      * 管理员取消合同时，联动取消其对应订单（若存在且未取消）。
-     *
      * 设计要点：
      * 1) 订单不存在时直接忽略，兼容历史脏数据；
      * 2) 订单已取消时直接返回，保证幂等；
@@ -514,7 +491,7 @@ public class AdminController {
     /**
      * 获取信用分分布（用于管理后台饼图）。
      *
-     * @return [{"range":"90-100(优秀)","count":5}, ...]
+     * @return [{"range":"90-200(优秀)","count":5}, ...]
      */
     @Operation(summary = "Get credit distribution stats")
     @GetMapping("/stats/credit")
@@ -549,7 +526,7 @@ public class AdminController {
     }
 
     /**
-     * 查询待审核房源（当前实现口径：OFFLINE 视作待审核/未上线）。
+     * 查询未上架房源（当前实现口径：OFFLINE未上架）。
      *
      * @param page    当前页码
      * @param size    每页数量
