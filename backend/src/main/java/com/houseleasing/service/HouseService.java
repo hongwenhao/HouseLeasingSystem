@@ -51,15 +51,6 @@ public interface HouseService { // 房源主流程抽象：发布、查询、收
     PageResult<House> searchHouses(HouseSearchRequest request); // 多条件分页搜索房源
 
     /**
-     * 管理员审核房源（上线或拒绝）
-     *
-     * @param id       要审核的房源 ID
-     * @param approved true 表示审核通过上线，false 表示拒绝
-     * @param reason   审核意见
-     */
-//    void approveHouse(Long id, boolean approved, String reason);
-
-    /**
      * 查询指定房东发布的房源列表（分页）
      *
      * @param ownerId 房东用户 ID
