@@ -50,7 +50,7 @@ import java.util.List;
 public class ContractServiceImpl implements ContractService { // 合同全流程实现：生成、签署、导出、取消
 
     /** PDF 文件存储子目录，位于上传根目录下的 contracts/ 文件夹 */
-    private static final String CONTRACT_PDF_SUBDIR = "contracts";
+    private static final String CONTRACT_PDF_SUBDIR = "contracts"; // 统一合同PDF子目录名，避免散落硬编码
 
     /** 从 application.yml 读取文件上传根目录，默认为 uploads */
     @Value("${app.upload.dir:uploads}")
@@ -94,7 +94,7 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
     @Override
     @Transactional
     public Contract generateContract(ContractGenerateRequest request, Long userId) { // 根据订单生成合同并做风险分析
-        Order order = orderMapper.selectById(request.getOrderId());
+        Order order = orderMapper.selectById(request.getOrderId()); // 根据请求中的订单ID加载订单主数据
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
@@ -105,14 +105,14 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             throw new BusinessException(400, "租赁结束日期不能早于起始日期");
         }
         // 生成合同时以房东确认的租赁期限为准，同时回写订单，保证后续详情与合同正文一致
-        order.setStartDate(request.getStartDate());
-        order.setEndDate(request.getEndDate());
-        order.setUpdateTime(LocalDateTime.now());
-        orderMapper.updateById(order);
+        order.setStartDate(request.getStartDate()); // 回写订单起租日期，确保订单与合同一致
+        order.setEndDate(request.getEndDate()); // 回写订单止租日期，避免后续页面展示不一致
+        order.setUpdateTime(LocalDateTime.now()); // 更新订单修改时间用于审计
+        orderMapper.updateById(order); // 持久化订单租期变更
         // 查询合同相关的房源、租客和房东信息
-        House house = houseMapper.selectById(order.getHouseId());
-        User tenant = userMapper.selectById(order.getTenantId());
-        User landlord = userMapper.selectById(order.getLandlordId());
+        House house = houseMapper.selectById(order.getHouseId()); // 加载合同关联房源信息
+        User tenant = userMapper.selectById(order.getTenantId()); // 加载租客实名信息
+        User landlord = userMapper.selectById(order.getLandlordId()); // 加载房东实名信息
         if (tenant == null || landlord == null) {
             throw new BusinessException(404, "合同关联用户不存在");
         }
