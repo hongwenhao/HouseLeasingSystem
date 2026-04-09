@@ -58,7 +58,7 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      * 收藏行为分值（用于推荐系统行为权重）：
      * 规则约定为 VIEW=1、COLLECT=3、ORDER=5，这里固定 COLLECT=3。
      */
-    private static final BigDecimal BEHAVIOR_COLLECT_SCORE = new BigDecimal("3.0"); // 创建对象承载本步骤数据
+    private static final BigDecimal BEHAVIOR_COLLECT_SCORE = new BigDecimal("3.0");
     private static final String HOUSE_STATUS_ONLINE = "ONLINE"; // 房源上架状态
     private static final String HOUSE_STATUS_OFFLINE = "OFFLINE"; // 房源下架状态
     private static final int CREDIT_SCORE_PUBLISHING_THRESHOLD = 0; // 发布房源所需最低信用分
@@ -75,11 +75,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @CacheEvict(value = "hotHouses", allEntries = true) // 发布并立即上线房源时清除热门房源缓存
     public House addHouse(House house, Long ownerId) { // 发布新房源
         User owner = userMapper.selectById(ownerId); // 查询发布者用户信息用于权限与信用校验
-        if (owner == null) { // 在该判断成立时执行对应逻辑
-            throw new BusinessException(404, "用户不存在"); // 立即返回错误避免继续执行
+        if (owner == null) {
+            throw new BusinessException(404, "用户不存在");
         }
-        if (owner.getCreditScore() != null && owner.getCreditScore() < CREDIT_SCORE_PUBLISHING_THRESHOLD) { // 在该判断成立时执行对应逻辑
-            throw new BusinessException(403, "当前信用分过低，暂不可发布房源"); // 以异常形式提示调用方当前问题
+        if (owner.getCreditScore() != null && owner.getCreditScore() < CREDIT_SCORE_PUBLISHING_THRESHOLD) {
+            throw new BusinessException(403, "当前信用分过低，暂不可发布房源");
         }
         house.setOwnerId(ownerId); // 绑定房源归属房东
         house.setStatus(HOUSE_STATUS_ONLINE); // 新房源默认状态为已上线
@@ -88,8 +88,8 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
         house.setUpdateTime(LocalDateTime.now()); // 初始化更新时间
         houseMapper.insert(house); // 插入房源主表记录
         // 同步写入 house_images 明细表，确保“房源主表 JSON 字段”和“图片明细表”两处数据一致
-        syncHouseImages(house.getId(), house.getImages()); // 借助已有方法完成该业务动作
-        return house; // 把结果交还给上层调用方
+        syncHouseImages(house.getId(), house.getImages());
+        return house;
     }
 
     /**
@@ -104,22 +104,22 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 更新房源后清除热门房源缓存
     public House updateHouse(Long id, House house, Long ownerId) { // 更新房源信息
-        House existing = houseMapper.selectById(id); // 读取当前业务所需数据
-        if (existing == null) { // 按该条件分支处理不同业务场景
-            throw new BusinessException(404, "房源不存在"); // 抛出业务异常并中断当前流程
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
         }
         // 验证操作人是否是该房源的所有者
-        if (!existing.getOwnerId().equals(ownerId)) { // 依据当前状态决定后续处理路径
-            throw new BusinessException(403, "没有权限修改该房源"); // 抛出业务异常并中断当前流程
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限修改该房源");
         }
-        house.setId(id); // 补齐对象属性供后续流程使用
-        house.setOwnerId(ownerId); // 设置业务字段以形成完整数据
-        house.setUpdateTime(LocalDateTime.now()); // 持久化本次状态更新
-        houseMapper.updateById(house); // 调用组件能力完成当前步骤
-        House updatedHouse = houseMapper.selectById(id); // 先查出目标记录再做业务判断
+        house.setId(id);
+        house.setOwnerId(ownerId);
+        house.setUpdateTime(LocalDateTime.now());
+        houseMapper.updateById(house);
+        House updatedHouse = houseMapper.selectById(id);
         // 更新后按数据库最终值重建图片明细，兼容“本次请求未携带 images 字段”的场景
-        syncHouseImages(id, updatedHouse != null ? updatedHouse.getImages() : null); // 借助已有方法完成该业务动作
-        return updatedHouse; // 输出本方法最终结果
+        syncHouseImages(id, updatedHouse != null ? updatedHouse.getImages() : null);
+        return updatedHouse;
     }
 
     /**
@@ -135,23 +135,23 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      * @param houseId     房源 ID
      * @param imagesJson  图片 JSON 字符串，期望格式如：["/api/uploads/a.jpg","/api/uploads/b.jpg"]
      */
-    private void syncHouseImages(Long houseId, String imagesJson) { // 借助已有方法完成该业务动作
-        if (houseId == null) { // 在该判断成立时执行对应逻辑
-            return; // 按既定流程继续处理后续逻辑
+    private void syncHouseImages(Long houseId, String imagesJson) {
+        if (houseId == null) {
+            return;
         }
         // 1) 先删除历史明细，避免重复与过期图片残留
-        LambdaQueryWrapper<HouseImage> deleteWrapper = new LambdaQueryWrapper<>(); // 读取当前业务所需数据
-        deleteWrapper.eq(HouseImage::getHouseId, houseId); // 调用组件能力完成当前步骤
-        houseImageMapper.delete(deleteWrapper); // 执行删除动作清理无效数据
+        LambdaQueryWrapper<HouseImage> deleteWrapper = new LambdaQueryWrapper<>();
+        deleteWrapper.eq(HouseImage::getHouseId, houseId);
+        houseImageMapper.delete(deleteWrapper);
 
         // 2) 解析主表 JSON 字段，逐条写入明细表（含顺序）
-        List<String> imageUrls = parseImageUrls(imagesJson); // 调用组件能力完成当前步骤
-        for (int i = 0; i < imageUrls.size(); i++) { // 遍历集合逐项处理业务数据
-            HouseImage houseImage = new HouseImage(); // 创建对象承载本步骤数据
-            houseImage.setHouseId(houseId); // 设置业务字段以形成完整数据
-            houseImage.setImageUrl(imageUrls.get(i)); // 给对象写入当前步骤需要的字段值
-            houseImage.setSort(i); // 设置业务字段以形成完整数据
-            houseImageMapper.insert(houseImage); // 把新建数据写入数据库
+        List<String> imageUrls = parseImageUrls(imagesJson);
+        for (int i = 0; i < imageUrls.size(); i++) {
+            HouseImage houseImage = new HouseImage();
+            houseImage.setHouseId(houseId);
+            houseImage.setImageUrl(imageUrls.get(i));
+            houseImage.setSort(i);
+            houseImageMapper.insert(houseImage);
         }
     }
 
@@ -168,22 +168,22 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      * @param images 图片字段原始值
      * @return 清洗后的图片 URL 列表（已过滤空白项）
      */
-    private List<String> parseImageUrls(String images) { // 调用组件能力完成当前步骤
-        if (images == null || images.trim().isEmpty()) { // 在该判断成立时执行对应逻辑
-            return List.of(); // 把结果交还给上层调用方
+    private List<String> parseImageUrls(String images) {
+        if (images == null || images.trim().isEmpty()) {
+            return List.of();
         }
-        String trimmed = images.trim(); // 执行对应服务/DAO方法推进流程
-        if (trimmed.startsWith("[")) { // 在该判断成立时执行对应逻辑
-            try { // 在当前步骤完成必要业务动作
-                List<String> parsed = objectMapper.readValue(trimmed, new TypeReference<List<String>>() {}); // 实例化新对象用于后续操作
-                return parsed.stream() // 输出本方法最终结果
+        String trimmed = images.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                List<String> parsed = objectMapper.readValue(trimmed, new TypeReference<List<String>>() {});
+                return parsed.stream()
                         .filter(url -> url != null && !url.trim().isEmpty())
-                        .toList(); // 执行对应服务/DAO方法推进流程
-            } catch (Exception e) { // 在当前步骤完成必要业务动作
-                log.warn("解析房源图片 JSON 失败，回退到单 URL 模式：{}", e.getMessage()); // 调用组件能力完成当前步骤
+                        .toList();
+            } catch (Exception e) {
+                log.warn("解析房源图片 JSON 失败，回退到单 URL 模式：{}", e.getMessage());
             }
         }
-        return List.of(trimmed); // 输出本方法最终结果
+        return List.of(trimmed);
     }
 
     /**
@@ -197,36 +197,36 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Transactional
     @CacheEvict(value = "hotHouses", allEntries = true) // 删除房源后清除热门房源缓存
     public void deleteHouse(Long id, Long ownerId) { // 删除房源及关联数据
-        House existing = houseMapper.selectById(id); // 读取当前业务所需数据
-        if (existing == null) { // 按该条件分支处理不同业务场景
-            throw new BusinessException(404, "房源不存在"); // 抛出业务异常并中断当前流程
+        House existing = houseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
         }
         // 验证操作人是否是该房源的所有者
-        if (!existing.getOwnerId().equals(ownerId)) { // 依据当前状态决定后续处理路径
-            throw new BusinessException(403, "没有权限删除该房源"); // 立即返回错误避免继续执行
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限删除该房源");
         }
         long relatedContractCount = contractMapper.selectCount(
                 new LambdaQueryWrapper<Contract>().eq(Contract::getHouseId, id)
-        ); // 在当前步骤完成必要业务动作
-        if (relatedContractCount > 0) { // 依据当前状态决定后续处理路径
-            throw new BusinessException(400, "该房源存在关联合同，无法删除"); // 以异常形式提示调用方当前问题
+        );
+        if (relatedContractCount > 0) {
+            throw new BusinessException(400, "该房源存在关联合同，无法删除");
         }
         // 清理关联的图片明细记录
-        LambdaQueryWrapper<HouseImage> imageWrapper = new LambdaQueryWrapper<>(); // 读取当前业务所需数据
-        imageWrapper.eq(HouseImage::getHouseId, id); // 借助已有方法完成该业务动作
-        houseImageMapper.delete(imageWrapper); // 从数据库移除对应记录
+        LambdaQueryWrapper<HouseImage> imageWrapper = new LambdaQueryWrapper<>();
+        imageWrapper.eq(HouseImage::getHouseId, id);
+        houseImageMapper.delete(imageWrapper);
         // 清理用户对该房源的收藏行为记录
-        LambdaQueryWrapper<UserBehavior> behaviorWrapper = new LambdaQueryWrapper<>(); // 先查出目标记录再做业务判断
+        LambdaQueryWrapper<UserBehavior> behaviorWrapper = new LambdaQueryWrapper<>();
         behaviorWrapper.eq(UserBehavior::getHouseId, id)
-                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT); // 执行对应服务/DAO方法推进流程
-        userBehaviorMapper.delete(behaviorWrapper); // 执行删除动作清理无效数据
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
+        userBehaviorMapper.delete(behaviorWrapper);
         // 删除房源主记录
-        try { // 在当前步骤完成必要业务动作
-            houseMapper.deleteById(id); // 借助已有方法完成该业务动作
-        } catch (DataIntegrityViolationException e) { // 这里执行当前语句的核心处理
-            throw new BusinessException(400, "该房源存在关联合同，无法删除"); // 以异常形式提示调用方当前问题
+        try {
+            houseMapper.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(400, "该房源存在关联合同，无法删除");
         }
-        log.info("房源 {} 已被房东 {} 删除", id, ownerId); // 借助已有方法完成该业务动作
+        log.info("房源 {} 已被房东 {} 删除", id, ownerId);
     }
 
     /**
@@ -246,11 +246,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @CacheEvict(value = "hotHouses", allEntries = true)
     public void putHouseOnline(Long id, Long ownerId) { // 房东主动上架房源
         House existing = houseMapper.selectById(id); // 先读取房源，确认目标记录存在
-        if (existing == null) { // 按该条件分支处理不同业务场景
-            throw new BusinessException(404, "房源不存在"); // 抛出业务异常并中断当前流程
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
         }
-        if (!existing.getOwnerId().equals(ownerId)) { // 依据当前状态决定后续处理路径
-            throw new BusinessException(403, "没有权限操作该房源"); // 以异常形式提示调用方当前问题
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限操作该房源");
         }
         existing.setStatus(HOUSE_STATUS_ONLINE); // 更新状态为“上架中”，使租客搜索结果可见
         existing.setUpdateTime(LocalDateTime.now()); // 刷新更新时间，便于“最新更新”排序准确
@@ -274,11 +274,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @CacheEvict(value = "hotHouses", allEntries = true)
     public void putHouseOffline(Long id, Long ownerId) { // 房东主动下架房源
         House existing = houseMapper.selectById(id); // 加载房源记录，后续执行权限与状态更新
-        if (existing == null) { // 按该条件分支处理不同业务场景
-            throw new BusinessException(404, "房源不存在"); // 抛出业务异常并中断当前流程
+        if (existing == null) {
+            throw new BusinessException(404, "房源不存在");
         }
-        if (!existing.getOwnerId().equals(ownerId)) { // 依据当前状态决定后续处理路径
-            throw new BusinessException(403, "没有权限操作该房源"); // 以异常形式提示调用方当前问题
+        if (!existing.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(403, "没有权限操作该房源");
         }
         existing.setStatus(HOUSE_STATUS_OFFLINE); // 更新状态为“已下架”，从公开列表中隐藏
         existing.setUpdateTime(LocalDateTime.now()); // 记录下架时间对应的更新时间
@@ -296,34 +296,34 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Override
     public House getHouseById(Long id) { // 查询房源详情并记录浏览行为
         House house = houseMapper.selectById(id); // 查询房源主记录，作为详情页基础数据
-        if (house == null) { // 在该判断成立时执行对应逻辑
-            throw new BusinessException(404, "房源不存在"); // 抛出业务异常并中断当前流程
+        if (house == null) {
+            throw new BusinessException(404, "房源不存在");
         }
         // 尝试增加浏览量，失败时只打印警告不影响正常查询
-        try { // 在当前步骤完成必要业务动作
+        try {
             houseMapper.incrementViewCount(id); // 浏览详情即累计热度，支持热门排序与推荐
-        } catch (Exception e) { // 在当前步骤完成必要业务动作
+        } catch (Exception e) {
             log.warn("增加浏览量失败：{}", e.getMessage()); // 浏览量更新失败不应影响用户查看详情
         }
         // 从 house_images 明细表读取图片列表（按 sort 升序），重建 images JSON 字段。
         // house_images 通过 syncHouseImages 在写入时保持与 houses.images 同步，
         // 因此两者正常情况下始终一致；当 house_images 无数据时（如历史旧数据），
         // 保留 houses.images 原值作为兜底。
-        try { // 在当前步骤完成必要业务动作
+        try {
             List<HouseImage> houseImages = houseImageMapper.selectByHouseId(id); // 从图片明细表读取该房源所有图片
-            if (!houseImages.isEmpty()) { // 在该判断成立时执行对应逻辑
+            if (!houseImages.isEmpty()) {
                 List<String> urls = houseImages.stream()
                         .map(HouseImage::getImageUrl)
                         .toList(); // 提取图片 URL 列表，准备回写到 images JSON 字段
                 house.setImages(objectMapper.writeValueAsString(urls)); // 按前端既有字段格式输出，避免兼容性问题
             }
-        } catch (Exception e) { // 在当前步骤完成必要业务动作
+        } catch (Exception e) {
             log.warn("从 house_images 填充房源 {} 图片失败：{}", id, e.getMessage()); // 图片重建失败仅告警，保留原 images 兜底
         }
         // 关联填充房东信息（隐去密码等敏感字段）
-        if (house.getOwnerId() != null) { // 按该条件分支处理不同业务场景
+        if (house.getOwnerId() != null) {
             User owner = userMapper.selectById(house.getOwnerId()); // 查询房东基础信息用于详情页展示
-            if (owner != null) { // 按该条件分支处理不同业务场景
+            if (owner != null) {
                 User sanitized = new User(); // 构建脱敏视图对象，避免直接返回完整用户实体
                 sanitized.setId(owner.getId()); // 保留房东ID供前端跳转个人页使用
                 sanitized.setUsername(owner.getUsername()); // 保留昵称用于详情页展示
@@ -347,8 +347,8 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Override
     public List<HouseImage> getHouseImages(Long houseId) { // 查询房源图片明细列表
         House house = houseMapper.selectById(houseId); // 先确认房源存在，避免查询无效图片数据
-        if (house == null) { // 在该判断成立时执行对应逻辑
-            throw new BusinessException(404, "房源不存在"); // 抛出业务异常并中断当前流程
+        if (house == null) {
+            throw new BusinessException(404, "房源不存在");
         }
         return houseImageMapper.selectByHouseId(houseId); // 返回按 sort 排好序的图片明细列表
     }
@@ -362,30 +362,30 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Override
     public PageResult<House> searchHouses(HouseSearchRequest request) { // 多条件分页搜索房源
         Page<House> page = new Page<>(request.getPage(), request.getSize()); // 创建分页参数，统一控制查询窗口
-        try { // 在当前步骤完成必要业务动作
+        try {
             // 使用 XML Mapper 中的复杂条件查询
             com.baomidou.mybatisplus.core.metadata.IPage<House> result = houseMapper.selectByCondition(page, request); // 执行主查询，支持多条件组合过滤
             return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize()); // 按统一分页对象格式返回结果
-        } catch (Exception e) { // 在当前步骤完成必要业务动作
+        } catch (Exception e) {
             // 降级处理：复杂查询失败时退回简单查询
             log.error("复杂的房屋搜索出错了，系统正在改用基础搜索方式重试: {}", e.getMessage()); // 记录主查询失败原因，便于后续排查SQL或参数问题
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>(); // 构建降级查询条件，保障接口可用性
             wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE); // 降级查询仅返回上架房源
             // 降级分支也要保持与 XML 主查询一致的排序语义，避免主查询异常时“最新”按钮失效。
             // newest = 最近更新时间优先；其余保持原有默认行为（最新发布时间优先）。
-            if ("newest".equals(request.getSortBy())) { // 依据当前状态决定后续处理路径
-                wrapper.orderByDesc(House::getUpdateTime); // 执行对应服务/DAO方法推进流程
-            } else if ("price_asc".equals(request.getSortBy())) { // 执行对应服务/DAO方法推进流程
-                wrapper.orderByAsc(House::getPrice); // 借助已有方法完成该业务动作
-            } else if ("price_desc".equals(request.getSortBy())) { // 执行对应服务/DAO方法推进流程
-                wrapper.orderByDesc(House::getPrice); // 执行对应服务/DAO方法推进流程
-            } else if ("popular".equals(request.getSortBy())) { // 执行对应服务/DAO方法推进流程
-                wrapper.orderByDesc(House::getViewCount); // 借助已有方法完成该业务动作
-            } else { // 这里执行当前语句的核心处理
-                wrapper.orderByDesc(House::getCreateTime); // 执行对应服务/DAO方法推进流程
+            if ("newest".equals(request.getSortBy())) {
+                wrapper.orderByDesc(House::getUpdateTime);
+            } else if ("price_asc".equals(request.getSortBy())) {
+                wrapper.orderByAsc(House::getPrice);
+            } else if ("price_desc".equals(request.getSortBy())) {
+                wrapper.orderByDesc(House::getPrice);
+            } else if ("popular".equals(request.getSortBy())) {
+                wrapper.orderByDesc(House::getViewCount);
+            } else {
+                wrapper.orderByDesc(House::getCreateTime);
             }
-            Page<House> result = houseMapper.selectPage(page, wrapper); // 从数据库加载后续处理对象
-            return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize()); // 输出本方法最终结果
+            Page<House> result = houseMapper.selectPage(page, wrapper);
+            return PageResult.of(result.getTotal(), result.getRecords(), request.getPage(), request.getSize());
         }
     }
 
@@ -399,12 +399,12 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      */
     @Override
     public PageResult<House> listOwnerHouses(Long ownerId, int page, int size) { // 查询房东发布房源分页
-        Page<House> pageObj = new Page<>(page, size); // 创建对象承载本步骤数据
-        LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>(); // 从数据库加载后续处理对象
-        wrapper.eq(House::getOwnerId, ownerId); // 执行对应服务/DAO方法推进流程
-        wrapper.orderByDesc(House::getCreateTime); // 执行对应服务/DAO方法推进流程
-        Page<House> result = houseMapper.selectPage(pageObj, wrapper); // 从数据库加载后续处理对象
-        return PageResult.of(result.getTotal(), result.getRecords(), page, size); // 输出本方法最终结果
+        Page<House> pageObj = new Page<>(page, size);
+        LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(House::getOwnerId, ownerId);
+        wrapper.orderByDesc(House::getCreateTime);
+        Page<House> result = houseMapper.selectPage(pageObj, wrapper);
+        return PageResult.of(result.getTotal(), result.getRecords(), page, size);
     }
 
     /**
@@ -417,22 +417,22 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      */
     @Override
     public PageResult<House> listCollectedHouses(Long userId, int page, int size) { // 查询用户收藏房源分页
-        Page<UserBehavior> pageObj = new Page<>(page, size); // 实例化新对象用于后续操作
-        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>(); // 先查出目标记录再做业务判断
+        Page<UserBehavior> pageObj = new Page<>(page, size);
+        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
                 .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT)
-                .orderByDesc(UserBehavior::getCreateTime); // 调用组件能力完成当前步骤
-        Page<UserBehavior> behaviorPage = userBehaviorMapper.selectPage(pageObj, wrapper); // 读取当前业务所需数据
+                .orderByDesc(UserBehavior::getCreateTime);
+        Page<UserBehavior> behaviorPage = userBehaviorMapper.selectPage(pageObj, wrapper);
         List<Long> houseIds = behaviorPage.getRecords().stream()
                 .map(UserBehavior::getHouseId)
-                .toList(); // 执行对应服务/DAO方法推进流程
-        List<House> houses = houseIds.isEmpty() ? List.of() : houseMapper.selectBatchIds(houseIds); // 从数据库加载后续处理对象
-        Map<Long, House> houseMap = houses.stream().collect(Collectors.toMap(House::getId, h -> h, (a, b) -> a)); // 调用组件能力完成当前步骤
+                .toList();
+        List<House> houses = houseIds.isEmpty() ? List.of() : houseMapper.selectBatchIds(houseIds);
+        Map<Long, House> houseMap = houses.stream().collect(Collectors.toMap(House::getId, h -> h, (a, b) -> a));
         List<House> ordered = houseIds.stream()
                 .map(houseMap::get)
                 .filter(h -> h != null && HOUSE_STATUS_ONLINE.equals(h.getStatus()))
-                .toList(); // 执行对应服务/DAO方法推进流程
-        return PageResult.of(behaviorPage.getTotal(), ordered, (int) behaviorPage.getCurrent(), (int) behaviorPage.getSize()); // 返回当前阶段的处理结果
+                .toList();
+        return PageResult.of(behaviorPage.getTotal(), ordered, (int) behaviorPage.getCurrent(), (int) behaviorPage.getSize());
     }
 
     /**
@@ -445,28 +445,28 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Transactional
     public void collectHouse(Long userId, Long houseId) { // 收藏房源并记录行为分
         // 检查是否已经收藏过该房源
-        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>(); // 先查出目标记录再做业务判断
+        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
                 .eq(UserBehavior::getHouseId, houseId)
-                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT); // 执行对应服务/DAO方法推进流程
-        UserBehavior existing = userBehaviorMapper.selectOne(wrapper); // 读取当前业务所需数据
-        if (existing == null) { // 按该条件分支处理不同业务场景
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
+        UserBehavior existing = userBehaviorMapper.selectOne(wrapper);
+        if (existing == null) {
             // 未收藏过：新增一条收藏行为，并显式写入 score=3。
             // 之前未写 score 会导致推荐行为权重丢失，本次统一补齐。
-            UserBehavior behavior = new UserBehavior(); // 初始化对象以便填充业务字段
-            behavior.setUserId(userId); // 补齐对象属性供后续流程使用
-            behavior.setHouseId(houseId); // 给对象写入当前步骤需要的字段值
-            behavior.setBehaviorType(BEHAVIOR_COLLECT); // 设置业务字段以形成完整数据
-            behavior.setScore(BEHAVIOR_COLLECT_SCORE); // 补齐对象属性供后续流程使用
-            behavior.setCreateTime(LocalDateTime.now()); // 补齐对象属性供后续流程使用
-            userBehaviorMapper.insert(behavior); // 落库保存本次新增记录
-            return; // 按既定流程继续处理后续逻辑
+            UserBehavior behavior = new UserBehavior();
+            behavior.setUserId(userId);
+            behavior.setHouseId(houseId);
+            behavior.setBehaviorType(BEHAVIOR_COLLECT);
+            behavior.setScore(BEHAVIOR_COLLECT_SCORE);
+            behavior.setCreateTime(LocalDateTime.now());
+            userBehaviorMapper.insert(behavior);
+            return;
         }
         // 已收藏过：保持接口幂等（不新增重复记录）。
         // 但为了兼容历史数据，若旧记录 score 为空或非 3，则在本次请求中修正为 3。
-        if (existing.getScore() == null || existing.getScore().compareTo(BEHAVIOR_COLLECT_SCORE) != 0) { // 在该判断成立时执行对应逻辑
-            existing.setScore(BEHAVIOR_COLLECT_SCORE); // 设置业务字段以形成完整数据
-            userBehaviorMapper.updateById(existing); // 调用组件能力完成当前步骤
+        if (existing.getScore() == null || existing.getScore().compareTo(BEHAVIOR_COLLECT_SCORE) != 0) {
+            existing.setScore(BEHAVIOR_COLLECT_SCORE);
+            userBehaviorMapper.updateById(existing);
         }
     }
 
@@ -479,11 +479,11 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Override
     @Transactional
     public void cancelCollectHouse(Long userId, Long houseId) { // 取消收藏并清理行为记录
-        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>(); // 先查出目标记录再做业务判断
+        LambdaQueryWrapper<UserBehavior> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserBehavior::getUserId, userId)
                 .eq(UserBehavior::getHouseId, houseId)
-                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT); // 执行对应服务/DAO方法推进流程
-        userBehaviorMapper.delete(wrapper); // 从数据库移除对应记录
+                .eq(UserBehavior::getBehaviorType, BEHAVIOR_COLLECT);
+        userBehaviorMapper.delete(wrapper);
     }
 
     /**
@@ -494,15 +494,15 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
     @Override
     @Cacheable(value = "hotHouses", key = "'all'") // 缓存热门房源列表，key 为 'hotHouses::all'
     public List<House> getHotHouses() { // 获取热门房源（带缓存）
-        try { // 在当前步骤完成必要业务动作
-            LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>(); // 从数据库加载后续处理对象
-            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE); // 执行对应服务/DAO方法推进流程
-            wrapper.orderByDesc(House::getViewCount); // 借助已有方法完成该业务动作
-            Page<House> page = new Page<>(1, 10); // 创建对象承载本步骤数据
-            return houseMapper.selectPage(page, wrapper).getRecords(); // 输出本方法最终结果
-        } catch (Exception e) { // 在当前步骤完成必要业务动作
-            log.error("获取热门房源失败：{}", e.getMessage()); // 执行对应服务/DAO方法推进流程
-            return List.of(); // 把结果交还给上层调用方
+        try {
+            LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(House::getStatus, HOUSE_STATUS_ONLINE);
+            wrapper.orderByDesc(House::getViewCount);
+            Page<House> page = new Page<>(1, 10);
+            return houseMapper.selectPage(page, wrapper).getRecords();
+        } catch (Exception e) {
+            log.error("获取热门房源失败：{}", e.getMessage());
+            return List.of();
         }
     }
 
@@ -513,10 +513,10 @@ public class HouseServiceImpl implements HouseService { // 房源核心业务实
      */
     @Override
     public void incrementViewCount(Long houseId) { // 增加房源浏览量
-        try { // 在当前步骤完成必要业务动作
-            houseMapper.incrementViewCount(houseId); // 从数据库加载后续处理对象
-        } catch (Exception e) { // 在当前步骤完成必要业务动作
-            log.warn("增加房源 {} 浏览量失败：{}", houseId, e.getMessage()); // 调用组件能力完成当前步骤
+        try {
+            houseMapper.incrementViewCount(houseId);
+        } catch (Exception e) {
+            log.warn("增加房源 {} 浏览量失败：{}", houseId, e.getMessage());
         }
     }
 }

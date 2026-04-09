@@ -45,16 +45,16 @@ public class RecommendationServiceImpl implements RecommendationService { // 协
 
             // 第二步：找到与当前用户行为相似的其他用户（基于共同感兴趣的房源>=1）
             Set<Long> similarUsers = new HashSet<>(); // 收集“与当前用户至少有一个共同房源交互”的用户
-            for (Long houseId : userHouseIds) { // 逐条执行同类处理逻辑
+            for (Long houseId : userHouseIds) {
                 List<Long> otherUsers = userBehaviorMapper.selectUserIdsByHouseId(houseId, userId); // 找到同样关注该房源的其他用户
                 similarUsers.addAll(otherUsers); // 合并进相似用户集合，自动去重
             }
 
             // 第三步：统计相似用户感兴趣但当前用户未看过的房源的出现频次
             Map<Long, Integer> houseFrequency = new HashMap<>(); // 统计候选房源被相似用户“共同选择”的次数
-            for (Long similarUserId : similarUsers) { // 逐条执行同类处理逻辑
+            for (Long similarUserId : similarUsers) {
                 List<Long> similarUserHouses = userBehaviorMapper.selectHouseIdsByUserId(similarUserId); // 拉取每个相似用户的房源交互列表
-                for (Long houseId : similarUserHouses) { // 循环处理当前批次元素
+                for (Long houseId : similarUserHouses) {
                     if (!userHouseSet.contains(houseId)) { // 过滤掉当前用户已经看过/点过的房源
                         // 相似用户每次出现该房源就计数 +1
                         houseFrequency.merge(houseId, 1, Integer::sum); // 出现一次计一次，用频次代表推荐强度
@@ -70,19 +70,19 @@ public class RecommendationServiceImpl implements RecommendationService { // 协
                     .collect(Collectors.toList()); // 仅保留前 limit 个房源ID
 
             List<House> recommended = new ArrayList<>(); // 存放最终推荐结果
-            if (!recommendedIds.isEmpty()) { // 依据当前状态决定后续处理路径
+            if (!recommendedIds.isEmpty()) {
                 // 批量查询推荐房源，只返回已上线的房源
                 LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>(); // 构建“候选ID + 上线状态”查询
                 wrapper.in(House::getId, recommendedIds)
-                        .eq(House::getStatus, "ONLINE"); // 借助已有方法完成该业务动作
+                        .eq(House::getStatus, "ONLINE");
                 recommended = houseMapper.selectList(wrapper); // 把候选ID还原为完整房源对象
             }
 
             // 第五步：如果推荐数量不足，用热门房源补充到指定数量
-            if (recommended.size() < limit) { // 按该条件分支处理不同业务场景
+            if (recommended.size() < limit) {
                 LambdaQueryWrapper<House> popularWrapper = new LambdaQueryWrapper<>(); // 构建热门房源兜底查询条件
                 popularWrapper.eq(House::getStatus, "ONLINE"); // 兜底也只返回上架房源
-                if (!recommended.isEmpty()) { // 在该判断成立时执行对应逻辑
+                if (!recommended.isEmpty()) {
                     // 排除已推荐的房源，避免重复
                     List<Long> existingIds = recommended.stream().map(House::getId).collect(Collectors.toList()); // 收集已在推荐列表中的房源ID
                     popularWrapper.notIn(House::getId, existingIds); // 兜底查询排除这些ID，防止重复展示
@@ -96,7 +96,7 @@ public class RecommendationServiceImpl implements RecommendationService { // 协
             }
 
             return recommended; // 返回最终推荐结果（个性化 + 热门兜底）
-        } catch (Exception e) { // 在当前步骤完成必要业务动作
+        } catch (Exception e) {
             log.error("推荐计算失败：{}", e.getMessage()); // 记录异常原因，便于排查算法或数据问题
             // 异常降级：推荐失败时直接返回热门房源，保障接口可用性
             LambdaQueryWrapper<House> wrapper = new LambdaQueryWrapper<>(); // 构建热门房源查询条件
