@@ -37,6 +37,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 合同服务实现类
@@ -59,6 +60,18 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
 
     /** 固定正文条款数量（不含补充条款） */
     private static final int BASE_ARTICLE_COUNT = 13;
+    /**
+     * 房屋类型中文标签映射。
+     * 说明：
+     * 1) 合同正文是下载 PDF 的直接数据来源，因此需要在生成正文时完成“枚举值 -> 中文”转换；
+     * 2) 若未来新增类型且暂未配置映射，会自动回退为原始枚举值，避免合同字段为空。
+     */
+    private static final Map<String, String> HOUSE_TYPE_LABEL_MAP = Map.of(
+            "APARTMENT", "公寓",
+            "HOUSE", "住宅",
+            "ROOM", "单间",
+            "VILLA", "别墅"
+    );
     /** 租金逾期违约金比例（千分比，0.5%/日） */
     private static final BigDecimal DAILY_LATE_FEE_RATE_PERCENT = new BigDecimal("0.5");
     /** 租金逾期达到该天数后，出租方可按约解除合同 */
@@ -239,7 +252,8 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
         sb.append("1.2 房屋地址：").append(houseAddress).append("\n");
         if (house != null) {
             sb.append("1.3 房屋面积：").append(house.getArea()).append("平方米\n");
-            sb.append("1.4 房屋类型：").append(house.getHouseType()).append("\n");
+            // 合同中优先展示中文类型，必要时保留原始枚举值作为兼容兜底。
+            sb.append("1.4 房屋类型：").append(formatHouseTypeForContract(house.getHouseType())).append("\n");
         }
         sb.append("\n");
 
@@ -373,6 +387,27 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             return trimmed;
         }
         return trimmed.substring(0, 6) + "********" + trimmed.substring(trimmed.length() - 4);
+    }
+
+    /**
+     * 将房屋类型格式化为合同可读文本（中文优先）。
+     * 输出策略：
+     * - 命中映射：返回“中文（枚举）”，例如“公寓（APARTMENT）”，既便于阅读也保留系统原始值；
+     * - 未命中映射：回退原始值，避免出现空字符串导致合同语义缺失。
+     *
+     * @param houseType 房屋类型枚举值（如 APARTMENT）
+     * @return 合同中展示的房屋类型文本
+     */
+    private String formatHouseTypeForContract(String houseType) {
+        if (!StringUtils.hasText(houseType)) {
+            return "未填写";
+        }
+        String normalized = houseType.trim().toUpperCase();
+        String label = HOUSE_TYPE_LABEL_MAP.get(normalized);
+        if (label == null) {
+            return houseType;
+        }
+        return label + "（" + normalized + "）";
     }
 
     /**
