@@ -638,7 +638,10 @@ function computeStats() {
   const signedContracts = contracts.value.filter(c => c.status === 'FULLY_SIGNED')
   // 金额字段容错读取：优先 monthlyRent，其次 rent；并统一转换为 Number，非法值按 0 处理。
   const signedRentValues = signedContracts.map(c => {
-    const rawRent = c.monthlyRent ?? c.rent ?? 0
+    // 仅在字段为 null/undefined 时才回退，避免把空字符串等“已赋值但异常数据”静默跳过。
+    const rawRent = c.monthlyRent !== null && c.monthlyRent !== undefined
+      ? c.monthlyRent
+      : (c.rent !== null && c.rent !== undefined ? c.rent : 0)
     const normalizedRent = Number(rawRent)
     return Number.isFinite(normalizedRent) ? normalizedRent : 0
   })
