@@ -45,7 +45,8 @@ public class UserSchemaCompatibilityInitializer implements ApplicationRunner {
             return;
         }
 
-        if (currentLength >= REQUIRED_ID_CARD_LENGTH) {
+        // 某些驱动/数据库返回空值时避免 NPE，直接跳过兼容处理并保留现状。
+        if (currentLength == null || currentLength >= REQUIRED_ID_CARD_LENGTH) {
             return;
         }
 

@@ -5,7 +5,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -25,7 +25,11 @@ class UserSchemaCompatibilityInitializerTest {
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).execute(sqlCaptor.capture());
-        assertTrue(sqlCaptor.getValue().contains("MODIFY COLUMN `id_card` VARCHAR(255)"));
+        String normalizedSql = sqlCaptor.getValue().replaceAll("\\s+", " ").trim();
+        assertEquals(
+                "ALTER TABLE `users` MODIFY COLUMN `id_card` VARCHAR(255) COMMENT '身份证号码（密文存储，应用层加密后写入）'",
+                normalizedSql
+        );
     }
 
     @Test
