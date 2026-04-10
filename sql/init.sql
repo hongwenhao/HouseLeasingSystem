@@ -1,251 +1,272 @@
--- ============================================================
--- init.sql —— 数据库初始化脚本
--- 创建 house_leasing 数据库及所有业务表，并插入演示数据
--- 字符集：utf8mb4（支持中文及 emoji）
--- ============================================================
+/*
+ Navicat Premium Data Transfer
 
--- 创建数据库（若不存在）
-CREATE DATABASE IF NOT EXISTS house_leasing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE house_leasing;
+ Source Server         : hongwenhao
+ Source Server Type    : MySQL
+ Source Server Version : 80039
+ Source Host           : localhost:3306
+ Source Schema         : house_leasing
 
--- ============================================================
--- 用户表（users）
--- 存储平台所有用户信息，包括租客、房东和管理员
--- role 字段区分用户角色，is_real_name_auth 标识是否完成实名认证
--- ============================================================
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
-  `username` VARCHAR(50) UNIQUE NOT NULL COMMENT '用户名',
-  `phone` VARCHAR(20) UNIQUE NOT NULL COMMENT '手机号',
-  `email` VARCHAR(100) UNIQUE NOT NULL COMMENT '邮箱',
-  `password` VARCHAR(255) NOT NULL COMMENT '密码',
-  `role` ENUM('TENANT','LANDLORD','ADMIN') DEFAULT 'TENANT' COMMENT '用户角色，TENANT租客/LANDLORD房东/ADMIN管理员，默认值为TENANT',
-  `real_name` VARCHAR(50) COMMENT '真实姓名',
-  `id_card` VARCHAR(255) COMMENT '身份证号码（密文存储，应用层加密后写入）',
-  `avatar` VARCHAR(500) COMMENT '头像URL',
-  `credit_score` INT DEFAULT 100 COMMENT '信用评分，初始100分',
-  `is_real_name_auth` TINYINT DEFAULT 0 COMMENT '是否实名认证，0否1是，默认值为0',
-  `status` ENUM('ACTIVE','BANNED') DEFAULT 'ACTIVE' COMMENT '账户状态，ACTIVE正常，BANNED封禁，默认值为ACTIVE',
-  `gender` TINYINT DEFAULT 0 COMMENT '性别，0未知1男2女，默认值为0',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ Target Server Type    : MySQL
+ Target Server Version : 80039
+ File Encoding         : 65001
 
--- ============================================================
--- 房源表（houses）
--- 存储房源全部信息，包含三类房东类型和五项费用配置
--- owner_type: OWNER（一手房东）/ SUBLEASE（二手房东）/ AGENT（持牌中介）
--- water/electric/gas/property/internet_fee_type: METERED/FIXED/INCLUDED
--- ============================================================
-CREATE TABLE IF NOT EXISTS `houses` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '房源ID',
-  `title` VARCHAR(200) NOT NULL COMMENT '房源标题',
-  `description` TEXT COMMENT '房源描述',
-  `province` VARCHAR(50) NOT NULL COMMENT '省份',
-  `city` VARCHAR(50) NOT NULL COMMENT '城市',
-  `district` VARCHAR(50) NOT NULL COMMENT '区/县',
-  `address` VARCHAR(300) NOT NULL COMMENT '详细地址',
-  `price` DECIMAL(10,2) NOT NULL COMMENT '月租金',
-  `deposit` DECIMAL(10,2) COMMENT '押金',
-  `area` DECIMAL(6,2) COMMENT '面积(平米)',
-  `rooms` INT DEFAULT 1 COMMENT '房间数量，默认值为1',
-  `halls` INT DEFAULT 1 COMMENT '客厅数量，默认值为1',
-  `bathrooms` INT DEFAULT 1 COMMENT '卫生间数量，默认值为1',
-  `floor` INT COMMENT '所在楼层',
-  `total_floor` INT COMMENT '总楼层数',
-  `decoration` ENUM('ROUGH','SIMPLE','MEDIUM','FINE','LUXURY') DEFAULT 'SIMPLE' COMMENT '装修程度，默认值为SIMPLE，ROUGH毛坯/SIMPLE简装/MEDIUM中等/FINE精装/LUXURY豪华',
-  `house_type` ENUM('APARTMENT','HOUSE','ROOM','VILLA') DEFAULT 'APARTMENT' COMMENT '房源类型，默认值为APARTMENT，APARTMENT公寓/HOUSE住宅/ROOM单间/VILLA别墅' ,
-  `owner_type` ENUM('OWNER','SUBLEASE','AGENT') NOT NULL COMMENT 'OWNER一手房东/SUBLEASE二手房东/AGENT中介',
-  `status` ENUM('ONLINE','OFFLINE') DEFAULT 'ONLINE' COMMENT '房源状态，默认值为ONLINE，ONLINE上架/OFFLINE下架',
-  `water_fee` DECIMAL(6,2) COMMENT '水费单价',
-  `water_fee_type` ENUM('METERED','FIXED','INCLUDED') DEFAULT 'METERED' COMMENT '水费计费方式，默认值为METERED，METERED按表计费/FIXED固定费用/INCLUDED包含在租金',
-  `electric_fee` DECIMAL(6,2) COMMENT '电费单价',
-  `electric_fee_type` ENUM('METERED','FIXED','INCLUDED') DEFAULT 'METERED' COMMENT '电费计费方式，默认值为METERED，METERED按表计费/FIXED固定费用/INCLUDED包含在租金',
-  `gas_fee` DECIMAL(6,2) COMMENT '燃气费',
-  `gas_fee_type` ENUM('METERED','FIXED','INCLUDED') DEFAULT 'FIXED' COMMENT '燃气费计费方式，默认值为FIXED，FIXED固定费用/METERED按表计费/INCLUDED包含在租金',
-  `property_fee` DECIMAL(8,2) COMMENT '物业费/月',
-  `property_fee_type` ENUM('METERED','FIXED','INCLUDED') DEFAULT 'FIXED' COMMENT '物业费计费方式，默认值为FIXED，FIXED固定费用/METERED按表计费/INCLUDED包含在租金',
-  `internet_fee` DECIMAL(6,2) COMMENT '网络费/月',
-  `internet_fee_type` ENUM('METERED','FIXED','INCLUDED') DEFAULT 'FIXED' COMMENT '网络费计费方式，默认值为FIXED，FIXED固定费用/METERED按表计费/INCLUDED包含在租金',
-  `cover_image` VARCHAR(500) COMMENT '封面图片URL',
-  `images` JSON COMMENT '图片列表JSON',
-  `tags` VARCHAR(500) COMMENT '标签列表，用逗号分隔',
-  `view_count` INT DEFAULT 0 COMMENT '浏览次数',
-  `owner_id` BIGINT NOT NULL COMMENT '房东用户ID',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  INDEX `idx_owner_id` (`owner_id`),
-  CONSTRAINT `fk_houses_owner` FOREIGN KEY (`owner_id`) REFERENCES `users`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ Date: 11/04/2026 01:12:10
+*/
 
--- ============================================================
--- 房源图片表（house_images）
--- 存储房源图片 URL 列表，支持多张图片，sort 字段控制显示顺序
--- ============================================================
-CREATE TABLE IF NOT EXISTS `house_images` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '图片ID',
-  `house_id` BIGINT NOT NULL COMMENT '关联房源ID',
-  `image_url` VARCHAR(500) NOT NULL COMMENT '图片URL',
-  `sort` INT DEFAULT 0 COMMENT '图片排序，默认值为0',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  INDEX `idx_house_id` (`house_id`),
-  CONSTRAINT `fk_house_images_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
 
--- ============================================================
--- 订单表（orders）
--- 存储租客发起的预约看房订单
--- status 流转：PENDING → APPROVED/REJECTED/CANCELLED → COMPLETED/SIGNED
--- ============================================================
-CREATE TABLE IF NOT EXISTS `orders` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '订单ID',
-  `house_id` BIGINT NOT NULL COMMENT '关联房源ID',
-  `tenant_id` BIGINT NOT NULL COMMENT '关联租客ID',
-  `landlord_id` BIGINT NOT NULL COMMENT '关联房东ID',
-  `order_no` VARCHAR(50) UNIQUE NOT NULL COMMENT '订单号',
-  `status` ENUM('PENDING','APPROVED','REJECTED','CANCELLED','COMPLETED','SIGNED') DEFAULT 'PENDING' COMMENT '订单状态，默认值为PENDING，PENDING待处理/APPROVED审核通过/REJECTED审核拒绝/CANCELLED取消/COMPLETED完成' ,
-  `appointment_time` DATETIME COMMENT '预约看房时间',
-  `start_date` DATE COMMENT '租赁开始日期',
-  `end_date` DATE COMMENT '租赁结束日期',
-  `monthly_rent` DECIMAL(10,2) COMMENT '月租金',
-  `deposit` DECIMAL(10,2) COMMENT '押金',
-  `total_amount` DECIMAL(12,2) COMMENT '总金额',
-  `payment_status` ENUM('UNPAID','PAID','REFUNDED') DEFAULT 'UNPAID' COMMENT '支付状态，默认值为UNPAID，UNPAID未支付/PAID已支付/REFUNDED已退款',
-  `remark` TEXT COMMENT '备注',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  INDEX `idx_house_id` (`house_id`),
-  INDEX `idx_tenant_id` (`tenant_id`),
-  INDEX `idx_landlord_id` (`landlord_id`),
-  CONSTRAINT `fk_orders_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_orders_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_orders_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ----------------------------
+-- Table structure for contracts
+-- ----------------------------
+DROP TABLE IF EXISTS `contracts`;
+CREATE TABLE `contracts`  (
+                              `id` bigint(0) NOT NULL AUTO_INCREMENT,
+                              `contract_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '合同编号',
+                              `order_id` bigint(0) NOT NULL COMMENT '关联订单ID',
+                              `house_id` bigint(0) NOT NULL COMMENT '关联房源ID',
+                              `tenant_id` bigint(0) NOT NULL COMMENT '关联租客ID',
+                              `landlord_id` bigint(0) NOT NULL COMMENT '关联房东ID',
+                              `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '合同内容',
+                              `status` enum('DRAFT','PENDING_SIGN','TENANT_SIGNED','LANDLORD_SIGNED','FULLY_SIGNED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'DRAFT' COMMENT '合同状态，默认值为DRAFT，DRAFT草稿/PENDING_SIGN待租客签名/TENANT_SIGNED租客已签名/LANDLORD_SIGNED房东已签名/FULLY_SIGNED /CANCELLED取消',
+                              `risk_level` enum('LOW','MEDIUM','HIGH') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'LOW',
+                              `risk_items` json NULL COMMENT '风险条款JSON',
+                              `tenant_signed` tinyint(0) NULL DEFAULT 0 COMMENT '租客是否已签名，0否1是，默认值为0',
+                              `landlord_signed` tinyint(0) NULL DEFAULT 0 COMMENT '房东是否已签名，0否1是，默认值为0',
+                              `tenant_sign_time` datetime(0) NULL DEFAULT NULL COMMENT '租客签名时间',
+                              `landlord_sign_time` datetime(0) NULL DEFAULT NULL COMMENT '房东签名时间',
+                              `start_date` date NULL DEFAULT NULL COMMENT '租赁开始日期',
+                              `end_date` date NULL DEFAULT NULL COMMENT '租赁结束日期',
+                              `monthly_rent` decimal(10, 2) NULL DEFAULT NULL COMMENT '月租金',
+                              `deposit` decimal(10, 2) NULL DEFAULT NULL COMMENT '押金',
+                              `pdf_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'PDF文件路径',
+                              `sign_time` datetime(0) NULL DEFAULT NULL COMMENT '最终签署时间',
+                              `workflow_instance_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '工作流实例ID',
+                              `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                              `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+                              PRIMARY KEY (`id`) USING BTREE,
+                              UNIQUE INDEX `contract_no`(`contract_no`) USING BTREE,
+                              INDEX `idx_order_id`(`order_id`) USING BTREE,
+                              INDEX `idx_house_id`(`house_id`) USING BTREE,
+                              INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+                              INDEX `idx_landlord_id`(`landlord_id`) USING BTREE,
+                              CONSTRAINT `fk_contracts_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                              CONSTRAINT `fk_contracts_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                              CONSTRAINT `fk_contracts_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                              CONSTRAINT `fk_contracts_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
--- ============================================================
--- 合同表（contracts）
--- 存储房屋租赁合同信息，支持电子签署（双方分别签名）
--- status 流转：DRAFT → PENDING_SIGN → TENANT_SIGNED/LANDLORD_SIGNED → FULLY_SIGNED/CANCELLED
--- risk_level 由 AI 智能检测合同条款风险后写入
--- ============================================================
-CREATE TABLE IF NOT EXISTS `contracts` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-  `contract_no` VARCHAR(50) UNIQUE NOT NULL COMMENT '合同编号',
-  `order_id` BIGINT NOT NULL COMMENT '关联订单ID',
-  `house_id` BIGINT NOT NULL COMMENT '关联房源ID',
-  `tenant_id` BIGINT NOT NULL COMMENT '关联租客ID',
-  `landlord_id` BIGINT NOT NULL COMMENT '关联房东ID',
-  `content` LONGTEXT COMMENT '合同内容',
-  `status` ENUM('DRAFT','PENDING_SIGN','TENANT_SIGNED','LANDLORD_SIGNED','FULLY_SIGNED','CANCELLED') DEFAULT 'DRAFT' COMMENT '合同状态，默认值为DRAFT，DRAFT草稿/PENDING_SIGN待租客签名/TENANT_SIGNED租客已签名/LANDLORD_SIGNED房东已签名/FULLY_SIGNED /CANCELLED取消',
-  `risk_level` ENUM('LOW','MEDIUM','HIGH') DEFAULT 'LOW',
-  `risk_items` JSON COMMENT '风险条款JSON',
-  `tenant_signed` TINYINT DEFAULT 0 COMMENT '租客是否已签名，0否1是，默认值为0',
-  `landlord_signed` TINYINT DEFAULT 0 COMMENT '房东是否已签名，0否1是，默认值为0',
-  `tenant_sign_time` DATETIME COMMENT '租客签名时间',
-  `landlord_sign_time` DATETIME COMMENT '房东签名时间',
-  `start_date` DATE COMMENT '租赁开始日期',
-  `end_date` DATE COMMENT '租赁结束日期',
-  `monthly_rent` DECIMAL(10,2) COMMENT '月租金',
-  `deposit` DECIMAL(10,2) COMMENT '押金',
-  `pdf_path` VARCHAR(500) COMMENT 'PDF文件路径',
-  `sign_time` DATETIME COMMENT '最终签署时间',
-  `workflow_instance_id` VARCHAR(100) COMMENT '工作流实例ID',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  INDEX `idx_order_id` (`order_id`),
-  INDEX `idx_house_id` (`house_id`),
-  INDEX `idx_tenant_id` (`tenant_id`),
-  INDEX `idx_landlord_id` (`landlord_id`),
-  CONSTRAINT `fk_contracts_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_contracts_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_contracts_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_contracts_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ----------------------------
+-- Table structure for house_images
+-- ----------------------------
+DROP TABLE IF EXISTS `house_images`;
+CREATE TABLE `house_images`  (
+                                 `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '图片ID',
+                                 `house_id` bigint(0) NOT NULL COMMENT '关联房源ID',
+                                 `image_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '图片URL',
+                                 `sort` int(0) NULL DEFAULT 0 COMMENT '图片排序，默认值为0',
+                                 `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                                 PRIMARY KEY (`id`) USING BTREE,
+                                 INDEX `idx_house_id`(`house_id`) USING BTREE,
+                                 CONSTRAINT `fk_house_images_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
--- ============================================================
--- 站内消息表（messages）
--- 存储系统通知、订单状态变更、合同提醒等消息
--- related_id 关联具体业务记录 ID
--- ============================================================
-CREATE TABLE IF NOT EXISTS `messages` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
-  `user_id` BIGINT NOT NULL COMMENT '接收消息的用户ID',
-  `title` VARCHAR(200) NOT NULL COMMENT '消息标题',
-  `content` TEXT COMMENT '消息内容',
-  `type` ENUM('SYSTEM','ORDER','CONTRACT','APPOINTMENT','REVIEW') DEFAULT 'SYSTEM' COMMENT '消息类型，默认值为SYSTEM，SYSTEM系统通知/ORDER订单相关/CONTRACT合同相关/APPOINTMENT预约相关/REVIEW评价相关',
-  `is_read` TINYINT DEFAULT 0 COMMENT '是否已读，默认值为0，0未读1已读',
-  `related_id` BIGINT COMMENT '关联业务ID' ,
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  INDEX `idx_user_id` (`user_id`),
-  CONSTRAINT `fk_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ----------------------------
+-- Records of house_images
+-- ----------------------------
+INSERT INTO `house_images` VALUES (23, 1, '/api/uploads/b6adcd07af6f411f99fab0e14c82cd36.png', 0, NULL);
+INSERT INTO `house_images` VALUES (24, 1, '/api/uploads/e1a93bdef4454dab8b46beb8f795e1f8.png', 1, NULL);
+INSERT INTO `house_images` VALUES (25, 1, '/api/uploads/a963b4e53dea44d3acd3adf41b037edc.png', 2, NULL);
+INSERT INTO `house_images` VALUES (26, 2, '/api/uploads/f149fba8c40b42cea27e19215f71cd2b.png', 0, NULL);
+INSERT INTO `house_images` VALUES (27, 3, '/api/uploads/52dbb17d85be4538a0b84b2d7b68b6c0.png', 0, NULL);
+INSERT INTO `house_images` VALUES (28, 4, '/api/uploads/890339e505664afe828f03a84b7cb470.png', 0, NULL);
+INSERT INTO `house_images` VALUES (29, 4, '/api/uploads/5685dfb68307422ab8be1c84f5582e89.png', 1, NULL);
+INSERT INTO `house_images` VALUES (30, 4, '/api/uploads/be967705237441659f82dc98870f1fb0.png', 2, NULL);
+INSERT INTO `house_images` VALUES (31, 5, '/api/uploads/b8034c6103d44f86983667e43daa1dba.png', 0, NULL);
+INSERT INTO `house_images` VALUES (32, 5, '/api/uploads/200de47fd57b4214aec7371a99e957db.png', 1, NULL);
+INSERT INTO `house_images` VALUES (34, 6, '/api/uploads/a2700c6354d643c0a9b5b2d95340eb8d.png', 0, NULL);
 
--- ============================================================
--- 用户行为记录表（user_behaviors）
--- 记录用户浏览、收藏、下单等行为，用于个性化推荐算法
--- score 字段：VIEW=1分, COLLECT=3分, ORDER=5分（行为权重）
--- ============================================================
-CREATE TABLE IF NOT EXISTS `user_behaviors` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '行为ID',
-  `user_id` BIGINT NOT NULL COMMENT '用户ID',
-  `house_id` BIGINT NOT NULL COMMENT '房源ID',
-  `behavior_type` ENUM('VIEW','COLLECT','ORDER') DEFAULT 'VIEW' COMMENT '行为类型，默认值为VIEW，VIEW浏览/COLLECT收藏/ORDER下单',
-  `score` DECIMAL(3,1) DEFAULT 1.0 COMMENT '行为评分(VIEW=1, COLLECT=3, ORDER=5)',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_house_id` (`house_id`),
-  CONSTRAINT `fk_behaviors_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_behaviors_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ----------------------------
+-- Table structure for houses
+-- ----------------------------
+DROP TABLE IF EXISTS `houses`;
+CREATE TABLE `houses`  (
+                           `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '房源ID',
+                           `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '房源标题',
+                           `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '房源描述',
+                           `province` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '省份',
+                           `city` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '城市',
+                           `district` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '区/县',
+                           `address` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '详细地址',
+                           `price` decimal(10, 2) NOT NULL COMMENT '月租金',
+                           `deposit` decimal(10, 2) NULL DEFAULT NULL COMMENT '押金',
+                           `area` decimal(6, 2) NULL DEFAULT NULL COMMENT '面积(平米)',
+                           `rooms` int(0) NULL DEFAULT 1 COMMENT '房间数量，默认值为1',
+                           `halls` int(0) NULL DEFAULT 1 COMMENT '客厅数量，默认值为1',
+                           `bathrooms` int(0) NULL DEFAULT 1 COMMENT '卫生间数量，默认值为1',
+                           `floor` int(0) NULL DEFAULT NULL COMMENT '所在楼层',
+                           `total_floor` int(0) NULL DEFAULT NULL COMMENT '总楼层数',
+                           `decoration` enum('ROUGH','SIMPLE','MEDIUM','FINE','LUXURY') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'SIMPLE' COMMENT '装修程度，默认值为SIMPLE，ROUGH毛坯/SIMPLE简装/MEDIUM中等/FINE精装/LUXURY豪华',
+                           `house_type` enum('APARTMENT','HOUSE','ROOM','VILLA') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'APARTMENT' COMMENT '房源类型，默认值为APARTMENT，APARTMENT公寓/HOUSE住宅/ROOM单间/VILLA别墅',
+                           `owner_type` enum('OWNER','SUBLEASE','AGENT') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'OWNER一手房东/SUBLEASE二手房东/AGENT中介',
+                           `status` enum('ONLINE','OFFLINE') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'ONLINE' COMMENT '房源状态，默认值为ONLINE，ONLINE上架/OFFLINE下架',
+                           `water_fee` decimal(6, 2) NULL DEFAULT NULL COMMENT '水费单价',
+                           `water_fee_type` enum('METERED','FIXED','INCLUDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'METERED' COMMENT '水费计费方式，默认值为METERED，METERED按表计费/FIXED固定费用/INCLUDED包含在租金',
+                           `electric_fee` decimal(6, 2) NULL DEFAULT NULL COMMENT '电费单价',
+                           `electric_fee_type` enum('METERED','FIXED','INCLUDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'METERED' COMMENT '电费计费方式，默认值为METERED，METERED按表计费/FIXED固定费用/INCLUDED包含在租金',
+                           `gas_fee` decimal(6, 2) NULL DEFAULT NULL COMMENT '燃气费',
+                           `gas_fee_type` enum('METERED','FIXED','INCLUDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'FIXED' COMMENT '燃气费计费方式，默认值为FIXED，FIXED固定费用/METERED按表计费/INCLUDED包含在租金',
+                           `property_fee` decimal(8, 2) NULL DEFAULT NULL COMMENT '物业费/月',
+                           `property_fee_type` enum('METERED','FIXED','INCLUDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'FIXED' COMMENT '物业费计费方式，默认值为FIXED，FIXED固定费用/METERED按表计费/INCLUDED包含在租金',
+                           `internet_fee` decimal(6, 2) NULL DEFAULT NULL COMMENT '网络费/月',
+                           `internet_fee_type` enum('METERED','FIXED','INCLUDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'FIXED' COMMENT '网络费计费方式，默认值为FIXED，FIXED固定费用/METERED按表计费/INCLUDED包含在租金',
+                           `cover_image` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '封面图片URL',
+                           `images` json NULL COMMENT '图片列表JSON',
+                           `tags` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '标签列表，用逗号分隔',
+                           `view_count` int(0) NULL DEFAULT 0 COMMENT '浏览次数',
+                           `owner_id` bigint(0) NOT NULL COMMENT '房东用户ID',
+                           `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                           `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+                           PRIMARY KEY (`id`) USING BTREE,
+                           INDEX `idx_owner_id`(`owner_id`) USING BTREE,
+                           CONSTRAINT `fk_houses_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
--- ============================================================
--- 房源评价表（reviews）
--- 租客在租期结束后对房源进行评价，rating 为 1-5 星
--- ============================================================
-CREATE TABLE IF NOT EXISTS `reviews` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评价ID',
-  `house_id` BIGINT NOT NULL COMMENT '关联房源ID',
-  `order_id` BIGINT NOT NULL COMMENT '关联订单ID',
-  `user_id` BIGINT NOT NULL COMMENT '评价用户ID',
-  `rating` INT DEFAULT 5 COMMENT '评价星级，默认值为5星',
-  `content` TEXT COMMENT '评价内容',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  INDEX `idx_house_id` (`house_id`),
-  INDEX `idx_order_id` (`order_id`),
-  INDEX `idx_user_id` (`user_id`),
-  CONSTRAINT `fk_reviews_house` FOREIGN KEY (`house_id`) REFERENCES `houses`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ----------------------------
+-- Records of houses
+-- ----------------------------
+INSERT INTO `houses` VALUES (1, '阳光花园精装两室一厅', '南北通透，采光极好，近地铁2号线', '北京市', '北京市', '朝阳区', '北京市朝阳区阳光路100号阳光花园1层501室', 5500.00, 1.00, 75.50, 4, 3, 3, 1, 3, 'LUXURY', 'VILLA', 'OWNER', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 200.00, 'FIXED', 80.00, 'FIXED', NULL, '[\"/api/uploads/b6adcd07af6f411f99fab0e14c82cd36.png\", \"/api/uploads/e1a93bdef4454dab8b46beb8f795e1f8.png\", \"/api/uploads/a963b4e53dea44d3acd3adf41b037edc.png\"]', '拎包入住,洗衣机,空调,热水器,床,衣柜,沙发,电视,微波炉,冰箱,天然气,WiFi,暖气,停车位,近地铁,电梯,可养宠物', 0, 2, '2026-04-10 23:52:48', '2026-04-11 01:03:18');
+INSERT INTO `houses` VALUES (2, '国贸CBD整租一居室', '精装修，拎包入住，距国贸地铁站500米', '河南省', '郑州市', '中原区', '郑州市郑州区西88号', 1000.00, 2.00, 55.00, 1, 1, 1, 12, 28, 'FINE', 'ROOM', 'AGENT', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 350.00, 'FIXED', 0.00, 'INCLUDED', NULL, '[\"/api/uploads/f149fba8c40b42cea27e19215f71cd2b.png\"]', '床,近地铁,电梯', 0, 2, '2026-04-10 23:52:48', '2026-04-11 01:03:29');
+INSERT INTO `houses` VALUES (3, '通州次卧出租（二房东）', '整套房次卧，可做饭，包网络', '北京市', '北京市', '通州区', '北京市通州区运河东大街88号', 2200.00, 1.00, 15.00, 1, 1, 1, 3, 6, 'SIMPLE', 'ROOM', 'SUBLEASE', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 0.00, 'INCLUDED', 100.00, 'FIXED', 0.00, 'INCLUDED', NULL, '[\"/api/uploads/52dbb17d85be4538a0b84b2d7b68b6c0.png\"]', '床,衣柜', 0, 2, '2026-04-10 23:52:48', '2026-04-11 01:03:46');
+INSERT INTO `houses` VALUES (4, '浦东新区精品公寓', '近陆家嘴，全套家电，商务出行便利', '上海市', '上海市', '浦东新区', '上海市浦东新区张杨路500号', 7500.00, 2.00, 80.00, 2, 2, 1, 8, 32, 'FINE', 'APARTMENT', 'OWNER', 'ONLINE', 4.00, 'METERED', 0.62, 'METERED', 60.00, 'FIXED', 500.00, 'FIXED', 120.00, 'FIXED', NULL, '[\"/api/uploads/890339e505664afe828f03a84b7cb470.png\", \"/api/uploads/5685dfb68307422ab8be1c84f5582e89.png\", \"/api/uploads/be967705237441659f82dc98870f1fb0.png\"]', '拎包入住,洗衣机,空调,热水器,床,衣柜,沙发', 0, 2, '2026-04-10 23:52:48', '2026-04-11 01:04:07');
+INSERT INTO `houses` VALUES (5, '天河区大三室整租', '广州天河，近珠江新城，交通便利', '广东省', '广州市', '天河区', '广州市天河区天河路385号', 4500.00, 1.00, 90.00, 3, 2, 2, 6, 15, 'MEDIUM', 'APARTMENT', 'OWNER', 'ONLINE', 2.50, 'METERED', 0.60, 'METERED', 40.00, 'FIXED', 280.00, 'FIXED', 80.00, 'FIXED', NULL, '[\"/api/uploads/b8034c6103d44f86983667e43daa1dba.png\", \"/api/uploads/200de47fd57b4214aec7371a99e957db.png\"]', '拎包入住,洗衣机,空调,热水器,床,衣柜,沙发', 0, 2, '2026-04-10 23:52:48', '2026-04-11 01:04:15');
+INSERT INTO `houses` VALUES (6, '北京四合院', '99新，欢迎入住', '北京市', '北京市', '石景山区', '西街公园26号', 10000.00, 2.00, 50.00, 2, 1, 1, 1, 1, 'LUXURY', 'VILLA', 'OWNER', 'ONLINE', 3.50, 'METERED', 0.60, 'METERED', 2.50, 'METERED', 200.00, 'FIXED', 100.00, 'FIXED', NULL, '[\"/api/uploads/a2700c6354d643c0a9b5b2d95340eb8d.png\"]', '拎包入住,洗衣机,空调,热水器,床,衣柜,沙发', 0, 2, '2026-04-11 01:05:48', '2026-04-11 01:06:26');
 
--- ============================================================
--- 演示数据初始化
--- 以下 INSERT 语句插入开发/测试用的示例数据
--- 所有密码均为 BCrypt 加密后的 "admin123" 哈希值
--- ============================================================
+-- ----------------------------
+-- Table structure for messages
+-- ----------------------------
+DROP TABLE IF EXISTS `messages`;
+CREATE TABLE `messages`  (
+                             `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '消息ID',
+                             `user_id` bigint(0) NOT NULL COMMENT '接收消息的用户ID',
+                             `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息标题',
+                             `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '消息内容',
+                             `type` enum('SYSTEM','ORDER','CONTRACT','APPOINTMENT','REVIEW') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'SYSTEM' COMMENT '消息类型，默认值为SYSTEM，SYSTEM系统通知/ORDER订单相关/CONTRACT合同相关/APPOINTMENT预约相关/REVIEW评价相关',
+                             `is_read` tinyint(0) NULL DEFAULT 0 COMMENT '是否已读，默认值为0，0未读1已读',
+                             `related_id` bigint(0) NULL DEFAULT NULL COMMENT '关联业务ID',
+                             `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                             PRIMARY KEY (`id`) USING BTREE,
+                             INDEX `idx_user_id`(`user_id`) USING BTREE,
+                             CONSTRAINT `fk_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
--- 管理员账号（账号：admin，密码：123456）
-INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
-('admin', '13800000000', 'admin@houseleasing.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'ADMIN', '系统管理员', 1, 100);
+-- ----------------------------
+-- Records of messages
+-- ----------------------------
+INSERT INTO `messages` VALUES (1, 3, '登录提醒', '今日登录成功，信用分+1（每日仅首次登录生效）', 'SYSTEM', 0, NULL, '2026-04-10 23:54:00');
 
--- 房东示例账号（账号：企鹅房东，密码：123456）
-INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
-('企鹅房东', '13811111111', 'landlord1@example.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'LANDLORD', '洪文豪', 0, 100);
+-- ----------------------------
+-- Table structure for orders
+-- ----------------------------
+DROP TABLE IF EXISTS `orders`;
+CREATE TABLE `orders`  (
+                           `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '订单ID',
+                           `house_id` bigint(0) NOT NULL COMMENT '关联房源ID',
+                           `tenant_id` bigint(0) NOT NULL COMMENT '关联租客ID',
+                           `landlord_id` bigint(0) NOT NULL COMMENT '关联房东ID',
+                           `order_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '订单号',
+                           `status` enum('PENDING','APPROVED','REJECTED','CANCELLED','COMPLETED','SIGNED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'PENDING' COMMENT '订单状态，默认值为PENDING，PENDING待处理/APPROVED审核通过/REJECTED审核拒绝/CANCELLED取消/COMPLETED完成',
+                           `appointment_time` datetime(0) NULL DEFAULT NULL COMMENT '预约看房时间',
+                           `start_date` date NULL DEFAULT NULL COMMENT '租赁开始日期',
+                           `end_date` date NULL DEFAULT NULL COMMENT '租赁结束日期',
+                           `monthly_rent` decimal(10, 2) NULL DEFAULT NULL COMMENT '月租金',
+                           `deposit` decimal(10, 2) NULL DEFAULT NULL COMMENT '押金',
+                           `total_amount` decimal(12, 2) NULL DEFAULT NULL COMMENT '总金额',
+                           `payment_status` enum('UNPAID','PAID','REFUNDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'UNPAID' COMMENT '支付状态，默认值为UNPAID，UNPAID未支付/PAID已支付/REFUNDED已退款',
+                           `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '备注',
+                           `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                           `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+                           PRIMARY KEY (`id`) USING BTREE,
+                           UNIQUE INDEX `order_no`(`order_no`) USING BTREE,
+                           INDEX `idx_house_id`(`house_id`) USING BTREE,
+                           INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+                           INDEX `idx_landlord_id`(`landlord_id`) USING BTREE,
+                           CONSTRAINT `fk_orders_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                           CONSTRAINT `fk_orders_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+                           CONSTRAINT `fk_orders_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
--- 租客示例账号（账号：羊羊租客，密码：123456）
-INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
-('羊羊租客', '13822222222', 'tenant1@example.com', '$$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'TENANT', '刘仲朝', 0, 100);
+-- ----------------------------
+-- Table structure for reviews
+-- ----------------------------
+DROP TABLE IF EXISTS `reviews`;
+CREATE TABLE `reviews`  (
+                            `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '评价ID',
+                            `house_id` bigint(0) NOT NULL COMMENT '关联房源ID',
+                            `order_id` bigint(0) NOT NULL COMMENT '关联订单ID',
+                            `user_id` bigint(0) NOT NULL COMMENT '评价用户ID',
+                            `rating` int(0) NULL DEFAULT 5 COMMENT '评价星级，默认值为5星',
+                            `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '评价内容',
+                            `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                            PRIMARY KEY (`id`) USING BTREE,
+                            INDEX `idx_house_id`(`house_id`) USING BTREE,
+                            INDEX `idx_order_id`(`order_id`) USING BTREE,
+                            INDEX `idx_user_id`(`user_id`) USING BTREE,
+                            CONSTRAINT `fk_reviews_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                            CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                            CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
--- 示例房源数据（北京/上海/广州各城市代表性房源，覆盖三种房东类型）
-INSERT INTO `houses` (title, description, province, city, district, address, price, deposit, area, rooms, halls, bathrooms, floor, total_floor, decoration, house_type, owner_type, status, water_fee, water_fee_type, electric_fee, electric_fee_type, gas_fee, gas_fee_type, property_fee, property_fee_type, internet_fee, internet_fee_type, owner_id) VALUES
-('阳光花园精装两室一厅', '南北通透，采光极好，近地铁2号线', '北京市', '北京', '朝阳区', '北京市朝阳区阳光路100号阳光花园3栋5层501室', 5500.00, 11000.00, 75.5, 2, 1, 1, 5, 18, 'FINE', 'APARTMENT', 'OWNER', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 200.00, 'FIXED', 80.00, 'FIXED', 2),
-('国贸CBD整租一居室', '精装修，拎包入住，距国贸地铁站500米', '北京市', '北京', '朝阳区', '北京市朝阳区建国路88号', 6800.00, 13600.00, 55.0, 1, 1, 1, 12, 28, 'FINE', 'APARTMENT', 'AGENT', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 50.00, 'FIXED', 350.00, 'FIXED', 100.00, 'INCLUDED', 2),
-('通州次卧出租（二房东）', '整套房次卧，可做饭，包网络', '北京市', '北京', '通州区', '北京市通州区运河东大街88号', 2200.00, 2200.00, 15.0, 1, 0, 1, 3, 6, 'SIMPLE', 'ROOM', 'SUBLEASE', 'ONLINE', 3.50, 'METERED', 0.52, 'METERED', 30.00, 'INCLUDED', 100.00, 'FIXED', 0.00, 'INCLUDED', 2),
-('浦东新区精品公寓', '近陆家嘴，全套家电，商务出行便利', '上海市', '上海', '浦东新区', '上海市浦东新区张杨路500号', 7500.00, 15000.00, 80.0, 2, 2, 1, 8, 32, 'LUXURY', 'APARTMENT', 'OWNER', 'ONLINE', 4.00, 'METERED', 0.617, 'METERED', 60.00, 'FIXED', 500.00, 'FIXED', 120.00, 'FIXED', 2),
-('天河区大三室整租', '广州天河，近珠江新城，交通便利', '广东省', '广州', '天河区', '广州市天河区天河路385号', 4500.00, 9000.00, 90.0, 3, 2, 2, 6, 15, 'MEDIUM', 'APARTMENT', 'OWNER', 'ONLINE', 2.50, 'METERED', 0.60, 'METERED', 40.00, 'FIXED', 280.00, 'FIXED', 80.00, 'FIXED', 2);
+-- ----------------------------
+-- Table structure for user_behaviors
+-- ----------------------------
+DROP TABLE IF EXISTS `user_behaviors`;
+CREATE TABLE `user_behaviors`  (
+                                   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '行为ID',
+                                   `user_id` bigint(0) NOT NULL COMMENT '用户ID',
+                                   `house_id` bigint(0) NOT NULL COMMENT '房源ID',
+                                   `behavior_type` enum('VIEW','COLLECT','ORDER') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'VIEW' COMMENT '行为类型，默认值为VIEW，VIEW浏览/COLLECT收藏/ORDER下单',
+                                   `score` decimal(3, 1) NULL DEFAULT 1.0 COMMENT '行为评分(VIEW=1, COLLECT=3, ORDER=5)',
+                                   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                                   PRIMARY KEY (`id`) USING BTREE,
+                                   INDEX `idx_user_id`(`user_id`) USING BTREE,
+                                   INDEX `idx_house_id`(`house_id`) USING BTREE,
+                                   CONSTRAINT `fk_behaviors_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                                   CONSTRAINT `fk_behaviors_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
+-- ----------------------------
+-- Table structure for users
+-- ----------------------------
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users`  (
+                          `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+                          `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户名',
+                          `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '手机号',
+                          `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '邮箱',
+                          `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码',
+                          `role` enum('TENANT','LANDLORD','ADMIN') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'TENANT' COMMENT '用户角色，TENANT租客/LANDLORD房东/ADMIN管理员，默认值为TENANT',
+                          `real_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '真实姓名',
+                          `id_card` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '身份证号码（密文存储，应用层加密后写入）',
+                          `avatar` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '头像URL',
+                          `credit_score` int(0) NULL DEFAULT 100 COMMENT '信用评分，初始100分',
+                          `is_real_name_auth` tinyint(0) NULL DEFAULT 0 COMMENT '是否实名认证，0否1是，默认值为0',
+                          `status` enum('ACTIVE','BANNED') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'ACTIVE' COMMENT '账户状态，ACTIVE正常，BANNED封禁，默认值为ACTIVE',
+                          `gender` tinyint(0) NULL DEFAULT 0 COMMENT '性别，0未知1男2女，默认值为0',
+                          `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT '创建时间',
+                          `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+                          PRIMARY KEY (`id`) USING BTREE,
+                          UNIQUE INDEX `username`(`username`) USING BTREE,
+                          UNIQUE INDEX `phone`(`phone`) USING BTREE,
+                          UNIQUE INDEX `email`(`email`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
+-- ----------------------------
+-- Records of users
+-- ----------------------------
+INSERT INTO `users` VALUES (1, 'admin', '13800000000', 'admin@houseleasing.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'ADMIN', '系统管理员', NULL, NULL, 100, 1, 'ACTIVE', 0, '2026-04-10 23:52:48', '2026-04-10 23:52:48');
+INSERT INTO `users` VALUES (2, '企鹅房东', '13811111111', 'landlord1@example.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'LANDLORD', '洪文豪', 'ENC$/ZXzpW9RwKgwYXQbYE7H5Wm77gVNxcvFk6q28uabvejMMz/elW9fxIUvxYsC7Q==', '/api/uploads/b888ac8b985c4681845cc3d26eb558b0.png', 100, 1, 'ACTIVE', 1, '2026-04-10 23:52:48', '2026-04-10 23:54:32');
+INSERT INTO `users` VALUES (3, '羊羊租客', '13822222222', 'tenant1@example.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'TENANT', '刘仲朝', 'ENC$TEs/0CI8sECGXRPGpHlY2sr5Bii0kOoayMmOcEqE2V+a1VG4+OvvzL2w5oTm0w==', '/api/uploads/a59dbb0d7d5f4069be11dc61fcfcb1fa.jpg', 101, 1, 'ACTIVE', 1, '2026-04-10 23:52:48', '2026-04-10 23:55:42');
 
-
-
-
+SET FOREIGN_KEY_CHECKS = 1;
