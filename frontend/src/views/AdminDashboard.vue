@@ -360,14 +360,14 @@
               <el-card class="stat-card">
                 <div class="stat-icon orange"><el-icon><Clock /></el-icon></div>
                 <div class="stat-info">
-                  <div class="stat-num">{{ stats.pendingContracts || 0 }}</div>
-                  <div class="stat-label">待审核合同</div>
+                  <div class="stat-num">{{ stats.completedOrderCount ?? stats.pendingContracts ?? 0 }}</div>
+                  <div class="stat-label">成交订单数</div>
                 </div>
               </el-card>
               <el-card class="stat-card">
                 <div class="stat-icon purple"><el-icon><Document /></el-icon></div>
                 <div class="stat-info">
-                  <div class="stat-num">{{ stats.contractCount || 0 }}</div>
+                  <div class="stat-num">{{ stats.signedContractCount ?? stats.contractCount ?? 0 }}</div>
                   <div class="stat-label">成交合同数</div>
                 </div>
               </el-card>
