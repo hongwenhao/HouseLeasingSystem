@@ -7,6 +7,7 @@ import com.houseleasing.common.PageResult;
 import com.houseleasing.common.exception.BusinessException;
 import com.houseleasing.common.security.IdCardCryptoService;
 import com.houseleasing.dto.ContractGenerateRequest;
+import com.houseleasing.dto.ContractWorkflowMonitorResponse;
 import com.houseleasing.entity.Contract;
 import com.houseleasing.entity.House;
 import com.houseleasing.entity.Order;
@@ -483,6 +484,36 @@ public class ContractServiceImpl implements ContractService { // 合同全流程
             }
         }
         return contract;
+    }
+
+    /**
+     * 查询合同流程可视化监控数据，并补齐“处理人姓名”字段。
+     *
+     * @param contractId 合同 ID
+     * @return 流程监控数据
+     */
+    @Override
+    public ContractWorkflowMonitorResponse getWorkflowMonitor(Long contractId) {
+        Contract contract = getContractById(contractId);
+        if (!StringUtils.hasText(contract.getWorkflowInstanceId())) {
+            throw new BusinessException(400, "当前合同未绑定流程实例，无法查看流程图监控");
+        }
+        ContractWorkflowMonitorResponse response = workflowService.queryWorkflowMonitor(contract.getWorkflowInstanceId());
+        if (response.getNodes() == null || response.getNodes().isEmpty()) {
+            return response;
+        }
+        String tenantId = contract.getTenantId() == null ? null : String.valueOf(contract.getTenantId());
+        String landlordId = contract.getLandlordId() == null ? null : String.valueOf(contract.getLandlordId());
+        String tenantName = contract.getTenant() == null ? null : contract.getTenant().getRealName();
+        String landlordName = contract.getLandlord() == null ? null : contract.getLandlord().getRealName();
+        for (ContractWorkflowMonitorResponse.NodeMonitorItem node : response.getNodes()) {
+            if (tenantId != null && tenantId.equals(node.getAssigneeId())) {
+                node.setAssigneeName(tenantName);
+            } else if (landlordId != null && landlordId.equals(node.getAssigneeId())) {
+                node.setAssigneeName(landlordName);
+            }
+        }
+        return response;
     }
 
     /**

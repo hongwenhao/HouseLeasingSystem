@@ -9,6 +9,9 @@
           </el-button>
           <h2 class="page-title">合同详情</h2>
           <div class="header-actions">
+            <el-button size="default" @click="openWorkflowDialog">
+              查看流程图
+            </el-button>
             <el-button size="default" @click="handleDownloadPdf">
               <el-icon><Download /></el-icon> 下载PDF
             </el-button>
@@ -166,19 +169,79 @@
       </template>
     </el-dialog>
 
+    <!-- Workflow Monitor Dialog -->
+    <el-dialog v-model="workflowDialogVisible" title="合同签署流程图监控" width="900px" destroy-on-close>
+      <div class="workflow-toolbar">
+        <el-tag type="info" effect="light">实时刷新：每 10 秒自动同步一次</el-tag>
+        <el-button size="small" :loading="workflowLoading" @click="loadWorkflowMonitor(true)">立即刷新</el-button>
+      </div>
+      <el-skeleton v-if="workflowLoading && !workflowMonitor" :rows="6" animated />
+      <template v-else>
+        <el-alert
+          v-if="workflowMonitor"
+          :type="workflowMonitor.finished ? 'success' : 'warning'"
+          :closable="false"
+          show-icon
+          class="workflow-alert"
+          :title="workflowMonitor.finished
+            ? '流程已结束'
+            : `当前停留节点：${workflowMonitor.currentNodeName || '未识别'}`"
+          :description="`最近同步时间：${formatDate(workflowMonitor.queryTime, true)}`"
+        />
+        <el-steps
+          v-if="workflowNodes.length"
+          :active="workflowActiveIndex"
+          align-center
+          finish-status="success"
+          process-status="process"
+          class="workflow-steps"
+        >
+          <el-step
+            v-for="(node, idx) in workflowNodes"
+            :key="node.nodeId || idx"
+            :title="node.nodeName || `节点${idx + 1}`"
+            :status="workflowStepStatus(node.status)"
+            :description="node.shortDesc"
+          />
+        </el-steps>
+        <el-empty v-else description="暂未获取到流程节点信息" />
+        <div v-if="workflowNodes.length" class="workflow-node-list">
+          <div v-for="(node, idx) in workflowNodes" :key="`${node.nodeId}-${idx}`" class="workflow-node-item">
+            <div class="node-title">
+              <span>{{ idx + 1 }}. {{ node.nodeName || '-' }}</span>
+              <el-tag size="small" :type="workflowTagType(node.status)">{{ workflowStatusLabel(node.status) }}</el-tag>
+            </div>
+            <div class="node-meta">
+              处理人：{{ node.assigneeName || node.assigneeId || '-' }} ｜ 节点停留：{{ node.stayText }}
+            </div>
+            <div class="node-meta">
+              进入时间：{{ formatDate(node.enterTime, true) }} ｜ 完成时间：{{ formatDate(node.completeTime, true) }}
+            </div>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
+
     <Footer />
   </div>
 </template>
 
 <script setup>
 // 说明：合同详情页逻辑，展示合同完整信息、AI 风险检测结果，并支持签署和取消合同操作
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import Footer from '../components/Footer.vue'
 import RiskWarning from '../components/RiskWarning.vue'
-import { getContractDetail, signContract, cancelContract, getContractRisks, downloadContractPdf } from '../api/contract.js'
+import {
+  getContractDetail,
+  signContract,
+  cancelContract,
+  getContractRisks,
+  downloadContractPdf,
+  getContractWorkflowMonitor
+} from '../api/contract.js'
 
 const route = useRoute()
 const loading = ref(false)                  // 页面加载状态
@@ -187,6 +250,12 @@ const contract = ref(null)                 // 合同详情数据
 const risks = ref([])                      // AI 检测到的合同风险列表
 const cancelDialogVisible = ref(false)  // 取消合同对话框显隐
 const role = localStorage.getItem('role') || ''  // 当前用户角色
+const workflowDialogVisible = ref(false)   // 流程图监控弹窗显隐
+const workflowLoading = ref(false)         // 流程图监控加载状态
+const workflowMonitor = ref(null)          // 后端返回的流程图监控数据
+const workflowRefreshTimer = ref(null)     // 10 秒一次的自动拉取定时器
+const workflowClockTimer = ref(null)       // 1 秒一次的本地时钟刷新定时器
+const workflowNow = ref(Date.now())        // 本地时间戳，用于实时刷新“当前节点停留时长”
 
 /** 合同状态对应的中文标签 */
 const statusLabel = computed(() => {
@@ -258,6 +327,38 @@ const clauseList = computed(() => {
     .slice(0, 12)
 })
 
+/**
+ * 将后端流程节点转换为前端渲染结构：
+ * - shortDesc 用于 Step 的简短摘要；
+ * - stayText 支持“当前节点实时增长”展示；
+ * - 处理人优先显示姓名，兜底显示 assigneeId。
+ */
+const workflowNodes = computed(() => {
+  const nodes = workflowMonitor.value?.nodes
+  if (!Array.isArray(nodes)) return []
+  return nodes.map((node) => {
+    const liveDuration = node.status === 'ACTIVE' && node.enterTime
+      ? Math.max(0, workflowNow.value - new Date(node.enterTime).getTime())
+      : node.stayDurationMs
+    const handler = node.assigneeName || node.assigneeId || '待分配'
+    return {
+      ...node,
+      shortDesc: `${workflowStatusLabel(node.status)}｜${handler}`,
+      stayText: formatDuration(liveDuration)
+    }
+  })
+})
+
+/** 计算 el-steps 的 active 下标（当前处理中的节点序号） */
+const workflowActiveIndex = computed(() => {
+  const nodes = workflowNodes.value
+  if (!nodes.length) return 0
+  const activeIndex = nodes.findIndex(i => i.status === 'ACTIVE')
+  if (activeIndex >= 0) return activeIndex
+  // 流程结束时将 active 设为“最后一步 + 1”，让步骤条完整高亮
+  return nodes.every(i => i.status === 'COMPLETED') ? nodes.length : 0
+})
+
 onMounted(async () => {
   loading.value = true
   try {
@@ -287,6 +388,71 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+/**
+ * 监听弹窗开关：
+ * - 打开时立即拉取一次监控数据，并启动自动刷新与本地时钟；
+ * - 关闭时清理定时器，避免页面后台继续请求。
+ */
+watch(workflowDialogVisible, async (visible) => {
+  if (visible) {
+    await loadWorkflowMonitor(true)
+    startWorkflowTimers()
+  } else {
+    stopWorkflowTimers()
+  }
+})
+
+onBeforeUnmount(() => {
+  stopWorkflowTimers()
+})
+
+/** 打开流程图监控弹窗 */
+function openWorkflowDialog() {
+  workflowDialogVisible.value = true
+}
+
+/**
+ * 拉取流程图监控数据。
+ * @param {boolean} forceTip 是否在失败时显示提示（手动刷新/首次打开时为 true）
+ */
+async function loadWorkflowMonitor(forceTip = false) {
+  if (!route.params.id) return
+  workflowLoading.value = true
+  try {
+    const res = await getContractWorkflowMonitor(route.params.id)
+    workflowMonitor.value = res
+  } catch (e) {
+    if (forceTip) {
+      ElMessage.error(e.message || '流程图监控数据加载失败')
+    }
+  } finally {
+    workflowLoading.value = false
+  }
+}
+
+/** 启动流程图监控相关定时器 */
+function startWorkflowTimers() {
+  stopWorkflowTimers()
+  workflowRefreshTimer.value = window.setInterval(() => {
+    loadWorkflowMonitor(false)
+  }, 10000)
+  workflowClockTimer.value = window.setInterval(() => {
+    workflowNow.value = Date.now()
+  }, 1000)
+}
+
+/** 清理流程图监控相关定时器 */
+function stopWorkflowTimers() {
+  if (workflowRefreshTimer.value) {
+    clearInterval(workflowRefreshTimer.value)
+    workflowRefreshTimer.value = null
+  }
+  if (workflowClockTimer.value) {
+    clearInterval(workflowClockTimer.value)
+    workflowClockTimer.value = null
+  }
+}
 
 /**
  * 当前用户签署合同
@@ -335,6 +501,49 @@ async function handleCancel() {
   } finally {
     actioning.value = false
   }
+}
+
+/** 流程节点状态转中文 */
+function workflowStatusLabel(status) {
+  const map = {
+    COMPLETED: '已完成',
+    ACTIVE: '处理中',
+    PENDING: '未开始'
+  }
+  return map[status] || status || '-'
+}
+
+/** 流程节点状态转步骤条状态 */
+function workflowStepStatus(status) {
+  if (status === 'COMPLETED') return 'finish'
+  if (status === 'ACTIVE') return 'process'
+  return 'wait'
+}
+
+/** 流程节点状态转标签颜色 */
+function workflowTagType(status) {
+  if (status === 'COMPLETED') return 'success'
+  if (status === 'ACTIVE') return 'warning'
+  return 'info'
+}
+
+/**
+ * 毫秒时长转可读文本（如：2小时15分钟10秒）。
+ * 用于展示“节点停留时长”，让流程阻塞点一眼可见。
+ */
+function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '-'
+  const totalSeconds = Math.floor(ms / 1000)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const parts = []
+  if (days > 0) parts.push(`${days}天`)
+  if (hours > 0 || days > 0) parts.push(`${hours}小时`)
+  if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}分钟`)
+  parts.push(`${seconds}秒`)
+  return parts.join('')
 }
 
 /** 格式化日期为本地化中文短日期 */
@@ -559,6 +768,53 @@ async function handleDownloadPdf() {
   margin: 40px auto;
   padding: 0 20px;
   width: 100%;
+}
+
+.workflow-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.workflow-alert {
+  margin-bottom: 14px;
+}
+
+.workflow-steps {
+  margin: 10px 0 18px;
+}
+
+.workflow-node-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fafafa;
+}
+
+.workflow-node-item {
+  padding: 10px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.workflow-node-item:last-child {
+  border-bottom: none;
+}
+
+.node-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #111827;
+}
+
+.node-meta {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 13px;
 }
 
 @media (max-width: 900px) {
