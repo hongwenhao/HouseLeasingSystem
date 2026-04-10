@@ -20,7 +20,15 @@
           <div class="left-col">
             <!-- 图片轮播 -->
             <div class="carousel-wrap">
-              <el-carousel height="380px" class="carousel" :autoplay="false" indicator-position="outside">
+              <el-carousel
+                height="380px"
+                class="carousel"
+                indicator-position="outside"
+                :autoplay="normalizedImages.length > 1"
+                :interval="3500"
+                :loop="normalizedImages.length > 1"
+                :arrow="normalizedImages.length > 1 ? 'always' : 'never'"
+              >
                 <el-carousel-item
                   v-for="(img, i) in normalizedImages"
                   :key="i"
