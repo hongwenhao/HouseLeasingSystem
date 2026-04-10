@@ -2,6 +2,7 @@ package com.houseleasing.service;
 
 import com.houseleasing.common.PageResult;
 import com.houseleasing.dto.ContractGenerateRequest;
+import com.houseleasing.dto.ContractWorkflowMonitorResponse;
 import com.houseleasing.entity.Contract;
 
 /**
@@ -57,6 +58,14 @@ public interface ContractService { // 合同主流程抽象：生成、签署、
      * @return PDF 文件的字节数组
      */
     byte[] exportPdf(Long contractId); // 导出合同 PDF 字节流
+
+    /**
+     * 查询合同签署流程可视化监控数据（节点状态、停留时长、处理人）。
+     *
+     * @param contractId 合同 ID
+     * @return 流程监控视图数据
+     */
+    ContractWorkflowMonitorResponse getWorkflowMonitor(Long contractId);
 
     /**
      * 取消指定合同（仅限草稿或待签署状态）

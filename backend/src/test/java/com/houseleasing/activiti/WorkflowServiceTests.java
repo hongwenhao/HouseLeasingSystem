@@ -1,5 +1,6 @@
 package com.houseleasing.activiti;
 
+import com.houseleasing.dto.ContractWorkflowMonitorResponse;
 import org.activiti.engine.TaskService;
 import org.activiti.engine.task.Task;
 import org.junit.jupiter.api.Test;
@@ -52,5 +53,21 @@ class WorkflowServiceTests {
         workflowService.completeContractTask(instanceId, landlordId, "LANDLORD", true);
 
         assertTrue(workflowService.isProcessFinished(instanceId));
+    }
+
+    @Test
+    void workflowMonitorShowsActiveAndCompletedNodes() {
+        Long tenantId = 101L;
+        Long landlordId = 202L;
+        String instanceId = workflowService.startContractSigningProcess(200L, tenantId, landlordId);
+
+        ContractWorkflowMonitorResponse beforeSign = workflowService.queryWorkflowMonitor(instanceId);
+        assertNotNull(beforeSign);
+        assertTrue(beforeSign.getNodes().stream().anyMatch(n -> "ACTIVE".equals(n.getStatus())));
+
+        workflowService.completeContractTask(instanceId, tenantId, "TENANT", true);
+        ContractWorkflowMonitorResponse afterTenantSign = workflowService.queryWorkflowMonitor(instanceId);
+        assertTrue(afterTenantSign.getNodes().stream().anyMatch(n -> "COMPLETED".equals(n.getStatus())));
+        assertTrue(afterTenantSign.getNodes().stream().anyMatch(n -> "ACTIVE".equals(n.getStatus())));
     }
 }

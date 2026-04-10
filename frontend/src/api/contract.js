@@ -7,6 +7,7 @@
  *   - PUT  /contracts/:id/cancel       取消/终止合同（草稿或待签署阶段）
  *   - GET  /contracts                  获取当前用户合同列表（参数：page/size/role）
  *   - GET  /contracts/:id              获取合同详情（含条款和双方信息）
+ *   - GET  /contracts/:id/workflow-monitor 获取合同签署流程图监控数据（节点、处理人、停留时长）
  *   - POST /contracts/:id/risk-check   AI 智能检测合同风险条款，返回风险列表
  */
 
@@ -38,3 +39,6 @@ export const getContractRisks = (id) => request.post(`/contracts/${id}/risk-chec
 
 /** 下载合同 PDF */
 export const downloadContractPdf = (id) => request.get(`/contracts/${id}/pdf`, { responseType: 'blob' })
+
+/** 获取合同流程可视化监控数据 */
+export const getContractWorkflowMonitor = (id) => request.get(`/contracts/${id}/workflow-monitor`)
