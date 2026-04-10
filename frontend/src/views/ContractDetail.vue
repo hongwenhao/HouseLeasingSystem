@@ -337,9 +337,12 @@ const workflowNodes = computed(() => {
   const nodes = workflowMonitor.value?.nodes
   if (!Array.isArray(nodes)) return []
   return nodes.map((node) => {
-    const liveDuration = node.status === 'ACTIVE' && node.enterTime
-      ? Math.max(0, workflowNow.value - new Date(node.enterTime).getTime())
-      : node.stayDurationMs
+    let liveDuration = null
+    if (node.status === 'ACTIVE' && node.enterTime) {
+      liveDuration = Math.max(0, workflowNow.value - new Date(node.enterTime).getTime())
+    } else if (node.status === 'COMPLETED') {
+      liveDuration = node.stayDurationMs
+    }
     const handler = node.assigneeName || node.assigneeId || '待分配'
     return {
       ...node,
@@ -422,6 +425,10 @@ async function loadWorkflowMonitor(forceTip = false) {
   try {
     const res = await getContractWorkflowMonitor(route.params.id)
     workflowMonitor.value = res
+    // 流程已结束时停止自动轮询与秒级计时，避免无意义刷新。
+    if (res?.finished) {
+      stopWorkflowTimers()
+    }
   } catch (e) {
     if (forceTip) {
       ElMessage.error(e.message || '流程图监控数据加载失败')
