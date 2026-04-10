@@ -1167,7 +1167,7 @@ async function cancelMyOrder(id) {
 async function handlePayOrder(order) {
   try {
     await ElMessageBox.confirm(
-      '即将进入支付界面，确认支付后订单将变为“已完成”。',
+      '即将进入支付界面，确认支付？',
       '支付确认',
       { type: 'warning', confirmButtonText: '确认支付', cancelButtonText: '取消' }
     )
@@ -1200,7 +1200,7 @@ async function handlePayOrder(order) {
 async function handleRefundOrder(order) {
   try {
     await ElMessageBox.confirm(
-      '确认发起退款？退款后订单状态将变为“已取消”。',
+      '确认发起退款？',
       '退款确认',
       { type: 'warning', confirmButtonText: '确认退款', cancelButtonText: '取消' }
     )
