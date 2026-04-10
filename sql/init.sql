@@ -228,13 +228,13 @@ CREATE TABLE IF NOT EXISTS `reviews` (
 INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
 ('admin', '13800000000', 'admin@houseleasing.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'ADMIN', '系统管理员', 1, 100);
 
--- 房东示例账号（账号：洪房东哈，密码：123456）
+-- 房东示例账号（账号：企鹅房东，密码：123456）
 INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
-('洪房东哈', '13811111111', 'landlord1@example.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'LANDLORD', '张房东', 1, 95);
+('企鹅房东', '13811111111', 'landlord1@example.com', '$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'LANDLORD', '洪文豪', 0, 100);
 
--- 租客示例账号（账号：刘租客呵，密码：123456）
+-- 租客示例账号（账号：羊羊租客，密码：123456）
 INSERT INTO `users` (username, phone, email, password, role, real_name, is_real_name_auth, credit_score) VALUES
-('刘租客呵', '13822222222', 'tenant1@example.com', '$$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'TENANT', '李租客', 1, 90);
+('羊羊租客', '13822222222', 'tenant1@example.com', '$$2a$10$qPKC3gexeduYGaWGlUo0B.SKZ/d4ymEqUCjeaNzT3Go1PsvVfhUBu', 'TENANT', '刘仲朝', 0, 100);
 
 -- 示例房源数据（北京/上海/广州各城市代表性房源，覆盖三种房东类型）
 INSERT INTO `houses` (title, description, province, city, district, address, price, deposit, area, rooms, halls, bathrooms, floor, total_floor, decoration, house_type, owner_type, status, water_fee, water_fee_type, electric_fee, electric_fee_type, gas_fee, gas_fee_type, property_fee, property_fee_type, internet_fee, internet_fee_type, owner_id) VALUES
