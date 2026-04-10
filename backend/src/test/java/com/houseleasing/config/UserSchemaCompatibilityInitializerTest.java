@@ -1,9 +1,11 @@
 package com.houseleasing.config;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -21,7 +23,9 @@ class UserSchemaCompatibilityInitializerTest {
 
         initializer.run(new DefaultApplicationArguments(new String[0]));
 
-        verify(jdbcTemplate).execute(anyString());
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).execute(sqlCaptor.capture());
+        assertTrue(sqlCaptor.getValue().contains("MODIFY COLUMN `id_card` VARCHAR(255)"));
     }
 
     @Test

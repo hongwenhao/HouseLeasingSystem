@@ -45,7 +45,7 @@ public class UserSchemaCompatibilityInitializer implements ApplicationRunner {
             return;
         }
 
-        if (currentLength == null || currentLength >= REQUIRED_ID_CARD_LENGTH) {
+        if (currentLength >= REQUIRED_ID_CARD_LENGTH) {
             return;
         }
 
