@@ -411,7 +411,14 @@ public class AdminController {
     }
 
     /**
-     * 获取系统统计数据（用户总数、房源总数、订单总数、合同总数）
+     * 获取系统统计数据（管理员概览卡片核心口径）：
+     * 1) userCount：用户总数；
+     * 2) houseCount：房源总数；
+     * 3) completedOrderCount：成交订单数（仅统计订单状态为 COMPLETED）；
+     * 4) signedContractCount：成交合同数（仅统计合同状态为 FULLY_SIGNED）。
+     * <p>
+     * 说明：为兼容历史前端字段，仍保留 orderCount/contractCount 字段，
+     * 其中 contractCount 已切换为“成交合同数”口径，避免继续展示“合同总数”造成误解。
      *
      * @return 包含各项统计数据的 Map
      */
@@ -422,12 +429,21 @@ public class AdminController {
         stats.put("userCount", userMapper.selectCount(null)); // 统计用户总数
         stats.put("houseCount", houseMapper.selectCount(null)); // 统计房源总数
         stats.put("orderCount", orderMapper.selectCount(null)); // 统计订单总数
+        // 成交订单口径：仅订单状态为 COMPLETED 才计入“成交订单数”。
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Order> completedOrderWrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        completedOrderWrapper.eq(Order::getStatus, "COMPLETED");
+        long completedOrderCount = orderMapper.selectCount(completedOrderWrapper);
+        stats.put("completedOrderCount", completedOrderCount); // 新字段：供前端直接展示“成交订单数”
+        stats.put("pendingContracts", completedOrderCount); // 兼容旧字段：避免历史页面读取该键时报空
 
-        stats.put("contractCount", contractMapper.selectCount(null)); // 统计合同总数
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> pendingWrapper =
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>(); // 构建“待签署合同”查询条件
-        pendingWrapper.eq(Contract::getStatus, "PENDING_SIGN"); // 只统计待签署状态
-        stats.put("pendingContracts", contractMapper.selectCount(pendingWrapper)); // 写入待签署合同数量
+        // 成交合同口径：仅合同状态为 FULLY_SIGNED 才计入“成交合同数”。
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Contract> signedContractWrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        signedContractWrapper.eq(Contract::getStatus, "FULLY_SIGNED");
+        long signedContractCount = contractMapper.selectCount(signedContractWrapper);
+        stats.put("signedContractCount", signedContractCount); // 新字段：语义明确，避免误用
+        stats.put("contractCount", signedContractCount); // 兼容历史字段：统一切换为“成交合同数”口径
         return Result.success(stats); // 返回统计结果
     }
 

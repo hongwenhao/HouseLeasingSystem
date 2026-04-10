@@ -625,17 +625,35 @@ async function loadReviewRecords() {
  * 计算房东收益统计数据（前端聚合计算）
  * - totalHouses：总房源数
  * - activeRentals：当前生效中的合同数（在租房源数）
- * - totalIncome：所有在租合同的月租金总和
- * - avgPrice：所有房源月租金的平均值
+ * - totalIncome：所有“双方已签(FULLY_SIGNED)”合同的月租金总和
+ * - avgPrice：所有“双方已签(FULLY_SIGNED)”合同的平均月租金
+ *
+ * 口径说明：
+ * 1) 收益统计只应基于“已实际成交并生效”的合同，因此统一使用 FULLY_SIGNED；
+ * 2) 历史数据中 rent/monthlyRent 可能是字符串，若直接做 + 运算会出现字符串拼接，
+ *    进而导致“平均租金/累计收益”异常，因此这里统一做数值化兜底转换。
  */
 function computeStats() {
+  // 仅保留已成交（双方已签）合同，避免把草稿、待签、已取消合同误计入收益口径。
+  const signedContracts = contracts.value.filter(c => c.status === 'FULLY_SIGNED')
+  // 金额字段容错读取：优先 monthlyRent，其次 rent；并统一转换为 Number，非法值按 0 处理。
+  const signedRentValues = signedContracts.map(c => {
+    const rawRent = c.monthlyRent ?? c.rent ?? 0
+    const normalizedRent = Number(rawRent)
+    return Number.isFinite(normalizedRent) ? normalizedRent : 0
+  })
+  // 成交合同月租金总和（作为“累计收益”展示口径）。
+  const totalIncome = signedRentValues.reduce((sum, rent) => sum + rent, 0)
+  // 成交合同月租金平均值；无成交合同时返回 0，避免除零。
+  const avgPrice = signedRentValues.length > 0
+    ? Math.round(totalIncome / signedRentValues.length)
+    : 0
+
   stats.value = {
     totalHouses: myHouses.value.length,
-    activeRentals: contracts.value.filter(c => c.status === 'FULLY_SIGNED').length,
-    totalIncome: contracts.value.filter(c => c.status === 'FULLY_SIGNED').reduce((sum, c) => sum + (c.monthlyRent || c.rent || 0), 0),
-    avgPrice: myHouses.value.length > 0
-      ? Math.round(myHouses.value.reduce((sum, h) => sum + (h.price || 0), 0) / myHouses.value.length)
-      : 0
+    activeRentals: signedContracts.length,
+    totalIncome,
+    avgPrice
   }
 }
 
