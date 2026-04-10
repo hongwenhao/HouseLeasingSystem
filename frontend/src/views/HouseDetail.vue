@@ -300,7 +300,7 @@ const appointForm = ref({
   // 预约看房时间（字符串格式：yyyy-MM-dd HH:mm:ss）
   // 说明：后端使用 LocalDateTime 接收，若直接提交 JS Date（带时区 Z），
   // 在部分环境会触发反序列化失败，前端统一改为无时区字符串可稳定解析。
-  appointmentTime: '',
+  appointmentTime: null,
   remark: ''              // 留言备注（对应后端 OrderCreateRequest.remark）
 })
 
@@ -473,6 +473,9 @@ async function submitAppointment() {
   if (!valid) return
   submitting.value = true
   try {
+    // 备注清洗：去掉首尾空格；若最终为空字符串，则按 null 提交，避免写入无意义空白文本。
+    const cleanedRemark = (appointForm.value.remark ?? '').trim()
+
     // 提交预约参数说明：
     // 1) houseId：目标房源 ID；
     // 2) appointmentTime：固定格式字符串 yyyy-MM-dd HH:mm:ss；
@@ -481,7 +484,7 @@ async function submitAppointment() {
     const res = await createOrder({
       houseId: house.value.id,
       appointmentTime: appointForm.value.appointmentTime, // 后端 OrderCreateRequest.appointmentTime
-      remark: appointForm.value.remark?.trim() || null   // 后端 OrderCreateRequest.remark
+      remark: cleanedRemark || null // 后端 OrderCreateRequest.remark
     })
     ElMessage.success('预约成功')
     appointmentVisible.value = false
