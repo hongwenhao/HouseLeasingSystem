@@ -59,6 +59,10 @@ public class SecurityConfig { // Spring Security 过滤链与鉴权策略配置
                 .requestMatchers(HttpMethod.GET, "/api/houses/{id}").permitAll() // 房源详情公开
                 .requestMatchers(HttpMethod.GET, "/api/houses/home-stats").permitAll() // 首页统计公开
                 .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll() // 已上传的图片文件公开访问（无需登录即可查看房源图片）
+                // 支付宝同步回跳验签接口允许匿名访问：
+                // 回跳发生在浏览器重定向链路中，可能出现域名切换导致 token 不可见；
+                // 该接口本身仍会做支付宝 RSA 验签、appId 与金额校验，业务安全由签名保障。
+                .requestMatchers(HttpMethod.POST, "/api/alipay/pay/sync/verify").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Swagger 文档公开
                 .anyRequest().authenticated() // 其他所有接口需要认证
             )

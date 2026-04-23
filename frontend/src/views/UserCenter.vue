@@ -1171,7 +1171,11 @@ async function handlePayOrder(order) {
       '支付确认',
       { type: 'warning', confirmButtonText: '确认支付', cancelButtonText: '取消' }
     )
-    const res = await createAlipayPayForm(order.id)
+    // 核心修复：
+    // 回跳地址使用“当前浏览器正在访问的同源域名”动态生成，
+    // 解决 localhost 与 127.0.0.1 混用时支付后落到另一域名导致 token 丢失、被重定向登录的问题。
+    const dynamicReturnUrl = `${window.location.origin}/payment/alipay/return`
+    const res = await createAlipayPayForm(order.id, dynamicReturnUrl)
     const formHtml = res?.formHtml
     if (!formHtml) {
       throw new Error(`支付表单生成失败（订单ID：${order.id}）`)

@@ -41,7 +41,10 @@ const routes = [
   { path: '/publish-house/:id', component: PublishHouse, meta: { requiresAuth: true, requiresRole: 'LANDLORD' } },
   { path: '/orders/:id', component: OrderDetail, meta: { requiresAuth: true } },
   { path: '/contracts/:id', component: ContractDetail, meta: { requiresAuth: true } },
-  { path: '/payment/alipay/return', component: AlipayReturn, meta: { requiresAuth: true } },
+  // 支付宝同步回跳页不做前置登录拦截：
+  // 1) 用户可能因 localhost/127.0.0.1 域名切换导致本地 token 不可见；
+  // 2) 先允许进入页面完成验签落库，再由页面逻辑引导到订单管理，避免“支付成功但状态未更新”。
+  { path: '/payment/alipay/return', component: AlipayReturn },
   // 管理后台只允许 ADMIN 角色访问
   { path: '/admin', component: AdminDashboard, meta: { requiresAuth: true, requiresRole: 'ADMIN' } },
   { path: '/admin/houses/:id', component: AdminHouseDetail, meta: { requiresAuth: true, requiresRole: 'ADMIN' } },
