@@ -1,3 +1,5 @@
+CREATE DATABASE IF NOT EXISTS house_leasing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE house_leasing;
 /*
  Navicat Premium Data Transfer
 
