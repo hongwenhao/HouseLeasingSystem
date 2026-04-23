@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 支付宝配置属性
  *
@@ -28,6 +31,20 @@ public class AlipayProperties { // 支付宝配置属性载体（由 application
     private String signType = "RSA2";
     /** 仅同步回跳地址：用户支付后支付宝重定向到前端页面 */
     private String returnUrl;
+    /**
+     * 允许作为动态 returnUrl 的主机白名单（不区分大小写）
+     *
+     * 说明：
+     * - 前端可按当前 origin 传回跳地址；
+     * - 后端仅允许白名单主机，避免被构造为任意第三方地址。
+     */
+    private List<String> allowedReturnHosts = new ArrayList<>();
+    /**
+     * 同步回跳参数数量上限
+     *
+     * 说明：用于拦截异常大参数包体，默认 40 已覆盖支付宝常见 return_url 参数数量。
+     */
+    private Integer maxSyncReturnParamCount = 40;
     /** 支付超时时间，示例值 30m（30 分钟） */
     private String timeoutExpress = "30m";
 }

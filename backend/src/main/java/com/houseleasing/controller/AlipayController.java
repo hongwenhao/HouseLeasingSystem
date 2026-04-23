@@ -48,7 +48,8 @@ public class AlipayController { // 负责支付宝支付创建与回调验签
             throw new BusinessException(400, "订单ID不能为空"); // 参数不完整，直接返回业务错误
         }
         User user = resolveUser(userDetails.getUsername()); // 根据登录用户名查出系统用户
-        String formHtml = alipayService.createPayForm(request.getOrderId(), user.getId()); // 生成支付宝自动提交的 HTML 表单
+        // 前端会传当前站点生成的 returnUrl，确保支付后回到“与登录态一致的同源地址”。
+        String formHtml = alipayService.createPayForm(request.getOrderId(), user.getId(), request.getReturnUrl()); // 生成支付宝自动提交的 HTML 表单
         return Result.success(new AlipayCreateResponse(formHtml)); // 把表单包装后返回给前端
     }
 
