@@ -120,3 +120,6 @@ alipay:
   timeout-express: 20m
   # 支付完成后支付宝同步回跳到前端页面（支持环境变量覆盖，避免多环境手工改配置）
   return-url: ${ALIPAY_RETURN_URL:${FRONTEND_BASE_URL:http://localhost:5173}/payment/alipay/return}
+  # 动态回跳地址主机白名单（英文逗号分隔）：
+  # 用于兼容本地开发 localhost/127.0.0.1 混用，同时避免被篡改到任意第三方域名。
+  allowed-return-hosts: ${ALIPAY_ALLOWED_RETURN_HOSTS:localhost,127.0.0.1}
