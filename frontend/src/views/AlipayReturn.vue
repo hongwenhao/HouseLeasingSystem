@@ -91,8 +91,8 @@ function normalizeQueryToMap() {
  * @returns {string} 修复后的参数值
  */
 function normalizeAlipayCallbackValue(key, value) {
-  const normalizedValue = value == null ? '' : String(value)
-  if (String(key).toLowerCase() !== 'sign') return normalizedValue
+  const normalizedValue = String(value)
+  if (key.toLowerCase() !== 'sign') return normalizedValue
   return normalizedValue.replace(/ /g, '+')
 }
 
