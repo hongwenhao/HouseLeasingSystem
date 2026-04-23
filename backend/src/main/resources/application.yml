@@ -123,3 +123,5 @@ alipay:
   # 动态回跳地址主机白名单（英文逗号分隔）：
   # 用于兼容本地开发 localhost/127.0.0.1 混用，同时避免被篡改到任意第三方域名。
   allowed-return-hosts: ${ALIPAY_ALLOWED_RETURN_HOSTS:localhost,127.0.0.1}
+  # 同步回跳参数数量上限（防滥用阈值，默认 40，可按网关实际参数量调优）
+  max-sync-return-param-count: ${ALIPAY_MAX_SYNC_RETURN_PARAM_COUNT:40}

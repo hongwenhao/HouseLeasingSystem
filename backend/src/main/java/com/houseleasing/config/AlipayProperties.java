@@ -39,6 +39,12 @@ public class AlipayProperties { // 支付宝配置属性载体（由 application
      * - 后端仅允许白名单主机，避免被构造为任意第三方地址。
      */
     private List<String> allowedReturnHosts = new ArrayList<>();
+    /**
+     * 同步回跳参数数量上限
+     *
+     * 说明：用于拦截异常大参数包体，默认 40 已覆盖支付宝常见 return_url 参数数量。
+     */
+    private Integer maxSyncReturnParamCount = 40;
     /** 支付超时时间，示例值 30m（30 分钟） */
     private String timeoutExpress = "30m";
 }
