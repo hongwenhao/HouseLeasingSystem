@@ -62,12 +62,37 @@ function normalizeQueryToMap() {
     if (Array.isArray(val)) {
       // 理论上支付宝回调参数均应为单值；若出现数组，记录告警并取首值，避免参数结构异常导致流程中断。
       console.warn('[AlipayReturn] 回调参数出现数组值，将使用首个元素：', key, val)
-      map[key] = val[0] ?? ''
+      map[key] = normalizeAlipayCallbackValue(key, val[0] ?? '')
     } else {
-      map[key] = val == null ? '' : String(val)
+      map[key] = normalizeAlipayCallbackValue(key, val == null ? '' : String(val))
     }
   }
   return map
+}
+
+/**
+ * 统一规范化支付宝回调参数值
+ *
+ * 为什么需要这一步：
+ * - Vue Router 解析 query 时会执行 URL 解码；
+ * - 在部分浏览器/网关组合下，`sign` 中的 `+` 可能被还原为空格；
+ * - 但支付宝验签要求签名串与原始值严格一致，`+` 被改成空格会直接验签失败。
+ *
+ * 后果：
+ * - 验签失败后，后端不会执行订单支付落库；
+ * - 前端因此拿不到“支付确认成功”，也不会自动跳转“预约订单管理”。
+ *
+ * 处理策略：
+ * - 仅对 `sign` 字段执行“空格 -> +”兼容修复；
+ * - 其他字段保持原值，避免误改交易号、金额等业务参数。
+ *
+ * @param {string} key 参数名
+ * @param {string} value 参数值
+ * @returns {string} 修复后的参数值
+ */
+function normalizeAlipayCallbackValue(key, value) {
+  if (key !== 'sign') return value
+  return value.replace(/ /g, '+')
 }
 
 onMounted(async () => {
